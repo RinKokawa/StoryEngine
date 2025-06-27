@@ -19,6 +19,9 @@
         <button :class="{active: currentNav==='writing'}" @click="currentNav='writing'">
           写作
         </button>
+        <button @click="goAiTest" class="ai-menu-btn">
+          AI测试
+        </button>
       </nav>
       <div class="sidebar-theme-switcher">
         <label>主题：</label>
@@ -331,6 +334,10 @@ const formatDate = (date: Date): string => {
   if (days === 1) return '昨天'
   if (days < 7) return `${days}天前`
   return date.toLocaleDateString()
+}
+
+function goAiTest() {
+  router.push('/ai-test')
 }
 </script>
 
@@ -880,5 +887,22 @@ body, html, #app {
   color: #fff;
   border-color: #f8d7da;
   cursor: not-allowed;
+}
+
+.ai-menu-btn {
+  margin-top: 2rem;
+  background: linear-gradient(90deg, #00fff7 0%, #ff00cc 100%);
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.7rem 1.2rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.ai-menu-btn:hover {
+  background: linear-gradient(90deg, #ff00cc 0%, #00fff7 100%);
+  color: #fff;
 }
 </style> 

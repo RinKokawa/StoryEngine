@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import AiTest from '../views/AiTest.vue'
 
 const routes = [
   {
@@ -25,6 +26,11 @@ const routes = [
     path: '/worldmap',
     name: 'WorldMap',
     component: () => import('../views/WorldMap.vue')
+  },
+  {
+    path: '/ai-test',
+    name: 'AiTest',
+    component: AiTest
   }
 ]
 
