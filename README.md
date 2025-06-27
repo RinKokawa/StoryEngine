@@ -1,18 +1,63 @@
-# Vue 3 + TypeScript + Vite
+# StoryEngine
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+> 你的小说/故事世界创作引擎，灵感与结构的完美结合！
 
-## Recommended IDE Setup
+StoryEngine 是一款现代化、跨平台的小说与故事创作引擎，灵感源自 Godot/Unity 等专业编辑器。它不仅仅是写作工具，更是一个支持世界观、角色、章节、AI助手等多模块协作的创作平台。
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+---
 
-## Type Support For `.vue` Imports in TS
+## 主要特性
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
+- 🖥️ **桌面级多面板布局**：侧边栏导航、主编辑区、属性面板，体验如同专业引擎。
+- 📚 **项目/小说管理**：支持多项目切换，资源统一管理。
+- 📝 **章节/大纲/角色/世界观模块**：结构化管理你的故事世界。
+- 🖼️ **封面上传与管理**：每本小说可自定义封面。
+- 💬 **AI助手集成**：内置AI测试窗口，未来可扩展AI写作、润色、灵感生成等。
+- 🎨 **多主题切换**：现代极简、酷炫赛博、玻璃拟态等多种风格一键切换。
+- 🗂️ **本地存储**：数据自动保存于本地，安全可靠。
+- 🚀 **未来可扩展**：插件机制、导出格式、协作等功能规划中。
 
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
+---
 
-1. Disable the built-in TypeScript Extension
-   1. Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-   2. Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
+## 快速开始
+
+1. **安装依赖**
+   ```bash
+   npm install
+   ```
+2. **启动开发环境**
+   ```bash
+   npm run dev
+   ```
+3. **打包构建**
+   ```bash
+   npm run build
+   ```
+
+---
+
+## 主要界面
+
+- **首页**：项目/小说总览，支持新建、导入、编辑、删除。
+- **写作页**：章节导航+主编辑器+状态栏，支持章节管理、字数统计、全屏、预览等。
+- **AI测试**：侧边栏点击"AI测试"或访问 `/ai-test`，体验AI对话与创作辅助。
+
+---
+
+## 未来规划
+- AI深度集成（智能写作、润色、世界观生成等）
+- 插件/扩展机制
+- 云同步与团队协作
+- 多格式导出（EPUB、PDF、Markdown等）
+- 资源管理（图片、地图、设定等）
+- 更丰富的可视化编辑器
+
+---
+
+## 贡献与反馈
+
+欢迎提出 Issue 或 PR，一起打造更强大的 StoryEngine！
+
+---
+
+**StoryEngine** —— 让每个创作者都拥有属于自己的"故事引擎"！
