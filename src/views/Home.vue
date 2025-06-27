@@ -125,11 +125,21 @@
         </form>
       </div>
     </div>
+
+    <!-- 主题切换器 -->
+    <div class="theme-switcher">
+      <label>主题：</label>
+      <select v-model="theme" @change="applyTheme">
+        <option value="modern">现代极简</option>
+        <option value="cyber">酷炫赛博</option>
+        <option value="glass">玻璃拟态</option>
+      </select>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   PlusIcon, 
@@ -165,10 +175,34 @@ const newNovel = reactive({
   genre: ''
 })
 
+const theme = ref('modern')
+
+const applyTheme = () => {
+  const root = document.documentElement
+  if (theme.value === 'modern') {
+    root.setAttribute('data-theme', 'modern')
+  } else if (theme.value === 'cyber') {
+    root.setAttribute('data-theme', 'cyber')
+  } else if (theme.value === 'glass') {
+    root.setAttribute('data-theme', 'glass')
+  }
+  localStorage.setItem('novel-theme', theme.value)
+}
+
 // 生命周期
 onMounted(() => {
   loadNovels()
+  // 主题初始化
+  const saved = localStorage.getItem('novel-theme')
+  if (saved) {
+    theme.value = saved
+    applyTheme()
+  } else {
+    applyTheme()
+  }
 })
+
+watch(theme, applyTheme)
 
 // 方法
 const loadNovels = () => {
@@ -252,34 +286,99 @@ const formatDate = (date: Date): string => {
 }
 </script>
 
-<style scoped>
+<style>
+:root,
+[data-theme='modern'] {
+  --main-bg: linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%);
+  --header-bg: #fff;
+  --title-color: #2c3e50;
+  --subtitle-color: #7f8c8d;
+  --card-bg: #fff;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --card-hover-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  --primary-btn-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-btn-color: #fff;
+  --primary-btn-hover: 0 4px 12px rgba(102,126,234,0.4);
+  --accent: #667eea;
+  --border: #dee2e6;
+  --input-bg: #fff;
+  --input-border: #ced4da;
+  --modal-bg: #fff;
+  --modal-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+[data-theme='cyber'] {
+  --main-bg: linear-gradient(120deg, #0f2027 0%, #2c5364 100%);
+  --header-bg: rgba(20,20,40,0.95);
+  --title-color: #00fff7;
+  --subtitle-color: #ff00cc;
+  --card-bg: rgba(30,30,60,0.95);
+  --card-shadow: 0 0 16px #00fff7, 0 2px 8px rgba(0,0,0,0.3);
+  --card-hover-shadow: 0 0 32px #ff00cc, 0 8px 24px rgba(0,0,0,0.4);
+  --primary-btn-bg: linear-gradient(90deg, #00fff7 0%, #ff00cc 100%);
+  --primary-btn-color: #222;
+  --primary-btn-hover: 0 0 16px #00fff7;
+  --accent: #ff00cc;
+  --border: #00fff7;
+  --input-bg: #181828;
+  --input-border: #00fff7;
+  --modal-bg: rgba(20,20,40,0.98);
+  --modal-shadow: 0 0 40px #ff00cc;
+}
+[data-theme='glass'] {
+  --main-bg: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  --header-bg: rgba(255,255,255,0.7);
+  --title-color: #3a3a3a;
+  --subtitle-color: #6c757d;
+  --card-bg: rgba(255,255,255,0.5);
+  --card-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+  --card-hover-shadow: 0 16px 48px 0 rgba(31,38,135,0.24);
+  --primary-btn-bg: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+  --primary-btn-color: #222;
+  --primary-btn-hover: 0 4px 24px rgba(137,247,254,0.4);
+  --accent: #66a6ff;
+  --border: #b0c4de;
+  --input-bg: rgba(255,255,255,0.7);
+  --input-border: #b0c4de;
+  --modal-bg: rgba(255,255,255,0.8);
+  --modal-shadow: 0 10px 40px rgba(137,247,254,0.2);
+}
+
 .home-container {
   padding: 2rem 3rem;
   min-height: 100vh;
   width: 100%;
+  background: var(--main-bg);
+  transition: background 0.5s;
 }
 
 .app-header {
   text-align: center;
   margin-bottom: 3rem;
   padding: 0 2rem;
+  background: var(--header-bg);
+  border-radius: 1.5rem;
+  box-shadow: var(--card-shadow);
+  position: relative;
 }
 
 .app-title {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--title-color);
   margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px var(--accent), 0 0 1px #fff;
 }
 
 .app-subtitle {
   font-size: 1.1rem;
-  color: #7f8c8d;
+  color: var(--subtitle-color);
+  margin-bottom: 0.5rem;
 }
 
 .quick-actions {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
   margin-bottom: 3rem;
 }
@@ -287,34 +386,30 @@ const formatDate = (date: Date): string => {
 .create-btn, .import-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
+  gap: 0.7rem;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(.4,2,.6,1);
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-color);
+  box-shadow: var(--card-shadow);
 }
-
-.create-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.create-btn:hover, .import-btn:hover {
+  transform: scale(1.06) translateY(-2px);
+  box-shadow: var(--primary-btn-hover);
 }
-
-.create-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
 .import-btn {
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
+  background: var(--input-bg);
+  color: var(--accent);
+  border: 2px solid var(--border);
 }
-
 .import-btn:hover {
-  background: #e9ecef;
+  background: var(--accent);
+  color: #fff;
 }
 
 .novels-section {
@@ -330,7 +425,7 @@ const formatDate = (date: Date): string => {
 
 .section-header h2 {
   font-size: 1.5rem;
-  color: #2c3e50;
+  color: var(--title-color);
 }
 
 .view-controls {
@@ -340,150 +435,152 @@ const formatDate = (date: Date): string => {
 
 .view-controls button {
   padding: 0.5rem;
-  border: 1px solid #dee2e6;
-  background: white;
-  border-radius: 4px;
+  border: 2px solid var(--border);
+  background: var(--input-bg);
+  border-radius: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  color: var(--accent);
 }
-
 .view-controls button.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .novels-container.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
   max-width: none;
 }
-
 .novels-container.list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .novel-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  border-radius: 2rem;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  box-shadow: var(--card-shadow);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(.4,2,.6,1);
   position: relative;
+  backdrop-filter: blur(8px);
+  border: 2px solid var(--border);
 }
-
 .novel-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px) scale(1.03) rotateZ(-0.5deg);
+  box-shadow: var(--card-hover-shadow);
+  border-color: var(--accent);
 }
 
 .novel-cover {
-  width: 60px;
-  height: 80px;
-  border-radius: 6px;
+  width: 70px;
+  height: 90px;
+  border-radius: 1rem;
   overflow: hidden;
   margin-bottom: 1rem;
-  background: #f8f9fa;
+  background: var(--input-bg);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 2px solid var(--border);
+  backdrop-filter: blur(4px);
 }
-
 .novel-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .default-cover {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-btn-bg);
 }
-
 .book-icon {
-  color: white;
-  width: 24px;
-  height: 24px;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 0 8px var(--accent));
 }
 
 .novel-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--title-color);
   margin-bottom: 0.5rem;
   line-height: 1.2;
+  letter-spacing: 1px;
 }
-
 .novel-description {
-  color: #6c757d;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  color: var(--subtitle-color);
+  font-size: 1rem;
+  line-height: 1.5;
   margin-bottom: 1rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .novel-stats {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
-  color: #868e96;
+  font-size: 0.95rem;
+  color: var(--subtitle-color);
 }
-
 .novel-actions {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1.2rem;
+  right: 1.2rem;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.7rem;
   opacity: 0;
   transition: opacity 0.2s;
 }
-
 .novel-card:hover .novel-actions {
   opacity: 1;
 }
-
 .action-btn {
-  padding: 0.5rem;
-  border: 1px solid #dee2e6;
-  background: white;
-  border-radius: 4px;
+  padding: 0.6rem;
+  border: 2px solid var(--border);
+  background: var(--input-bg);
+  border-radius: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  color: var(--accent);
+  font-size: 1.1rem;
 }
-
 .action-btn:hover {
-  background: #f8f9fa;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
-
 .action-btn.delete:hover {
   background: #dc3545;
-  color: white;
+  color: #fff;
   border-color: #dc3545;
+  box-shadow: 0 0 8px #dc3545;
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #6c757d;
+  color: var(--subtitle-color);
 }
-
 .empty-icon {
   width: 4rem;
   height: 4rem;
   margin-bottom: 1rem;
   opacity: 0.5;
+  filter: drop-shadow(0 0 8px var(--accent));
 }
 
 .modal-overlay {
@@ -498,114 +595,130 @@ const formatDate = (date: Date): string => {
   justify-content: center;
   z-index: 1000;
 }
-
 .modal {
-  background: white;
-  border-radius: 12px;
+  background: var(--modal-bg);
+  border-radius: 2rem;
   width: 600px;
   max-width: 90vw;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--modal-shadow);
+  backdrop-filter: blur(12px);
 }
-
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--border);
 }
-
 .modal-header h3 {
   margin: 0;
-  color: #2c3e50;
+  color: var(--title-color);
 }
-
 .close-btn {
   padding: 0.5rem;
   border: none;
   background: none;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 1rem;
   transition: background 0.2s;
 }
-
 .close-btn:hover {
-  background: #f8f9fa;
+  background: var(--input-bg);
 }
-
 .modal-content {
   padding: 1.5rem;
 }
-
 .form-group {
   margin-bottom: 1.5rem;
 }
-
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #495057;
+  color: var(--title-color);
 }
-
 .form-group input,
 .form-group textarea,
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
+  border: 2px solid var(--input-border);
+  border-radius: 1rem;
   font-size: 1rem;
+  background: var(--input-bg);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--primary-btn-bg);
 }
-
 .modal-actions {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 2rem;
 }
-
 .cancel-btn,
 .confirm-btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 1rem;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .cancel-btn {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #dee2e6;
+  background: var(--input-bg);
+  color: var(--subtitle-color);
+  border: 2px solid var(--border);
 }
-
 .cancel-btn:hover {
-  background: #e9ecef;
+  background: var(--accent);
+  color: #fff;
 }
-
 .confirm-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-color);
 }
-
 .confirm-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: var(--primary-btn-hover);
+}
+.icon {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
-.icon {
-  width: 1rem;
-  height: 1rem;
+.theme-switcher {
+  position: fixed;
+  top: 24px;
+  right: 32px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.7);
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 0.4rem 1.2rem;
+  border: 1.5px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.theme-switcher label {
+  color: var(--accent);
+  font-weight: bold;
+}
+.theme-switcher select {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--accent);
+  outline: none;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
 }
 </style> 
