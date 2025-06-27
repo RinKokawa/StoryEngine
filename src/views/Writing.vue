@@ -1,115 +1,91 @@
 <template>
-  <div class="writing-container">
-    <!-- 顶部工具栏 -->
-    <header class="writing-header">
-      <div class="header-left">
-        <button @click="goBack" class="back-btn">
-          <ArrowLeftIcon class="icon" />
-          返回
-        </button>
-        <div class="novel-info">
-          <h1 class="novel-title">{{ currentNovel?.title || '未命名小说' }}</h1>
-          <span class="word-count">{{ wordCount }} 字</span>
-        </div>
-      </div>
-      <div class="header-right">
-        <button @click="saveContent" class="save-btn" :disabled="!hasUnsavedChanges">
-          <SaveIcon class="icon" />
-          {{ hasUnsavedChanges ? '保存' : '已保存' }}
-        </button>
-        <button @click="toggleFullscreen" class="fullscreen-btn">
-          <MaximizeIcon v-if="!isFullscreen" class="icon" />
-          <MinimizeIcon v-else class="icon" />
-        </button>
-      </div>
-    </header>
-
-    <!-- 编辑器区域 -->
-    <main class="editor-main" :class="{ fullscreen: isFullscreen }">
-      <div class="editor-container">
-        <textarea
-          ref="editorRef"
-          v-model="content"
-          @input="onContentChange"
-          @scroll="syncScroll"
-          class="editor"
-          placeholder="开始你的创作..."
-          spellcheck="false"
-        ></textarea>
-        
-        <!-- 预览面板（可选） -->
-        <div v-if="showPreview" class="preview-panel">
-          <div class="preview-content" v-html="formattedContent"></div>
-        </div>
-      </div>
-    </main>
-
-    <!-- 侧边栏 -->
-    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+  <div class="writing-desktop-layout">
+    <!-- 左侧章节导航栏 -->
+    <aside class="chapter-sidebar" :class="{ collapsed: sidebarCollapsed }"
+      @mouseenter="sidebarCollapsed = false"
+      @mouseleave="sidebarCollapsed = true">
       <div class="sidebar-header">
-        <button @click="toggleSidebar" class="toggle-btn">
-          <ChevronLeftIcon v-if="!sidebarCollapsed" class="icon" />
-          <ChevronRightIcon v-else class="icon" />
+        <span v-if="!sidebarCollapsed" class="sidebar-title">章节目录</span>
+      </div>
+      <div v-if="!sidebarCollapsed" class="chapter-list">
+        <div 
+          v-for="chapter in chapters" 
+          :key="chapter.id"
+          class="chapter-item"
+          :class="{ active: currentChapter === chapter.id }"
+          @click="switchChapter(chapter.id)"
+        >
+          <span class="chapter-title">{{ chapter.title }}</span>
+          <span class="chapter-words">{{ chapter.wordCount }}字</span>
+        </div>
+        <button @click="addChapter" class="add-chapter-btn">
+          <PlusIcon class="icon" /> 添加章节
         </button>
       </div>
-      
-      <div v-if="!sidebarCollapsed" class="sidebar-content">
-        <!-- 章节列表 -->
-        <div class="sidebar-section">
-          <h3>章节目录</h3>
-          <div class="chapter-list">
-            <div 
-              v-for="chapter in chapters" 
-              :key="chapter.id"
-              class="chapter-item"
-              :class="{ active: currentChapter === chapter.id }"
-              @click="switchChapter(chapter.id)"
-            >
-              <span class="chapter-title">{{ chapter.title }}</span>
-              <span class="chapter-words">{{ chapter.wordCount }}字</span>
-            </div>
-            <button @click="() => addChapter()" class="add-chapter-btn">
-              <PlusIcon class="icon" />
-              添加章节
-            </button>
-          </div>
-        </div>
-
-        <!-- 写作统计 -->
-        <div class="sidebar-section">
-          <h3>写作统计</h3>
-          <div class="writing-stats">
-            <div class="stat-item">
-              <span class="stat-label">今日字数</span>
-              <span class="stat-value">{{ todayWordCount }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">总字数</span>
-              <span class="stat-value">{{ totalWordCount }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">章节数</span>
-              <span class="stat-value">{{ chapters.length }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 快速工具 -->
-        <div class="sidebar-section">
-          <h3>工具</h3>
-          <div class="tools">
-            <button @click="togglePreview" class="tool-btn">
-              <EyeIcon class="icon" />
-              {{ showPreview ? '隐藏预览' : '显示预览' }}
-            </button>
-            <button @click="exportContent" class="tool-btn">
-              <DownloadIcon class="icon" />
-              导出
-            </button>
-          </div>
-        </div>
-      </div>
+      <div v-else class="sidebar-collapsed-bar"></div>
     </aside>
+
+    <div class="writing-main-area">
+      <!-- 顶部操作栏 -->
+      <header class="writing-main-header">
+        <div class="header-left">
+          <button @click="goBack" class="back-btn">
+            <ArrowLeftIcon class="icon" />
+            <span class="btn-text">返回</span>
+          </button>
+          <div class="novel-info">
+            <h1 class="novel-title">{{ currentNovel?.title || '未命名小说' }}</h1>
+            <span class="word-count">{{ wordCount }} 字</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button @click="saveContent" class="save-btn" :disabled="!hasUnsavedChanges">
+            <SaveIcon class="icon" />
+            <span class="btn-text">{{ hasUnsavedChanges ? '保存' : '已保存' }}</span>
+          </button>
+          <button @click="togglePreview" class="tool-btn">
+            <EyeIcon class="icon" />
+            <span class="btn-text">{{ showPreview ? '隐藏预览' : '显示预览' }}</span>
+          </button>
+          <button @click="exportContent" class="tool-btn">
+            <DownloadIcon class="icon" />
+            <span class="btn-text">导出</span>
+          </button>
+          <button @click="toggleFullscreen" class="fullscreen-btn">
+            <MaximizeIcon v-if="!isFullscreen" class="icon" />
+            <MinimizeIcon v-else class="icon" />
+            <span class="btn-text">{{ isFullscreen ? '退出全屏' : '全屏' }}</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 编辑器主区 -->
+      <main class="editor-main" :class="{ fullscreen: isFullscreen }">
+        <div class="editor-container">
+          <textarea
+            ref="editorRef"
+            v-model="content"
+            @input="onContentChange"
+            @scroll="syncScroll"
+            class="editor"
+            placeholder="开始你的创作..."
+            spellcheck="false"
+          ></textarea>
+          <div v-if="showPreview" class="preview-panel">
+            <div class="preview-content" v-html="formattedContent"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- 底部状态栏 -->
+      <footer class="writing-status-bar">
+        <div>章节：{{ currentChapterTitle }}</div>
+        <div>总字数：{{ totalWordCount }}</div>
+        <div>今日字数：{{ todayWordCount }}</div>
+        <div v-if="hasUnsavedChanges" class="unsaved">有未保存更改</div>
+        <div v-else class="saved">已保存</div>
+      </footer>
+    </div>
   </div>
 </template>
 
@@ -121,8 +97,6 @@ import {
   SaveIcon,
   MaximizeIcon,
   MinimizeIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   PlusIcon,
   EyeIcon,
   DownloadIcon
@@ -147,8 +121,6 @@ interface Chapter {
 }
 
 const router = useRouter()
-
-// 响应式数据
 const currentNovel = ref<Novel | null>(null)
 const chapters = ref<Chapter[]>([])
 const currentChapter = ref<string>('')
@@ -156,48 +128,29 @@ const content = ref('')
 const editorRef = ref<HTMLTextAreaElement>()
 const hasUnsavedChanges = ref(false)
 const isFullscreen = ref(false)
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(true)
 const showPreview = ref(false)
 const todayWordCount = ref(0)
 
-// 计算属性
-const wordCount = computed(() => {
-  return content.value.replace(/\s/g, '').length
-})
+const wordCount = computed(() => content.value.replace(/\s/g, '').length)
+const totalWordCount = computed(() => chapters.value.reduce((total, chapter) => total + chapter.wordCount, 0))
+const formattedContent = computed(() => content.value.replace(/\n/g, '<br>').replace(/^(\s{4,}|\t+)(.+)$/gm, '<div class="indent">$2</div>'))
+const currentChapterTitle = computed(() => chapters.value.find(c => c.id === currentChapter.value)?.title || '')
 
-const totalWordCount = computed(() => {
-  return chapters.value.reduce((total, chapter) => total + chapter.wordCount, 0)
-})
-
-const formattedContent = computed(() => {
-  return content.value
-    .replace(/\n/g, '<br>')
-    .replace(/^(\s{4,}|\t+)(.+)$/gm, '<div class="indent">$2</div>')
-})
-
-// 生命周期
 onMounted(() => {
   loadCurrentNovel()
   loadTodayStats()
-  
-  // 监听键盘快捷键
   document.addEventListener('keydown', handleKeyboard)
-  
-  // 自动保存
-  setInterval(autoSave, 30000) // 每30秒自动保存
+  setInterval(autoSave, 30000)
 })
-
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard)
 })
-
-// 监听内容变化
 watch(content, () => {
   hasUnsavedChanges.value = true
   updateChapterWordCount()
 })
 
-// 方法
 const loadCurrentNovel = () => {
   const novelId = localStorage.getItem('currentNovelId')
   if (!novelId) {
@@ -322,10 +275,6 @@ const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value
 }
 
-const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value
-}
-
 const togglePreview = () => {
   showPreview.value = !showPreview.value
 }
@@ -390,322 +339,289 @@ const handleKeyboard = (e: KeyboardEvent) => {
     e.preventDefault()
     toggleFullscreen()
   }
-  
-  // Ctrl+B 切换侧边栏
-  if (e.ctrlKey && e.key === 'b') {
-    e.preventDefault()
-    toggleSidebar()
-  }
 }
 </script>
 
-<style scoped>
-.writing-container {
-  display: flex;
-  height: 100vh;
-  flex-direction: column;
-  background: #fafafa;
+<style>
+:root,
+[data-theme='modern'] {
+  --writing-bg: linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%);
+  --writing-header-bg: #fff;
+  --writing-sidebar-bg: #f4f6fa;
+  --writing-card-bg: #fff;
+  --writing-border: #dee2e6;
+  --writing-accent: #667eea;
+  --writing-title: #2c3e50;
+  --writing-subtitle: #7f8c8d;
+  --writing-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+[data-theme='cyber'] {
+  --writing-bg: linear-gradient(120deg, #0f2027 0%, #2c5364 100%);
+  --writing-header-bg: rgba(20,20,40,0.95);
+  --writing-sidebar-bg: #181828;
+  --writing-card-bg: rgba(30,30,60,0.95);
+  --writing-border: #00fff7;
+  --writing-accent: #ff00cc;
+  --writing-title: #00fff7;
+  --writing-subtitle: #ff00cc;
+  --writing-shadow: 0 0 16px #00fff7, 0 2px 8px rgba(0,0,0,0.3);
+}
+[data-theme='glass'] {
+  --writing-bg: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  --writing-header-bg: rgba(255,255,255,0.7);
+  --writing-sidebar-bg: rgba(255,255,255,0.5);
+  --writing-card-bg: rgba(255,255,255,0.5);
+  --writing-border: #b0c4de;
+  --writing-accent: #66a6ff;
+  --writing-title: #3a3a3a;
+  --writing-subtitle: #6c757d;
+  --writing-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
 }
 
-.writing-header {
+body, html, #app {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: var(--writing-bg);
+}
+
+.writing-desktop-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: var(--writing-bg);
+}
+.chapter-sidebar {
+  width: 260px;
+  background: var(--writing-sidebar-bg);
+  box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 2.5rem 0 2rem 0;
+  border-right: 2px solid var(--writing-border);
+  z-index: 10;
+  transition: width 0.22s cubic-bezier(.4,2,.6,1);
+}
+.chapter-sidebar.collapsed {
+  width: 16px;
+  min-width: 16px;
+  padding: 2.5rem 0 2rem 0;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 1.2rem 1.2rem 1.2rem;
+}
+.sidebar-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--writing-accent);
+  letter-spacing: 1px;
+}
+.chapter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1.2rem;
+}
+.chapter-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  background: white;
-  border-bottom: 1px solid #e9ecef;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 0.7rem 1.1rem;
+  border-radius: 0.8rem;
+  cursor: pointer;
+  color: var(--writing-title);
+  background: none;
+  border: none;
+  transition: background 0.18s, color 0.18s;
+}
+.chapter-item.active, .chapter-item:hover {
+  background: var(--writing-accent);
+  color: #fff;
+}
+.add-chapter-btn {
+  margin-top: 1.2rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.8rem;
+  border: none;
+  background: var(--writing-accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.18s;
+}
+.add-chapter-btn:hover {
+  background: var(--writing-title);
 }
 
+.writing-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  overflow: auto;
+}
+.writing-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2.2rem 3vw 1.2rem 3vw;
+  background: var(--writing-header-bg);
+  border-bottom: 2px solid var(--writing-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
 }
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: none;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: #f8f9fa;
-}
-
 .novel-info {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: baseline;
+  gap: 1.2rem;
 }
-
 .novel-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--writing-title);
+  letter-spacing: 1px;
 }
-
 .word-count {
-  font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--writing-accent);
+  font-size: 1.1rem;
 }
-
 .header-right {
   display: flex;
-  gap: 0.75rem;
+  gap: 1.2rem;
 }
-
-.save-btn,
-.fullscreen-btn {
+.save-btn, .tool-btn, .fullscreen-btn, .back-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.7rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  background: var(--writing-accent);
+  color: #fff;
+  box-shadow: var(--writing-shadow);
+  transition: background 0.18s, color 0.18s;
 }
-
-.save-btn {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  color: white;
-}
-
-.save-btn:disabled {
-  background: #6c757d;
+.save-btn[disabled] {
+  background: #b0b0b0;
+  color: #fff;
   cursor: not-allowed;
 }
-
-.fullscreen-btn {
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
-}
-
-.fullscreen-btn:hover {
-  background: #e9ecef;
+.save-btn:hover:not([disabled]), .tool-btn:hover, .fullscreen-btn:hover, .back-btn:hover {
+  background: var(--writing-title);
+  color: #fff;
 }
 
 .editor-main {
   flex: 1;
   display: flex;
-  overflow: hidden;
+  align-items: stretch;
+  background: var(--writing-bg);
+  transition: background 0.5s;
 }
-
-.editor-main.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  background: white;
-}
-
 .editor-container {
   flex: 1;
   display: flex;
   position: relative;
+  height: 100%;
 }
-
 .editor {
   flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  font-size: 1.15rem;
+  font-family: 'JetBrains Mono', 'Fira Mono', 'Consolas', 'Menlo', 'monospace', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  padding: 2.2rem 2.5rem;
   border: none;
   outline: none;
-  padding: 3rem;
-  font-family: 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 1.2rem;
-  line-height: 2;
-  color: #2c3e50;
-  background: white;
+  background: var(--writing-card-bg);
+  color: var(--writing-title);
+  border-radius: 1.5rem;
+  box-shadow: var(--writing-shadow);
   resize: none;
-  max-width: none;
+  transition: background 0.3s, color 0.3s;
 }
-
-.editor:focus {
-  background: #fff;
-}
-
 .preview-panel {
-  flex: 1;
-  padding: 3rem;
-  background: #f8f9fa;
-  border-left: 1px solid #dee2e6;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 48%;
+  height: 100%;
+  background: var(--writing-card-bg);
+  border-radius: 1.5rem;
+  box-shadow: var(--writing-shadow);
+  padding: 2.2rem 2.5rem;
   overflow-y: auto;
-  max-width: none;
+  z-index: 2;
+  border-left: 2px solid var(--writing-border);
 }
-
 .preview-content {
-  font-family: 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: var(--writing-title);
   font-size: 1.1rem;
   line-height: 1.8;
-  color: #2c3e50;
 }
 
-.sidebar {
-  width: 350px;
-  background: white;
-  border-left: 1px solid #dee2e6;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease;
-}
-
-.sidebar.collapsed {
-  width: 50px;
-}
-
-.sidebar-header {
-  padding: 1rem;
-  border-bottom: 1px solid #e9ecef;
-  display: flex;
-  justify-content: flex-start;
-}
-
-.toggle-btn {
-  padding: 0.5rem;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.toggle-btn:hover {
-  background: #f8f9fa;
-}
-
-.sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.sidebar-section {
-  margin-bottom: 2rem;
-}
-
-.sidebar-section h3 {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.chapter-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.chapter-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.chapter-item:hover {
-  background: #f8f9fa;
-}
-
-.chapter-item.active {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.chapter-title {
-  font-weight: 500;
-}
-
-.chapter-words {
-  font-size: 0.75rem;
-  color: #6c757d;
-}
-
-.add-chapter-btn {
+.writing-status-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px dashed #ced4da;
-  background: none;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #6c757d;
-  transition: all 0.2s;
+  gap: 2.5rem;
+  padding: 1rem 2.5rem;
+  background: var(--writing-header-bg);
+  border-top: 2px solid var(--writing-border);
+  color: var(--writing-subtitle);
+  font-size: 1rem;
+  min-height: 48px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
 }
-
-.add-chapter-btn:hover {
-  border-color: #667eea;
-  color: #667eea;
+.writing-status-bar .unsaved {
+  color: #dc3545;
+  font-weight: bold;
 }
-
-.writing-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.writing-status-bar .saved {
+  color: var(--writing-accent);
+  font-weight: bold;
 }
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #6c757d;
-}
-
-.stat-value {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.tools {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.tool-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #495057;
-  transition: all 0.2s;
-  text-align: left;
-}
-
-.tool-btn:hover {
-  background: #f8f9fa;
-}
-
 .icon {
-  width: 1rem;
-  height: 1rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
-.indent {
-  padding-left: 2rem;
+@media (max-width: 900px) {
+  .writing-main-header .btn-text {
+    display: none;
+  }
+  .writing-main-header button {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+  }
+}
+
+/* 收起时显示竖条 */
+.sidebar-collapsed-bar {
+  width: 6px;
+  height: 100%;
+  background: var(--writing-accent);
+  border-radius: 3px;
+  margin: 0 auto;
 }
 </style> 
