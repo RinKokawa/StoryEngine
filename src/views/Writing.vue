@@ -13,10 +13,35 @@
           :key="chapter.id"
           class="chapter-item"
           :class="{ active: currentChapter === chapter.id }"
-          @click="switchChapter(chapter.id)"
         >
-          <span class="chapter-title">{{ chapter.title }}</span>
-          <span class="chapter-words">{{ chapter.wordCount }}字</span>
+          <template v-if="editingChapterId === chapter.id">
+            <input
+              class="chapter-edit-input"
+              v-model="editingChapterTitle"
+              @keydown.enter="saveChapterTitle(chapter)"
+              @keydown.esc="cancelEditChapter"
+              @blur="saveChapterTitle(chapter)"
+              ref="editInputRef"
+              maxlength="30"
+              :placeholder="chapter.title"
+              autofocus
+            />
+            <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
+              <CheckIcon class="icon" />
+            </button>
+            <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
+              <XIcon class="icon" />
+            </button>
+          </template>
+          <template v-else>
+            <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
+              {{ chapter.title }}
+            </span>
+            <span class="chapter-words">{{ chapter.wordCount }}字</span>
+            <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
+              <EditIcon class="icon" />
+            </button>
+          </template>
         </div>
         <button @click="addChapter" class="add-chapter-btn">
           <PlusIcon class="icon" /> 添加章节
@@ -90,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ArrowLeftIcon,
@@ -99,7 +124,10 @@ import {
   MinimizeIcon,
   PlusIcon,
   EyeIcon,
-  DownloadIcon
+  DownloadIcon,
+  EditIcon,
+  CheckIcon,
+  XIcon
 } from 'lucide-vue-next'
 
 interface Novel {
@@ -131,6 +159,9 @@ const isFullscreen = ref(false)
 const sidebarCollapsed = ref(true)
 const showPreview = ref(false)
 const todayWordCount = ref(0)
+const editingChapterId = ref<string | null>(null)
+const editingChapterTitle = ref('')
+const editInputRef = ref<HTMLInputElement>()
 
 const wordCount = computed(() => content.value.replace(/\s/g, '').length)
 const totalWordCount = computed(() => chapters.value.reduce((total, chapter) => total + chapter.wordCount, 0))
@@ -340,6 +371,28 @@ const handleKeyboard = (e: KeyboardEvent) => {
     toggleFullscreen()
   }
 }
+
+function startEditChapter(chapter: Chapter) {
+  editingChapterId.value = chapter.id
+  editingChapterTitle.value = chapter.title
+  nextTick(() => {
+    editInputRef.value?.focus()
+  })
+}
+
+function saveChapterTitle(chapter: Chapter) {
+  const newTitle = editingChapterTitle.value.trim()
+  if (newTitle && newTitle !== chapter.title) {
+    chapter.title = newTitle
+    // 如有持久化需求，这里应保存章节列表
+    saveChapters()
+  }
+  editingChapterId.value = null
+}
+
+function cancelEditChapter() {
+  editingChapterId.value = null
+}
 </script>
 
 <style>
@@ -438,6 +491,7 @@ body, html, #app {
   background: none;
   border: none;
   transition: background 0.18s, color 0.18s;
+  position: relative;
 }
 .chapter-item.active, .chapter-item:hover {
   background: var(--writing-accent);
@@ -460,6 +514,38 @@ body, html, #app {
 }
 .add-chapter-btn:hover {
   background: var(--writing-title);
+}
+.chapter-title {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chapter-edit-btn {
+  background: none;
+  border: none;
+  color: var(--writing-accent);
+  cursor: pointer;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 0.5rem;
+  transition: background 0.15s;
+}
+.chapter-edit-btn:hover {
+  background: var(--writing-accent);
+  color: #fff;
+}
+.chapter-edit-input {
+  flex: 1;
+  font-size: 1rem;
+  border: 1.5px solid var(--writing-accent);
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  outline: none;
+  color: var(--writing-title);
+  background: var(--writing-card-bg);
+  margin-right: 0.5rem;
 }
 
 .writing-main-area {
@@ -623,5 +709,24 @@ body, html, #app {
   background: var(--writing-accent);
   border-radius: 3px;
   margin: 0 auto;
+}
+
+.chapter-edit-confirm, .chapter-edit-cancel {
+  background: none;
+  border: none;
+  color: var(--writing-accent);
+  cursor: pointer;
+  margin-left: 0.2rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 0.5rem;
+  transition: background 0.15s;
+}
+.chapter-edit-confirm:hover {
+  background: #4caf50;
+  color: #fff;
+}
+.chapter-edit-cancel:hover {
+  background: #dc3545;
+  color: #fff;
 }
 </style> 

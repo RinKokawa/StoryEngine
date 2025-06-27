@@ -2,10 +2,10 @@
   <div class="desktop-layout">
     <!-- 侧边栏 -->
     <aside class="sidebar">
-      <div class="sidebar-title">📚 小说工作室</div>
+      <div class="sidebar-title">📕 StoryEngine</div>
       <nav class="sidebar-nav">
         <button :class="{active: currentNav==='novels'}" @click="currentNav='novels'">
-          我的小说
+          我的项目
         </button>
         <button :class="{active: currentNav==='outline'}" @click="currentNav='outline'">
           大纲
@@ -33,7 +33,7 @@
     <div class="main-area">
       <!-- 顶部栏 -->
       <header class="main-header">
-        <div class="header-title">我的小说工作室</div>
+        <div class="header-title">StoryEngine</div>
         <div class="header-actions">
           <button class="create-btn" @click="showCreateModal = true">
             <PlusIcon class="icon" /> 新建小说
@@ -44,7 +44,7 @@
       <!-- 小说列表区 -->
       <section v-if="currentNav==='novels'" class="novels-section">
         <div class="section-header">
-          <h2>我的小说</h2>
+          <h2>我的项目</h2>
           <div class="view-controls">
             <button @click="viewMode = 'grid'" :class="{ active: viewMode === 'grid' }">
               <GridIcon class="icon" />
@@ -89,7 +89,7 @@
           </div>
           <div v-if="novels.length === 0" class="empty-state">
             <BookIcon class="empty-icon" />
-            <h3>还没有小说</h3>
+            <h3>还没有项目</h3>
             <p>点击"新建小说"开始你的创作之旅</p>
           </div>
         </div>
@@ -155,6 +155,33 @@
         </form>
       </div>
     </div>
+
+    <!-- 删除小说确认弹窗 -->
+    <div v-if="deleteModal.visible" class="modal-overlay" @click="closeDeleteModal">
+      <div class="modal delete-modal" @click.stop>
+        <div class="modal-header">
+          <h3>危险操作：删除小说</h3>
+          <button @click="closeDeleteModal" class="close-btn">
+            <XIcon class="icon" />
+          </button>
+        </div>
+        <div class="modal-content">
+          <p>请输入小说标题 <b>"{{ deleteModal.novel?.title }}"</b> 以确认删除。此操作不可恢复！</p>
+          <input
+            v-model="deleteModal.input"
+            class="delete-input"
+            :placeholder="deleteModal.novel?.title"
+            @keydown.enter="confirmDeleteNovel"
+            autofocus
+          />
+          <div v-if="deleteModal.input && deleteModal.input !== deleteModal.novel?.title" class="delete-warn">标题不匹配，无法删除。</div>
+          <div class="modal-actions">
+            <button type="button" @click="closeDeleteModal" class="cancel-btn">取消</button>
+            <button type="button" class="confirm-btn delete" :disabled="deleteModal.input !== deleteModal.novel?.title" @click="confirmDeleteNovel">删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -194,6 +221,7 @@ const newNovel = reactive({
 })
 const theme = ref('modern')
 const currentNav = ref('novels')
+const deleteModal = ref({ visible: false, novel: null as Novel | null, input: '' })
 
 const applyTheme = () => {
   const root = document.documentElement
@@ -261,9 +289,22 @@ const editNovelInfo = (novel: Novel) => {
 }
 
 const deleteNovel = (novel: Novel) => {
-  if (confirm(`确定要删除小说《${novel.title}》吗？此操作不可恢复。`)) {
-    novels.value = novels.value.filter(n => n.id !== novel.id)
+  deleteModal.value.visible = true
+  deleteModal.value.novel = novel
+  deleteModal.value.input = ''
+}
+
+const closeDeleteModal = () => {
+  deleteModal.value.visible = false
+  deleteModal.value.novel = null
+  deleteModal.value.input = ''
+}
+
+const confirmDeleteNovel = () => {
+  if (deleteModal.value.novel && deleteModal.value.input === deleteModal.value.novel.title) {
+    novels.value = novels.value.filter(n => n.id !== deleteModal.value.novel!.id)
     saveNovels()
+    closeDeleteModal()
   }
 }
 
@@ -805,5 +846,39 @@ body, html, #app {
 .placeholder-content {
   text-align: center;
   color: var(--subtitle-color);
+}
+
+.delete-modal {
+  border: 2px solid #dc3545;
+}
+.delete-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #dc3545;
+  border-radius: 0.7rem;
+  font-size: 1.1rem;
+  margin: 1.2rem 0 0.5rem 0;
+  background: var(--input-bg);
+  color: #dc3545;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.delete-input:focus {
+  border-color: #b71c1c;
+}
+.delete-warn {
+  color: #dc3545;
+  font-size: 0.98rem;
+  margin-bottom: 0.5rem;
+}
+.confirm-btn.delete {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+.confirm-btn.delete:disabled {
+  background: #f8d7da;
+  color: #fff;
+  border-color: #f8d7da;
+  cursor: not-allowed;
 }
 </style> 
