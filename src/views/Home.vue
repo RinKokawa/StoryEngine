@@ -106,21 +106,22 @@
       </section>
     </div>
 
-    <!-- 创建小说弹窗 -->
-    <div v-if="showCreateModal" class="modal-overlay" @click="showCreateModal = false">
+    <!-- 创建/编辑小说弹窗 -->
+    <div v-if="showCreateModal || editModal.visible" class="modal-overlay" @click="closeNovelModal">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h3>创建新小说</h3>
-          <button @click="showCreateModal = false" class="close-btn">
+          <h3>{{ editModal.visible ? '编辑小说' : '创建新小说' }}</h3>
+          <button @click="closeNovelModal" class="close-btn">
             <XIcon class="icon" />
           </button>
         </div>
-        <form @submit.prevent="createNovel" class="modal-content">
+        <form @submit.prevent="editModal.visible ? updateNovel() : createNovel()" class="modal-content">
           <div class="form-group">
             <label for="title">小说标题 *</label>
             <input 
               id="title"
-              v-model="newNovel.title" 
+              :value="editModal.visible ? editNovelData.title : newNovel.title"
+              @input="e => editModal.visible ? (editNovelData.title = (e.target as HTMLInputElement).value) : (newNovel.title = (e.target as HTMLInputElement).value)"
               type="text" 
               placeholder="输入小说标题"
               required
@@ -130,14 +131,19 @@
             <label for="description">简介</label>
             <textarea 
               id="description"
-              v-model="newNovel.description" 
+              :value="editModal.visible ? editNovelData.description : newNovel.description"
+              @input="e => editModal.visible ? (editNovelData.description = (e.target as HTMLTextAreaElement).value) : (newNovel.description = (e.target as HTMLTextAreaElement).value)"
               placeholder="简要描述你的故事..."
               rows="3"
             ></textarea>
           </div>
           <div class="form-group">
             <label for="genre">类型</label>
-            <select id="genre" v-model="newNovel.genre">
+            <select 
+              id="genre"
+              :value="editModal.visible ? editNovelData.genre : newNovel.genre"
+              @change="e => editModal.visible ? (editNovelData.genre = (e.target as HTMLSelectElement).value) : (newNovel.genre = (e.target as HTMLSelectElement).value)"
+            >
               <option value="">选择类型</option>
               <option value="fantasy">玄幻</option>
               <option value="romance">言情</option>
@@ -147,13 +153,16 @@
               <option value="other">其他</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>封面</label>
+            <input type="file" accept="image/*" @change="onCoverChange($event, editModal.visible)" />
+            <div v-if="coverPreview" class="cover-preview">
+              <img :src="coverPreview" alt="封面预览" />
+            </div>
+          </div>
           <div class="modal-actions">
-            <button type="button" @click="showCreateModal = false" class="cancel-btn">
-              取消
-            </button>
-            <button type="submit" class="confirm-btn">
-              创建
-            </button>
+            <button type="button" @click="closeNovelModal" class="cancel-btn">取消</button>
+            <button type="submit" class="confirm-btn">{{ editModal.visible ? '保存' : '创建' }}</button>
           </div>
         </form>
       </div>
@@ -217,10 +226,14 @@ const router = useRouter()
 const novels = ref<Novel[]>([])
 const viewMode = ref<'grid' | 'list'>('grid')
 const showCreateModal = ref(false)
+const editModal = ref({ visible: false, novel: null as Novel | null })
+const editNovelData = reactive({ title: '', description: '', genre: '', cover: '' })
+const coverPreview = ref('')
 const newNovel = reactive({
   title: '',
   description: '',
-  genre: ''
+  genre: '',
+  cover: ''
 })
 const theme = ref('modern')
 const currentNav = ref('novels')
@@ -263,32 +276,69 @@ const loadNovels = () => {
   }
 }
 
-const createNovel = () => {
+function onCoverChange(e: Event, isEdit: boolean) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = ev => {
+      coverPreview.value = ev.target?.result as string
+      if (isEdit) editNovelData.cover = coverPreview.value
+      else newNovel.cover = coverPreview.value
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+function closeNovelModal() {
+  showCreateModal.value = false
+  editModal.value.visible = false
+  coverPreview.value = ''
+}
+
+function createNovel() {
   if (!newNovel.title.trim()) return
   const novel: Novel = {
     id: Date.now().toString(),
     title: newNovel.title,
     description: newNovel.description,
     genre: newNovel.genre,
+    cover: newNovel.cover || '',
     wordCount: 0,
     lastEdit: new Date(),
     createdAt: new Date()
   }
   novels.value.unshift(novel)
   saveNovels()
-  Object.assign(newNovel, { title: '', description: '', genre: '' })
+  Object.assign(newNovel, { title: '', description: '', genre: '', cover: '' })
   showCreateModal.value = false
   openNovel(novel)
+}
+
+function editNovelInfo(novel: Novel) {
+  editModal.value.visible = true
+  editModal.value.novel = novel
+  Object.assign(editNovelData, {
+    title: novel.title,
+    description: novel.description,
+    genre: novel.genre,
+    cover: novel.cover || ''
+  })
+  coverPreview.value = novel.cover || ''
+}
+
+function updateNovel() {
+  if (!editModal.value.novel) return
+  editModal.value.novel.title = editNovelData.title
+  editModal.value.novel.description = editNovelData.description
+  editModal.value.novel.genre = editNovelData.genre
+  editModal.value.novel.cover = editNovelData.cover
+  saveNovels()
+  closeNovelModal()
 }
 
 const openNovel = (novel: Novel) => {
   localStorage.setItem('currentNovelId', novel.id)
   router.push('/writing')
-}
-
-const editNovelInfo = (novel: Novel) => {
-  // TODO: 实现编辑小说信息功能
-  console.log('编辑小说信息:', novel)
 }
 
 const deleteNovel = (novel: Novel) => {
@@ -904,5 +954,19 @@ body, html, #app {
 .ai-menu-btn:hover {
   background: linear-gradient(90deg, #ff00cc 0%, #00fff7 100%);
   color: #fff;
+}
+
+.cover-preview {
+  margin-top: 0.5rem;
+  max-width: 120px;
+  max-height: 160px;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 </style> 
