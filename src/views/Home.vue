@@ -1,77 +1,107 @@
 <template>
-  <div class="home-container">
-    <!-- 顶部标题栏 -->
-    <header class="app-header">
-      <h1 class="app-title">我的小说工作室</h1>
-      <p class="app-subtitle">创作属于你的故事世界</p>
-    </header>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-title">📚 小说工作室</div>
+      <nav class="sidebar-nav">
+        <button :class="{active: currentNav==='novels'}" @click="currentNav='novels'">
+          我的小说
+        </button>
+        <button :class="{active: currentNav==='outline'}" @click="currentNav='outline'">
+          大纲
+        </button>
+        <button :class="{active: currentNav==='characters'}" @click="currentNav='characters'">
+          角色
+        </button>
+        <button :class="{active: currentNav==='world'}" @click="currentNav='world'">
+          世界观
+        </button>
+        <button :class="{active: currentNav==='writing'}" @click="currentNav='writing'">
+          写作
+        </button>
+      </nav>
+      <div class="sidebar-theme-switcher">
+        <label>主题：</label>
+        <select v-model="theme" @change="applyTheme">
+          <option value="modern">现代极简</option>
+          <option value="cyber">酷炫赛博</option>
+          <option value="glass">玻璃拟态</option>
+        </select>
+      </div>
+    </aside>
 
-    <!-- 快速操作区域 -->
-    <section class="quick-actions">
-      <button @click="showCreateModal = true" class="create-btn">
-        <PlusIcon class="icon" />
-        创建新小说
-      </button>
-      <button @click="importNovel" class="import-btn">
-        <UploadIcon class="icon" />
-        导入小说
-      </button>
-    </section>
-
-    <!-- 小说列表 -->
-    <section class="novels-section">
-      <div class="section-header">
-        <h2>我的小说</h2>
-        <div class="view-controls">
-          <button @click="viewMode = 'grid'" :class="{ active: viewMode === 'grid' }">
-            <GridIcon class="icon" />
-          </button>
-          <button @click="viewMode = 'list'" :class="{ active: viewMode === 'list' }">
-            <ListIcon class="icon" />
+    <div class="main-area">
+      <!-- 顶部栏 -->
+      <header class="main-header">
+        <div class="header-title">我的小说工作室</div>
+        <div class="header-actions">
+          <button class="create-btn" @click="showCreateModal = true">
+            <PlusIcon class="icon" /> 新建小说
           </button>
         </div>
-      </div>
+      </header>
 
-      <!-- 小说网格/列表视图 -->
-      <div class="novels-container" :class="viewMode">
-        <div 
-          v-for="novel in novels" 
-          :key="novel.id" 
-          class="novel-card"
-          @click="openNovel(novel)"
-        >
-          <div class="novel-cover">
-            <img v-if="novel.cover" :src="novel.cover" :alt="novel.title" />
-            <div v-else class="default-cover">
-              <BookIcon class="book-icon" />
-            </div>
-          </div>
-          <div class="novel-info">
-            <h3 class="novel-title">{{ novel.title }}</h3>
-            <p class="novel-description">{{ novel.description || '暂无简介' }}</p>
-            <div class="novel-stats">
-              <span class="word-count">{{ formatWordCount(novel.wordCount) }}</span>
-              <span class="last-edit">{{ formatDate(novel.lastEdit) }}</span>
-            </div>
-          </div>
-          <div class="novel-actions">
-            <button @click.stop="editNovelInfo(novel)" class="action-btn">
-              <EditIcon class="icon" />
+      <!-- 小说列表区 -->
+      <section v-if="currentNav==='novels'" class="novels-section">
+        <div class="section-header">
+          <h2>我的小说</h2>
+          <div class="view-controls">
+            <button @click="viewMode = 'grid'" :class="{ active: viewMode === 'grid' }">
+              <GridIcon class="icon" />
             </button>
-            <button @click.stop="deleteNovel(novel)" class="action-btn delete">
-              <TrashIcon class="icon" />
+            <button @click="viewMode = 'list'" :class="{ active: viewMode === 'list' }">
+              <ListIcon class="icon" />
+            </button>
+            <button @click="importNovel" class="import-btn">
+              <UploadIcon class="icon" /> 导入
             </button>
           </div>
         </div>
-
-        <!-- 空状态 -->
-        <div v-if="novels.length === 0" class="empty-state">
-          <BookIcon class="empty-icon" />
-          <h3>还没有小说</h3>
-          <p>点击"创建新小说"开始你的创作之旅</p>
+        <div class="novels-container" :class="viewMode">
+          <div 
+            v-for="novel in novels" 
+            :key="novel.id" 
+            class="novel-card"
+            @dblclick="openNovel(novel)"
+          >
+            <div class="novel-cover">
+              <img v-if="novel.cover" :src="novel.cover" :alt="novel.title" />
+              <div v-else class="default-cover">
+                <BookIcon class="book-icon" />
+              </div>
+            </div>
+            <div class="novel-info">
+              <h3 class="novel-title">{{ novel.title }}</h3>
+              <p class="novel-description">{{ novel.description || '暂无简介' }}</p>
+              <div class="novel-stats">
+                <span class="word-count">{{ formatWordCount(novel.wordCount) }}</span>
+                <span class="last-edit">{{ formatDate(novel.lastEdit) }}</span>
+              </div>
+            </div>
+            <div class="novel-actions">
+              <button @click.stop="editNovelInfo(novel)" class="action-btn">
+                <EditIcon class="icon" />
+              </button>
+              <button @click.stop="deleteNovel(novel)" class="action-btn delete">
+                <TrashIcon class="icon" />
+              </button>
+            </div>
+          </div>
+          <div v-if="novels.length === 0" class="empty-state">
+            <BookIcon class="empty-icon" />
+            <h3>还没有小说</h3>
+            <p>点击"新建小说"开始你的创作之旅</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+      <!-- 其他功能区预留 -->
+      <section v-else class="placeholder-section">
+        <div class="placeholder-content">
+          <h2>功能开发中…</h2>
+          <p>敬请期待！</p>
+        </div>
+      </section>
+    </div>
 
     <!-- 创建小说弹窗 -->
     <div v-if="showCreateModal" class="modal-overlay" @click="showCreateModal = false">
@@ -125,16 +155,6 @@
         </form>
       </div>
     </div>
-
-    <!-- 主题切换器 -->
-    <div class="theme-switcher">
-      <label>主题：</label>
-      <select v-model="theme" @change="applyTheme">
-        <option value="modern">现代极简</option>
-        <option value="cyber">酷炫赛博</option>
-        <option value="glass">玻璃拟态</option>
-      </select>
-    </div>
   </div>
 </template>
 
@@ -149,7 +169,7 @@ import {
   BookIcon, 
   EditIcon, 
   TrashIcon,
-  XIcon 
+  XIcon
 } from 'lucide-vue-next'
 
 interface Novel {
@@ -164,8 +184,6 @@ interface Novel {
 }
 
 const router = useRouter()
-
-// 响应式数据
 const novels = ref<Novel[]>([])
 const viewMode = ref<'grid' | 'list'>('grid')
 const showCreateModal = ref(false)
@@ -174,8 +192,8 @@ const newNovel = reactive({
   description: '',
   genre: ''
 })
-
 const theme = ref('modern')
+const currentNav = ref('novels')
 
 const applyTheme = () => {
   const root = document.documentElement
@@ -189,7 +207,6 @@ const applyTheme = () => {
   localStorage.setItem('novel-theme', theme.value)
 }
 
-// 生命周期
 onMounted(() => {
   loadNovels()
   // 主题初始化
@@ -204,9 +221,7 @@ onMounted(() => {
 
 watch(theme, applyTheme)
 
-// 方法
 const loadNovels = () => {
-  // 从本地存储加载小说列表
   const stored = localStorage.getItem('novels')
   if (stored) {
     novels.value = JSON.parse(stored).map((novel: any) => ({
@@ -219,7 +234,6 @@ const loadNovels = () => {
 
 const createNovel = () => {
   if (!newNovel.title.trim()) return
-
   const novel: Novel = {
     id: Date.now().toString(),
     title: newNovel.title,
@@ -229,20 +243,14 @@ const createNovel = () => {
     lastEdit: new Date(),
     createdAt: new Date()
   }
-
   novels.value.unshift(novel)
   saveNovels()
-  
-  // 重置表单
   Object.assign(newNovel, { title: '', description: '', genre: '' })
   showCreateModal.value = false
-  
-  // 直接进入编辑模式
   openNovel(novel)
 }
 
 const openNovel = (novel: Novel) => {
-  // 设置当前小说ID，然后跳转到写作页面
   localStorage.setItem('currentNovelId', novel.id)
   router.push('/writing')
 }
@@ -278,7 +286,6 @@ const formatDate = (date: Date): string => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
   if (days === 0) return '今天'
   if (days === 1) return '昨天'
   if (days < 7) return `${days}天前`
@@ -305,6 +312,8 @@ const formatDate = (date: Date): string => {
   --input-border: #ced4da;
   --modal-bg: #fff;
   --modal-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  --sidebar-bg: #f4f6fa;
+  --sidebar-active: #667eea;
 }
 [data-theme='cyber'] {
   --main-bg: linear-gradient(120deg, #0f2027 0%, #2c5364 100%);
@@ -323,6 +332,8 @@ const formatDate = (date: Date): string => {
   --input-border: #00fff7;
   --modal-bg: rgba(20,20,40,0.98);
   --modal-shadow: 0 0 40px #ff00cc;
+  --sidebar-bg: #181828;
+  --sidebar-active: #ff00cc;
 }
 [data-theme='glass'] {
   --main-bg: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
@@ -341,145 +352,203 @@ const formatDate = (date: Date): string => {
   --input-border: #b0c4de;
   --modal-bg: rgba(255,255,255,0.8);
   --modal-shadow: 0 10px 40px rgba(137,247,254,0.2);
+  --sidebar-bg: rgba(255,255,255,0.5);
+  --sidebar-active: #66a6ff;
 }
 
-.home-container {
-  padding: 2rem 3rem;
-  min-height: 100vh;
-  width: 100%;
+body, html, #app {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
   background: var(--main-bg);
-  transition: background 0.5s;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
 }
 
-.app-header {
+.desktop-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: var(--main-bg);
+}
+
+.sidebar {
+  width: 220px;
+  background: var(--sidebar-bg);
+  box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 2.5rem 0 2rem 0;
+  border-right: 2px solid var(--border);
+  z-index: 10;
+}
+.sidebar-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--accent);
   text-align: center;
-  margin-bottom: 3rem;
-  padding: 0 2rem;
-  background: var(--header-bg);
-  border-radius: 1.5rem;
-  box-shadow: var(--card-shadow);
-  position: relative;
+  margin-bottom: 2.5rem;
+  letter-spacing: 2px;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0 1.5rem;
+}
+.sidebar-nav button {
+  background: none;
+  border: none;
+  font-size: 1.08rem;
+  color: var(--title-color);
+  padding: 0.7rem 1.2rem;
+  border-radius: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.sidebar-nav button.active, .sidebar-nav button:hover {
+  background: var(--sidebar-active);
+  color: #fff;
 }
 
-.app-title {
-  font-size: 2.8rem;
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  overflow: auto;
+}
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2.2rem 3vw 1.2rem 3vw;
+  background: var(--header-bg);
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.header-title {
+  font-size: 2.1rem;
   font-weight: bold;
   color: var(--title-color);
-  margin-bottom: 0.5rem;
   letter-spacing: 2px;
-  text-shadow: 0 2px 8px var(--accent), 0 0 1px #fff;
 }
-
-.app-subtitle {
-  font-size: 1.1rem;
-  color: var(--subtitle-color);
-  margin-bottom: 0.5rem;
-}
-
-.quick-actions {
+.header-actions {
   display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  margin-bottom: 3rem;
+  gap: 1.2rem;
 }
-
-.create-btn, .import-btn {
+.create-btn {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 1rem 2rem;
+  padding: 0.9rem 2rem;
   border: none;
   border-radius: 2rem;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(.4,2,.6,1);
   background: var(--primary-btn-bg);
   color: var(--primary-btn-color);
   box-shadow: var(--card-shadow);
+  transition: all 0.22s cubic-bezier(.4,2,.6,1);
 }
-.create-btn:hover, .import-btn:hover {
+.create-btn:hover {
   transform: scale(1.06) translateY(-2px);
   box-shadow: var(--primary-btn-hover);
 }
-.import-btn {
-  background: var(--input-bg);
-  color: var(--accent);
-  border: 2px solid var(--border);
-}
-.import-btn:hover {
-  background: var(--accent);
-  color: #fff;
-}
 
 .novels-section {
-  margin-bottom: 2rem;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1600px;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 2.5rem 2vw 2.5rem 2vw;
 }
-
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1.5px solid var(--border);
+  padding-bottom: 0.5rem;
 }
-
 .section-header h2 {
   font-size: 1.5rem;
   color: var(--title-color);
 }
-
 .view-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.7rem;
 }
-
 .view-controls button {
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
   border: 2px solid var(--border);
   background: var(--input-bg);
   border-radius: 1rem;
   cursor: pointer;
   transition: all 0.2s;
   color: var(--accent);
+  font-size: 1.1rem;
 }
 .view-controls button.active {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
+.import-btn {
+  background: var(--input-bg);
+  color: var(--accent);
+  border: 2px solid var(--border);
+  font-size: 1.05rem;
+}
+.import-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
 
 .novels-container.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 2rem;
-  max-width: none;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 2.5rem 2rem;
+  margin-top: 2rem;
 }
 .novels-container.list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
+  gap: 2rem;
+  margin-top: 2rem;
 
+}
 .novel-card {
   background: var(--card-bg);
   border-radius: 2rem;
-  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  padding: 2.2rem 2rem 1.7rem 2rem;
   box-shadow: var(--card-shadow);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(.4,2,.6,1);
   position: relative;
   backdrop-filter: blur(8px);
   border: 2px solid var(--border);
+  min-width: 320px;
+  max-width: 480px;
+  margin: 0 auto;
 }
 .novel-card:hover {
   transform: translateY(-8px) scale(1.03) rotateZ(-0.5deg);
   box-shadow: var(--card-hover-shadow);
   border-color: var(--accent);
 }
-
 .novel-cover {
-  width: 70px;
-  height: 90px;
+  width: 80px;
+  height: 104px;
   border-radius: 1rem;
   overflow: hidden;
   margin-bottom: 1rem;
@@ -506,11 +575,10 @@ const formatDate = (date: Date): string => {
 }
 .book-icon {
   color: #fff;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   filter: drop-shadow(0 0 8px var(--accent));
 }
-
 .novel-title {
   font-size: 1.3rem;
   font-weight: 700;
@@ -569,7 +637,6 @@ const formatDate = (date: Date): string => {
   border-color: #dc3545;
   box-shadow: 0 0 8px #dc3545;
 }
-
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -583,6 +650,42 @@ const formatDate = (date: Date): string => {
   filter: drop-shadow(0 0 8px var(--accent));
 }
 
+/* 侧边栏主题切换器 */
+.sidebar-theme-switcher {
+  margin-top: auto;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 1rem;
+  background: none;
+}
+.sidebar-theme-switcher label {
+  color: var(--accent);
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+}
+.sidebar-theme-switcher select {
+  border: 1.5px solid var(--border);
+  background: var(--input-bg);
+  font-size: 1rem;
+  color: var(--accent);
+  outline: none;
+  font-weight: 600;
+  border-radius: 0.7rem;
+  padding: 0.3rem 1.2rem 0.3rem 0.7rem;
+  margin-top: 0.1rem;
+  transition: border-color 0.18s;
+}
+.sidebar-theme-switcher select:focus {
+  border-color: var(--accent);
+}
+.theme-switcher {
+  display: none !important;
+}
+
+/* 弹窗和表单 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -692,33 +795,15 @@ const formatDate = (date: Date): string => {
   height: 1.2rem;
 }
 
-.theme-switcher {
-  position: fixed;
-  top: 24px;
-  right: 32px;
-  z-index: 9999;
+/* 其他功能区占位 */
+.placeholder-section {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  background: rgba(255,255,255,0.7);
-  border-radius: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  padding: 0.4rem 1.2rem;
-  border: 1.5px solid var(--border);
-  backdrop-filter: blur(8px);
+  justify-content: center;
+  height: 60vh;
 }
-.theme-switcher label {
-  color: var(--accent);
-  font-weight: bold;
-}
-.theme-switcher select {
-  border: none;
-  background: transparent;
-  font-size: 1rem;
-  color: var(--accent);
-  outline: none;
-  font-weight: 600;
-  padding: 0.2rem 0.5rem;
+.placeholder-content {
+  text-align: center;
+  color: var(--subtitle-color);
 }
 </style> 
