@@ -29,6 +29,11 @@
           <option value="modern">现代极简</option>
           <option value="cyber">酷炫赛博</option>
           <option value="glass">玻璃拟态</option>
+          <option value="dark">暗黑极简</option>
+          <option value="retro">复古打字机</option>
+          <option value="green">绿色护眼</option>
+          <option value="sunset">日落橙紫</option>
+          <option value="neon">极客霓虹</option>
         </select>
       </div>
     </aside>
@@ -247,6 +252,16 @@ const applyTheme = () => {
     root.setAttribute('data-theme', 'cyber')
   } else if (theme.value === 'glass') {
     root.setAttribute('data-theme', 'glass')
+  } else if (theme.value === 'dark') {
+    root.setAttribute('data-theme', 'dark')
+  } else if (theme.value === 'retro') {
+    root.setAttribute('data-theme', 'retro')
+  } else if (theme.value === 'green') {
+    root.setAttribute('data-theme', 'green')
+  } else if (theme.value === 'sunset') {
+    root.setAttribute('data-theme', 'sunset')
+  } else if (theme.value === 'neon') {
+    root.setAttribute('data-theme', 'neon')
   }
   localStorage.setItem('novel-theme', theme.value)
 }
@@ -452,6 +467,96 @@ function goAiTest() {
   --modal-shadow: 0 10px 40px rgba(137,247,254,0.2);
   --sidebar-bg: rgba(255,255,255,0.5);
   --sidebar-active: #66a6ff;
+}
+[data-theme='dark'] {
+  --main-bg: #181a1b;
+  --header-bg: #23272e;
+  --title-color: #fff;
+  --subtitle-color: #b0b0b0;
+  --card-bg: #23272e;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.32);
+  --card-hover-shadow: 0 8px 24px rgba(0,0,0,0.44);
+  --primary-btn-bg: linear-gradient(135deg, #23272e 0%, #4f8cff 100%);
+  --primary-btn-color: #fff;
+  --primary-btn-hover: 0 4px 12px rgba(79,140,255,0.4);
+  --accent: #4f8cff;
+  --border: #333;
+  --input-bg: #23272e;
+  --input-border: #444;
+  --modal-bg: #23272e;
+  --modal-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+[data-theme='retro'] {
+  --main-bg: #f5ecd7;
+  --header-bg: #f9f6f2;
+  --title-color: #3e2c1c;
+  --subtitle-color: #7c6f57;
+  --card-bg: #f9f6f2;
+  --card-shadow: 0 2px 8px #e0d3b8;
+  --card-hover-shadow: 0 8px 24px #e0d3b8;
+  --primary-btn-bg: linear-gradient(135deg, #b48a78 0%, #e0d3b8 100%);
+  --primary-btn-color: #3e2c1c;
+  --primary-btn-hover: 0 4px 12px #b48a78;
+  --accent: #b48a78;
+  --border: #e0d3b8;
+  --input-bg: #fffbe9;
+  --input-border: #e0d3b8;
+  --modal-bg: #fffbe9;
+  --modal-shadow: 0 10px 40px #e0d3b8;
+}
+[data-theme='green'] {
+  --main-bg: #eafaf1;
+  --header-bg: #d2f5e3;
+  --title-color: #2e4d3a;
+  --subtitle-color: #5e7d6a;
+  --card-bg: #f6fff9;
+  --card-shadow: 0 2px 8px #b2dfdb;
+  --card-hover-shadow: 0 8px 24px #b2dfdb;
+  --primary-btn-bg: linear-gradient(135deg, #4caf50 0%, #b2dfdb 100%);
+  --primary-btn-color: #fff;
+  --primary-btn-hover: 0 4px 12px #4caf50;
+  --accent: #4caf50;
+  --border: #b2dfdb;
+  --input-bg: #eafaf1;
+  --input-border: #b2dfdb;
+  --modal-bg: #f6fff9;
+  --modal-shadow: 0 10px 40px #b2dfdb;
+}
+[data-theme='sunset'] {
+  --main-bg: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  --header-bg: #fff0e6;
+  --title-color: #ff6e7f;
+  --subtitle-color: #b06ab3;
+  --card-bg: #fff0e6;
+  --card-shadow: 0 2px 8px #fcb69f;
+  --card-hover-shadow: 0 8px 24px #fcb69f;
+  --primary-btn-bg: linear-gradient(135deg, #ff6e7f 0%, #b06ab3 100%);
+  --primary-btn-color: #fff;
+  --primary-btn-hover: 0 4px 12px #ff6e7f;
+  --accent: #ff6e7f;
+  --border: #fcb69f;
+  --input-bg: #fff0e6;
+  --input-border: #fcb69f;
+  --modal-bg: #fff0e6;
+  --modal-shadow: 0 10px 40px #fcb69f;
+}
+[data-theme='neon'] {
+  --main-bg: #18122b;
+  --header-bg: #232044;
+  --title-color: #00ffe7;
+  --subtitle-color: #ff00ea;
+  --card-bg: #232044;
+  --card-shadow: 0 0 16px #00ffe7, 0 2px 8px #ff00ea;
+  --card-hover-shadow: 0 0 32px #ff00ea, 0 8px 24px #00ffe7;
+  --primary-btn-bg: linear-gradient(90deg, #00ffe7 0%, #ff00ea 100%);
+  --primary-btn-color: #222;
+  --primary-btn-hover: 0 0 16px #00ffe7;
+  --accent: #ff00ea;
+  --border: #00ffe7;
+  --input-bg: #18122b;
+  --input-border: #00ffe7;
+  --modal-bg: #232044;
+  --modal-shadow: 0 0 40px #ff00ea;
 }
 
 body, html, #app {
