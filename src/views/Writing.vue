@@ -43,7 +43,7 @@
             </button>
           </template>
         </div>
-        <button @click="addChapter" class="add-chapter-btn">
+        <button @click="() => addChapter()" class="add-chapter-btn">
           <PlusIcon class="icon" /> 添加章节
         </button>
       </div>

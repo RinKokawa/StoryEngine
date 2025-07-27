@@ -7,16 +7,16 @@
         <button :class="{active: currentNav==='novels'}" @click="currentNav='novels'">
           我的项目
         </button>
-        <button :class="{active: currentNav==='outline'}" @click="currentNav='outline'">
+        <button :class="{active: currentNav==='outline'}" @click="goToOutline">
           大纲
         </button>
-        <button :class="{active: currentNav==='characters'}" @click="currentNav='characters'">
+        <button :class="{active: currentNav==='characters'}" @click="goToCharacters">
           角色
         </button>
-        <button :class="{active: currentNav==='world'}" @click="currentNav='world'">
+        <button :class="{active: currentNav==='world'}" @click="goToWorldMap">
           世界观
         </button>
-        <button :class="{active: currentNav==='writing'}" @click="currentNav='writing'">
+        <button :class="{active: currentNav==='writing'}" @click="goToWriting">
           写作
         </button>
         <button @click="goAiTest" class="ai-menu-btn">
@@ -403,6 +403,22 @@ const formatDate = (date: Date): string => {
 
 function goAiTest() {
   router.push('/ai-test')
+}
+
+function goToCharacters() {
+  router.push('/characters')
+}
+
+function goToOutline() {
+  router.push('/outline')
+}
+
+function goToWorldMap() {
+  router.push('/worldmap')
+}
+
+function goToWriting() {
+  router.push('/writing')
 }
 </script>
 
