@@ -290,6 +290,8 @@ function updateNovel() {
 
 const openNovel = (novel: Novel) => {
   localStorage.setItem('currentNovelId', novel.id)
+  // 清除可能存在的章节ID，确保从主页进入时加载第一章
+  localStorage.removeItem('currentChapterId')
   router.push('/writing')
 }
 

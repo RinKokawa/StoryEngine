@@ -498,6 +498,7 @@ const confirmDelete = () => {
 }
 
 const openChapter = (chapter: Chapter) => {
+  localStorage.setItem('currentNovelId', currentNovel.value!.id)
   localStorage.setItem('currentChapterId', chapter.id)
   router.push('/writing')
 }

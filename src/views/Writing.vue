@@ -4,46 +4,101 @@
       <!-- 左侧章节导航栏 -->
       <aside class="chapter-sidebar" :class="{ collapsed: sidebarCollapsed }"
         @mouseenter="sidebarCollapsed = false"
-        @mouseleave="sidebarCollapsed = true">
+        @mouseleave="handleSidebarLeave">
         <div class="sidebar-header">
           <span v-if="!sidebarCollapsed" class="sidebar-title">章节目录</span>
         </div>
         <div v-if="!sidebarCollapsed" class="chapter-list">
-          <div 
-            v-for="chapter in chapters" 
-            :key="chapter.id"
-            class="chapter-item"
-            :class="{ active: currentChapter === chapter.id }"
-          >
-            <template v-if="editingChapterId === chapter.id">
-              <input
-                class="chapter-edit-input"
-                v-model="editingChapterTitle"
-                @keydown.enter="saveChapterTitle(chapter)"
-                @keydown.esc="cancelEditChapter"
-                @blur="saveChapterTitle(chapter)"
-                ref="editInputRef"
-                maxlength="30"
-                :placeholder="chapter.title"
-                autofocus
-              />
-              <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
-                <CheckIcon class="icon" />
-              </button>
-              <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
-                <XIcon class="icon" />
-              </button>
-            </template>
-            <template v-else>
-              <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
-                {{ chapter.title }}
-              </span>
-              <span class="chapter-words">{{ chapter.wordCount }}字</span>
-              <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
-                <EditIcon class="icon" />
-              </button>
-            </template>
+          <!-- 显示卷和章节的层级结构 -->
+          <div v-for="volume in volumes" :key="volume.id" class="volume-section">
+            <div class="volume-header">
+              <span class="volume-title">{{ volume.title }}</span>
+              <span class="volume-count">{{ volume.chapters.length }}章</span>
+            </div>
+            <div class="volume-chapters">
+              <div 
+                v-for="chapter in volume.chapters" 
+                :key="chapter.id"
+                class="chapter-item"
+                :class="{ active: currentChapter === chapter.id }"
+              >
+                <template v-if="editingChapterId === chapter.id">
+                  <input
+                    class="chapter-edit-input"
+                    v-model="editingChapterTitle"
+                    @keydown.enter="saveChapterTitle(chapter)"
+                    @keydown.esc="cancelEditChapter"
+                    @blur="saveChapterTitle(chapter)"
+                    ref="editInputRef"
+                    maxlength="30"
+                    :placeholder="chapter.title"
+                    autofocus
+                  />
+                  <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
+                    <CheckIcon class="icon" />
+                  </button>
+                  <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
+                    <XIcon class="icon" />
+                  </button>
+                </template>
+                <template v-else>
+                  <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
+                    {{ chapter.title }}
+                  </span>
+                  <span class="chapter-words">{{ formatWordCount(chapter.wordCount) }}</span>
+                  <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
+                    <EditIcon class="icon" />
+                  </button>
+                </template>
+              </div>
+            </div>
           </div>
+
+          <!-- 未分类章节 -->
+          <div v-if="unassignedChapters.length > 0" class="volume-section">
+            <div class="volume-header">
+              <span class="volume-title">未分类章节</span>
+              <span class="volume-count">{{ unassignedChapters.length }}章</span>
+            </div>
+            <div class="volume-chapters">
+              <div 
+                v-for="chapter in unassignedChapters" 
+                :key="chapter.id"
+                class="chapter-item"
+                :class="{ active: currentChapter === chapter.id }"
+              >
+                <template v-if="editingChapterId === chapter.id">
+                  <input
+                    class="chapter-edit-input"
+                    v-model="editingChapterTitle"
+                    @keydown.enter="saveChapterTitle(chapter)"
+                    @keydown.esc="cancelEditChapter"
+                    @blur="saveChapterTitle(chapter)"
+                    ref="editInputRef"
+                    maxlength="30"
+                    :placeholder="chapter.title"
+                    autofocus
+                  />
+                  <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
+                    <CheckIcon class="icon" />
+                  </button>
+                  <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
+                    <XIcon class="icon" />
+                  </button>
+                </template>
+                <template v-else>
+                  <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
+                    {{ chapter.title }}
+                  </span>
+                  <span class="chapter-words">{{ formatWordCount(chapter.wordCount) }}</span>
+                  <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
+                    <EditIcon class="icon" />
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+
           <button @click="() => addChapter()" class="add-chapter-btn">
             <PlusIcon class="icon" /> 添加章节
           </button>
@@ -133,27 +188,40 @@ import {
   XIcon
 } from 'lucide-vue-next'
 
-interface Novel {
+interface Chapter {
   id: string
   title: string
-  description?: string
-  genre?: string
+  content: string
+  number: string
+  volumeId?: string
   wordCount: number
   lastEdit: Date
   createdAt: Date
 }
 
-interface Chapter {
+interface Volume {
   id: string
   title: string
-  content: string
+  description?: string
+  chapters: Chapter[]
+  createdAt: Date
+}
+
+interface Novel {
+  id: string
+  title: string
+  description?: string
+  genre?: string
+  cover?: string
   wordCount: number
-  order: number
+  lastEdit: Date
+  createdAt: Date
+  volumes: Volume[]
 }
 
 const router = useRouter()
 const currentNovel = ref<Novel | null>(null)
-const chapters = ref<Chapter[]>([])
+const volumes = ref<Volume[]>([])
 const currentChapter = ref<string>('')
 const content = ref('')
 const editorRef = ref<HTMLTextAreaElement>()
@@ -167,9 +235,19 @@ const editingChapterTitle = ref('')
 const editInputRef = ref<HTMLInputElement>()
 
 const wordCount = computed(() => content.value.replace(/\s/g, '').length)
-const totalWordCount = computed(() => chapters.value.reduce((total, chapter) => total + chapter.wordCount, 0))
+const totalWordCount = computed(() => {
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  return allChapters.reduce((total, chapter) => total + chapter.wordCount, 0)
+})
 const formattedContent = computed(() => content.value.replace(/\n/g, '<br>').replace(/^(\s{4,}|\t+)(.+)$/gm, '<div class="indent">$2</div>'))
-const currentChapterTitle = computed(() => chapters.value.find(c => c.id === currentChapter.value)?.title || '')
+const currentChapterTitle = computed(() => {
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  return allChapters.find(c => c.id === currentChapter.value)?.title || ''
+})
+const unassignedChapters = computed(() => {
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  return allChapters.filter(c => !c.volumeId)
+})
 
 onMounted(() => {
   loadCurrentNovel()
@@ -204,31 +282,64 @@ const loadCurrentNovel = () => {
 }
 
 const loadChapters = (novelId: string) => {
-  const stored = localStorage.getItem(`chapters_${novelId}`)
-  if (stored) {
-    chapters.value = JSON.parse(stored)
+  // 从小说数据中加载卷和章节
+  if (currentNovel.value && currentNovel.value.volumes) {
+    volumes.value = currentNovel.value.volumes.map((v: any) => ({
+      ...v,
+      createdAt: new Date(v.createdAt),
+      chapters: v.chapters ? v.chapters.map((c: any) => ({
+        ...c,
+        lastEdit: new Date(c.lastEdit),
+        createdAt: new Date(c.createdAt)
+      })) : []
+    }))
   }
   
-  if (chapters.value.length === 0) {
-    // 创建第一章
+  // 如果没有章节，创建默认的第一章
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  if (allChapters.length === 0) {
     addChapter('第一章')
   } else {
-    // 加载第一章内容
-    switchChapter(chapters.value[0].id)
+    // 检查是否有指定的章节ID
+    const targetChapterId = localStorage.getItem('currentChapterId')
+    if (targetChapterId) {
+      const targetChapter = allChapters.find(c => c.id === targetChapterId)
+      if (targetChapter) {
+        switchChapter(targetChapter.id)
+        localStorage.removeItem('currentChapterId') // 清除，避免影响后续操作
+        return
+      }
+    }
+    // 默认加载第一章内容
+    switchChapter(allChapters[0].id)
   }
 }
 
 const addChapter = (title?: string) => {
   const newChapter: Chapter = {
     id: Date.now().toString(),
-    title: title || `第${chapters.value.length + 1}章`,
+    title: title || `第${volumes.value.flatMap(v => v.chapters).length + 1}章`,
     content: '',
+    number: generateChapterNumber(),
     wordCount: 0,
-    order: chapters.value.length
+    lastEdit: new Date(),
+    createdAt: new Date()
   }
   
-  chapters.value.push(newChapter)
-  saveChapters()
+  // 添加到第一个卷，如果没有卷则创建默认卷
+  if (volumes.value.length === 0) {
+    const defaultVolume: Volume = {
+      id: Date.now().toString(),
+      title: '第一卷',
+      chapters: [newChapter],
+      createdAt: new Date()
+    }
+    volumes.value.push(defaultVolume)
+  } else {
+    volumes.value[0].chapters.push(newChapter)
+  }
+  
+  saveNovel()
   switchChapter(newChapter.id)
 }
 
@@ -239,7 +350,8 @@ const switchChapter = (chapterId: string) => {
   }
   
   currentChapter.value = chapterId
-  const chapter = chapters.value.find(c => c.id === chapterId)
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  const chapter = allChapters.find(c => c.id === chapterId)
   if (chapter) {
     content.value = chapter.content
     hasUnsavedChanges.value = false
@@ -247,45 +359,65 @@ const switchChapter = (chapterId: string) => {
 }
 
 const saveCurrentChapter = () => {
-  const chapter = chapters.value.find(c => c.id === currentChapter.value)
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  const chapter = allChapters.find(c => c.id === currentChapter.value)
   if (chapter) {
     chapter.content = content.value
     chapter.wordCount = wordCount.value
+    chapter.lastEdit = new Date()
   }
 }
 
 const saveContent = () => {
   saveCurrentChapter()
-  saveChapters()
+  saveNovel()
   updateNovelStats()
   hasUnsavedChanges.value = false
 }
 
-const saveChapters = () => {
-  if (currentNovel.value) {
-    localStorage.setItem(`chapters_${currentNovel.value.id}`, JSON.stringify(chapters.value))
+const saveNovel = () => {
+  if (!currentNovel.value) return
+  
+  currentNovel.value.volumes = volumes.value
+  currentNovel.value.lastEdit = new Date()
+  
+  const stored = localStorage.getItem('novels')
+  const novels = stored ? JSON.parse(stored) : []
+  const novelIndex = novels.findIndex((n: any) => n.id === currentNovel.value!.id)
+  
+  if (novelIndex !== -1) {
+    novels[novelIndex] = currentNovel.value
   }
+  
+  localStorage.setItem('novels', JSON.stringify(novels))
 }
 
 const updateNovelStats = () => {
   if (!currentNovel.value) return
   
+  currentNovel.value.wordCount = totalWordCount.value
+  currentNovel.value.lastEdit = new Date()
+  
   const novels = JSON.parse(localStorage.getItem('novels') || '[]')
   const novelIndex = novels.findIndex((n: Novel) => n.id === currentNovel.value!.id)
   
   if (novelIndex >= 0) {
-    novels[novelIndex].wordCount = totalWordCount.value
-    novels[novelIndex].lastEdit = new Date()
+    novels[novelIndex] = currentNovel.value
     localStorage.setItem('novels', JSON.stringify(novels))
-    currentNovel.value = novels[novelIndex]
   }
 }
 
 const updateChapterWordCount = () => {
-  const chapter = chapters.value.find(c => c.id === currentChapter.value)
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  const chapter = allChapters.find(c => c.id === currentChapter.value)
   if (chapter) {
     chapter.wordCount = wordCount.value
   }
+}
+
+const generateChapterNumber = (): string => {
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  return `第${allChapters.length + 1}章`
 }
 
 const autoSave = () => {
@@ -314,8 +446,14 @@ const togglePreview = () => {
 }
 
 const exportContent = () => {
-  const allContent = chapters.value
-    .sort((a, b) => a.order - b.order)
+  const allChapters = volumes.value.flatMap(v => v.chapters)
+  const sortedChapters = allChapters.sort((a, b) => {
+    const aNum = parseInt(a.number.match(/\d+/)?.[0] || '0')
+    const bNum = parseInt(b.number.match(/\d+/)?.[0] || '0')
+    return aNum - bNum
+  })
+  
+  const allContent = sortedChapters
     .map(chapter => `${chapter.title}\n\n${chapter.content}`)
     .join('\n\n---\n\n')
   
@@ -378,6 +516,8 @@ const handleKeyboard = (e: KeyboardEvent) => {
 function startEditChapter(chapter: Chapter) {
   editingChapterId.value = chapter.id
   editingChapterTitle.value = chapter.title
+  // 确保侧边栏展开以便编辑
+  sidebarCollapsed.value = false
   nextTick(() => {
     editInputRef.value?.focus()
   })
@@ -387,14 +527,29 @@ function saveChapterTitle(chapter: Chapter) {
   const newTitle = editingChapterTitle.value.trim()
   if (newTitle && newTitle !== chapter.title) {
     chapter.title = newTitle
-    // 如有持久化需求，这里应保存章节列表
-    saveChapters()
+    saveNovel()
   }
   editingChapterId.value = null
+  // 编辑结束后，允许侧边栏正常收缩
 }
 
 function cancelEditChapter() {
   editingChapterId.value = null
+  // 取消编辑后，允许侧边栏正常收缩
+}
+
+function handleSidebarLeave() {
+  // 如果正在编辑章节标题，不要收缩侧边栏
+  if (editingChapterId.value) {
+    return
+  }
+  sidebarCollapsed.value = true
+}
+
+const formatWordCount = (count: number): string => {
+  if (count < 1000) return `${count}字`
+  if (count < 10000) return `${(count / 1000).toFixed(1)}千字`
+  return `${(count / 10000).toFixed(1)}万字`
 }
 </script>
 
@@ -444,6 +599,40 @@ function cancelEditChapter() {
   flex-direction: column;
   gap: 0.5rem;
   padding: 0 1.2rem;
+}
+
+.volume-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.volume-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.volume-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--title-color);
+  letter-spacing: 0.5px;
+}
+
+.volume-count {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.volume-chapters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-left: 1rem;
 }
 
 .chapter-item {
@@ -706,9 +895,15 @@ function cancelEditChapter() {
   color: var(--accent);
   cursor: pointer;
   margin-left: 0.2rem;
-  padding: 0.2rem 0.3rem;
+  padding: 0.3rem 0.4rem;
   border-radius: 0.5rem;
   transition: background 0.15s;
+  min-width: 24px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
 }
 
 .chapter-edit-confirm:hover {
@@ -719,5 +914,25 @@ function cancelEditChapter() {
 .chapter-edit-cancel:hover {
   background: #dc3545;
   color: #fff;
+}
+
+/* 编辑模式下的特殊样式 */
+.chapter-item:has(.chapter-edit-input) {
+  background: var(--card-bg);
+  border: 1px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chapter-edit-input {
+  flex: 1;
+  font-size: 1rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  outline: none;
+  color: var(--title-color);
+  background: var(--card-bg);
+  margin-right: 0.5rem;
+  min-width: 120px;
 }
 </style> 
