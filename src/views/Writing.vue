@@ -54,50 +54,7 @@
             </div>
           </div>
 
-          <!-- 未分类章节 -->
-          <div v-if="unassignedChapters.length > 0" class="volume-section">
-            <div class="volume-header">
-              <span class="volume-title">未分类章节</span>
-              <span class="volume-count">{{ unassignedChapters.length }}章</span>
-            </div>
-            <div class="volume-chapters">
-              <div 
-                v-for="chapter in unassignedChapters" 
-                :key="chapter.id"
-                class="chapter-item"
-                :class="{ active: currentChapter === chapter.id }"
-              >
-                <template v-if="editingChapterId === chapter.id">
-                  <input
-                    class="chapter-edit-input"
-                    v-model="editingChapterTitle"
-                    @keydown.enter="saveChapterTitle(chapter)"
-                    @keydown.esc="cancelEditChapter"
-                    @blur="saveChapterTitle(chapter)"
-                    ref="editInputRef"
-                    maxlength="30"
-                    :placeholder="chapter.title"
-                    autofocus
-                  />
-                  <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
-                    <CheckIcon class="icon" />
-                  </button>
-                  <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
-                    <XIcon class="icon" />
-                  </button>
-                </template>
-                <template v-else>
-                  <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
-                    {{ chapter.title }}
-                  </span>
-                  <span class="chapter-words">{{ formatWordCount(chapter.wordCount) }}</span>
-                  <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
-                    <EditIcon class="icon" />
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
+          
 
           <button @click="() => addChapter()" class="add-chapter-btn">
             <PlusIcon class="icon" /> 添加章节
@@ -244,10 +201,7 @@ const currentChapterTitle = computed(() => {
   const allChapters = volumes.value.flatMap(v => v.chapters)
   return allChapters.find(c => c.id === currentChapter.value)?.title || ''
 })
-const unassignedChapters = computed(() => {
-  const allChapters = volumes.value.flatMap(v => v.chapters)
-  return allChapters.filter(c => !c.volumeId)
-})
+
 
 onMounted(() => {
   loadCurrentNovel()
@@ -335,6 +289,7 @@ const addChapter = (title?: string) => {
     title: title || `第${targetVolume.chapters.length + 1}章`,
     content: '',
     number: `第${targetVolume.chapters.length + 1}章`,
+    volumeId: targetVolume.id,
     wordCount: 0,
     lastEdit: new Date(),
     createdAt: new Date()

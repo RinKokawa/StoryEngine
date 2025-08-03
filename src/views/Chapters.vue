@@ -58,26 +58,7 @@
                 </div>
               </div>
 
-              <!-- 未分类章节 -->
-              <div v-if="unassignedChapters.length > 0" class="volume-nav-item">
-                <div class="volume-nav-header" @click="scrollToUnassigned">
-                  <FolderIcon class="icon" />
-                  <span class="volume-nav-title">未分类章节</span>
-                  <span class="chapter-count">{{ unassignedChapters.length }}章</span>
-                </div>
-                
-                <div class="chapters-nav-list">
-                  <div 
-                    v-for="chapter in unassignedChapters" 
-                    :key="chapter.id"
-                    class="chapter-nav-item"
-                    @click="scrollToChapter(chapter.id)"
-                  >
-                    <div class="chapter-nav-number">{{ chapter.number }}</div>
-                    <div class="chapter-nav-title">{{ chapter.title }}</div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </aside>
@@ -146,43 +127,7 @@
               </div>
             </div>
 
-            <!-- 未分类章节 -->
-            <div v-if="unassignedChapters.length > 0" class="volume-section" id="unassigned-chapters">
-              <div class="volume-header">
-                <div class="volume-info">
-                  <h3 class="volume-title">未分类章节</h3>
-                  <span class="volume-chapter-count">{{ unassignedChapters.length }}章</span>
-                </div>
-              </div>
-              <div class="chapters-list">
-                <div 
-                  v-for="chapter in unassignedChapters" 
-                  :key="chapter.id" 
-                  class="chapter-item"
-                  :id="`chapter-${chapter.id}`"
-                  @click="openChapter(chapter)"
-                >
-                  <div class="chapter-info">
-                    <div class="chapter-number">{{ chapter.number }}</div>
-                    <div class="chapter-details">
-                      <h4 class="chapter-title">{{ chapter.title }}</h4>
-                      <div class="chapter-stats">
-                        <span class="word-count">{{ formatWordCount(chapter.wordCount) }}</span>
-                        <span class="last-edit">{{ formatDate(chapter.lastEdit) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="chapter-actions">
-                    <button @click.stop="editChapter(chapter)" class="action-btn">
-                      <EditIcon class="icon" />
-                    </button>
-                    <button @click.stop="deleteChapter(chapter)" class="action-btn delete">
-                      <TrashIcon class="icon" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
@@ -248,19 +193,20 @@
               required
             />
           </div>
-          <div class="form-group">
-            <label for="chapterVolume">所属卷</label>
-            <select 
-              id="chapterVolume"
-              :value="editChapterModal.visible ? editChapterData.volumeId : newChapter.volumeId"
-              @change="e => editChapterModal.visible ? (editChapterData.volumeId = (e.target as HTMLSelectElement).value) : (newChapter.volumeId = (e.target as HTMLSelectElement).value)"
-            >
-              <option value="">不分类</option>
-              <option v-for="volume in volumes" :key="volume.id" :value="volume.id">
-                {{ volume.title }}
-              </option>
-            </select>
-          </div>
+                      <div class="form-group">
+              <label for="chapterVolume">所属卷 *</label>
+              <select 
+                id="chapterVolume"
+                :value="editChapterModal.visible ? editChapterData.volumeId : newChapter.volumeId"
+                @change="e => editChapterModal.visible ? (editChapterData.volumeId = (e.target as HTMLSelectElement).value) : (newChapter.volumeId = (e.target as HTMLSelectElement).value)"
+                required
+              >
+                <option value="">请选择卷</option>
+                <option v-for="volume in volumes" :key="volume.id" :value="volume.id">
+                  {{ volume.title }}
+                </option>
+              </select>
+            </div>
           <div class="form-group">
             <label for="chapterContent">章节内容</label>
             <textarea 
@@ -310,8 +256,7 @@ import {
   EditIcon, 
   TrashIcon,
   XIcon,
-  BookOpenIcon,
-  FolderIcon
+  BookOpenIcon
 } from 'lucide-vue-next'
 
 interface Chapter {
@@ -392,11 +337,7 @@ const loadNovel = () => {
   }
 }
 
-const unassignedChapters = computed(() => {
-  if (!currentNovel.value) return []
-  const allChapters = volumes.value.flatMap(v => v.chapters)
-  return allChapters.filter(c => !c.volumeId)
-})
+
 
 const goBack = () => {
   router.push('/')
@@ -460,26 +401,10 @@ const deleteVolume = (volume: Volume) => {
 }
 
 const createChapter = () => {
-  if (!newChapter.title.trim()) return
+  if (!newChapter.title.trim() || !newChapter.volumeId) return
   
-  let targetVolume: Volume
-  
-  if (newChapter.volumeId) {
-    targetVolume = volumes.value.find(v => v.id === newChapter.volumeId)!
-  } else {
-    // 添加到第一个卷，如果没有卷则创建默认卷
-    if (volumes.value.length === 0) {
-      targetVolume = {
-        id: Date.now().toString(),
-        title: '第一卷',
-        chapters: [],
-        createdAt: new Date()
-      }
-      volumes.value.push(targetVolume)
-    } else {
-      targetVolume = volumes.value[0]
-    }
-  }
+  const targetVolume = volumes.value.find(v => v.id === newChapter.volumeId)
+  if (!targetVolume) return
   
   const chapter: Chapter = {
     id: Date.now().toString(),
@@ -512,7 +437,7 @@ const editChapter = (chapter: Chapter) => {
 }
 
 const updateChapter = () => {
-  if (!editChapterModal.value.chapter) return
+  if (!editChapterModal.value.chapter || !editChapterData.volumeId) return
   const chapter = editChapterModal.value.chapter
   chapter.title = editChapterData.title
   chapter.content = editChapterData.content
@@ -532,17 +457,10 @@ const updateChapter = () => {
       if (targetVolume) {
         chapter.volumeId = editChapterData.volumeId
         targetVolume.chapters.push(chapter)
-      }
-    } else {
-      chapter.volumeId = undefined
-      // 添加到第一个卷
-      if (volumes.value.length > 0) {
-        volumes.value[0].chapters.push(chapter)
+        // 重新生成所有章节的编号
+        regenerateChapterNumbers()
       }
     }
-    
-    // 重新生成所有章节的编号
-    regenerateChapterNumbers()
   }
   
   saveNovel()
@@ -639,12 +557,7 @@ const scrollToChapter = (chapterId: string) => {
   }
 }
 
-const scrollToUnassigned = () => {
-  const element = document.getElementById('unassigned-chapters')
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
+
 
 const formatDate = (date: Date): string => {
   const now = new Date()
