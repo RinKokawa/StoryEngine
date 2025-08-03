@@ -49,6 +49,9 @@
               </div>
             </div>
             <div class="novel-actions">
+              <button @click.stop="openChapters(novel)" class="action-btn chapters">
+                <BookOpenIcon class="icon" />
+              </button>
               <button @click.stop="editNovelInfo(novel)" class="action-btn">
                 <EditIcon class="icon" />
               </button>
@@ -165,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Layout from '../components/Layout.vue'
 import { 
@@ -176,7 +179,8 @@ import {
   BookIcon, 
   EditIcon, 
   TrashIcon,
-  XIcon
+  XIcon,
+  BookOpenIcon
 } from 'lucide-vue-next'
 
 interface Novel {
@@ -188,6 +192,7 @@ interface Novel {
   wordCount: number
   lastEdit: Date
   createdAt: Date
+  volumes?: any[]
 }
 
 const router = useRouter()
@@ -216,7 +221,8 @@ const loadNovels = () => {
     novels.value = JSON.parse(stored).map((novel: any) => ({
       ...novel,
       lastEdit: new Date(novel.lastEdit),
-      createdAt: new Date(novel.createdAt)
+      createdAt: new Date(novel.createdAt),
+      volumes: novel.volumes || []
     }))
   }
 }
@@ -250,7 +256,8 @@ function createNovel() {
     cover: newNovel.cover || '',
     wordCount: 0,
     lastEdit: new Date(),
-    createdAt: new Date()
+    createdAt: new Date(),
+    volumes: []
   }
   novels.value.unshift(novel)
   saveNovels()
@@ -284,6 +291,10 @@ function updateNovel() {
 const openNovel = (novel: Novel) => {
   localStorage.setItem('currentNovelId', novel.id)
   router.push('/writing')
+}
+
+const openChapters = (novel: Novel) => {
+  router.push(`/chapters/${novel.id}`)
 }
 
 const deleteNovel = (novel: Novel) => {
@@ -583,6 +594,13 @@ const formatDate = (date: Date): string => {
   color: #fff;
   border-color: #dc3545;
   box-shadow: 0 0 8px #dc3545;
+}
+
+.action-btn.chapters:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
 .empty-state {
