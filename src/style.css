@@ -167,13 +167,14 @@
   --sidebar-active: #ff00ea;
 }
 
-body, html, #app {
-  width: 100vw;
-  height: 100vh;
+html, body {
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   background: var(--main-bg);
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  overflow: hidden;
 }
 
 a {
@@ -214,9 +215,10 @@ button:focus-visible {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   text-align: center;
 }
 
