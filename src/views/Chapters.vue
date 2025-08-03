@@ -22,100 +22,164 @@
         </div>
       </header>
 
-      <!-- 章节内容区 -->
-      <div class="chapters-container">
-        <div v-if="volumes.length === 0" class="empty-state">
-          <BookOpenIcon class="empty-icon" />
-          <h3>还没有章节</h3>
-          <p>点击"新建章节"开始创建你的故事</p>
-        </div>
-
-        <div v-else class="volumes-list">
-          <div 
-            v-for="volume in volumes" 
-            :key="volume.id" 
-            class="volume-section"
-          >
-            <div class="volume-header">
-              <div class="volume-info">
-                <h3 class="volume-title">{{ volume.title }}</h3>
-                <span class="volume-chapter-count">{{ volume.chapters.length }}章</span>
-              </div>
-              <div class="volume-actions">
-                <button @click="editVolume(volume)" class="action-btn">
-                  <EditIcon class="icon" />
-                </button>
-                <button @click="deleteVolume(volume)" class="action-btn delete">
-                  <TrashIcon class="icon" />
-                </button>
-              </div>
-            </div>
-
-            <div class="chapters-list">
+      <!-- 主要内容区域 -->
+      <div class="content-wrapper">
+        <!-- 导航侧边栏 -->
+        <aside class="navigation-sidebar">
+          <div class="sidebar-header">
+            <h3>快速导航</h3>
+          </div>
+          
+          <div class="sidebar-content">
+            <div class="navigation-list">
+              <!-- 卷列表 -->
               <div 
-                v-for="chapter in volume.chapters" 
-                :key="chapter.id" 
-                class="chapter-item"
-                @click="openChapter(chapter)"
+                v-for="volume in volumes" 
+                :key="volume.id" 
+                class="volume-nav-item"
               >
-                <div class="chapter-info">
-                  <div class="chapter-number">{{ chapter.number }}</div>
-                  <div class="chapter-details">
-                    <h4 class="chapter-title">{{ chapter.title }}</h4>
-                    <div class="chapter-stats">
-                      <span class="word-count">{{ formatWordCount(chapter.wordCount) }}</span>
-                      <span class="last-edit">{{ formatDate(chapter.lastEdit) }}</span>
-                    </div>
+                <div class="volume-nav-header" @click="scrollToVolume(volume.id)">
+                  <BookOpenIcon class="icon" />
+                  <span class="volume-nav-title">{{ volume.title }}</span>
+                  <span class="chapter-count">{{ volume.chapters.length }}章</span>
+                </div>
+                
+                <!-- 章节列表 -->
+                <div class="chapters-nav-list">
+                  <div 
+                    v-for="chapter in volume.chapters" 
+                    :key="chapter.id"
+                    class="chapter-nav-item"
+                    @click="scrollToChapter(chapter.id)"
+                  >
+                    <div class="chapter-nav-number">{{ chapter.number }}</div>
+                    <div class="chapter-nav-title">{{ chapter.title }}</div>
                   </div>
                 </div>
-                <div class="chapter-actions">
-                  <button @click.stop="editChapter(chapter)" class="action-btn">
-                    <EditIcon class="icon" />
-                  </button>
-                  <button @click.stop="deleteChapter(chapter)" class="action-btn delete">
-                    <TrashIcon class="icon" />
-                  </button>
-                </div>
               </div>
 
-              <div v-if="volume.chapters.length === 0" class="empty-chapters">
-                <p>此卷还没有章节</p>
+              <!-- 未分类章节 -->
+              <div v-if="unassignedChapters.length > 0" class="volume-nav-item">
+                <div class="volume-nav-header" @click="scrollToUnassigned">
+                  <FolderIcon class="icon" />
+                  <span class="volume-nav-title">未分类章节</span>
+                  <span class="chapter-count">{{ unassignedChapters.length }}章</span>
+                </div>
+                
+                <div class="chapters-nav-list">
+                  <div 
+                    v-for="chapter in unassignedChapters" 
+                    :key="chapter.id"
+                    class="chapter-nav-item"
+                    @click="scrollToChapter(chapter.id)"
+                  >
+                    <div class="chapter-nav-number">{{ chapter.number }}</div>
+                    <div class="chapter-nav-title">{{ chapter.title }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </aside>
 
-          <!-- 未分类章节 -->
-          <div v-if="unassignedChapters.length > 0" class="volume-section">
-            <div class="volume-header">
-              <div class="volume-info">
-                <h3 class="volume-title">未分类章节</h3>
-                <span class="volume-chapter-count">{{ unassignedChapters.length }}章</span>
-              </div>
-            </div>
-            <div class="chapters-list">
-              <div 
-                v-for="chapter in unassignedChapters" 
-                :key="chapter.id" 
-                class="chapter-item"
-                @click="openChapter(chapter)"
-              >
-                <div class="chapter-info">
-                  <div class="chapter-number">{{ chapter.number }}</div>
-                  <div class="chapter-details">
-                    <h4 class="chapter-title">{{ chapter.title }}</h4>
-                    <div class="chapter-stats">
-                      <span class="word-count">{{ formatWordCount(chapter.wordCount) }}</span>
-                      <span class="last-edit">{{ formatDate(chapter.lastEdit) }}</span>
-                    </div>
-                  </div>
+        <!-- 章节内容区 -->
+        <div class="chapters-container">
+          <div v-if="volumes.length === 0" class="empty-state">
+            <BookOpenIcon class="empty-icon" />
+            <h3>还没有章节</h3>
+            <p>点击"新建章节"开始创建你的故事</p>
+          </div>
+
+          <div v-else class="volumes-list">
+            <div 
+              v-for="volume in volumes" 
+              :key="volume.id" 
+              class="volume-section"
+              :id="`volume-${volume.id}`"
+            >
+              <div class="volume-header">
+                <div class="volume-info">
+                  <h3 class="volume-title">{{ volume.title }}</h3>
+                  <span class="volume-chapter-count">{{ volume.chapters.length }}章</span>
                 </div>
-                <div class="chapter-actions">
-                  <button @click.stop="editChapter(chapter)" class="action-btn">
+                <div class="volume-actions">
+                  <button @click="editVolume(volume)" class="action-btn">
                     <EditIcon class="icon" />
                   </button>
-                  <button @click.stop="deleteChapter(chapter)" class="action-btn delete">
+                  <button @click="deleteVolume(volume)" class="action-btn delete">
                     <TrashIcon class="icon" />
                   </button>
+                </div>
+              </div>
+
+              <div class="chapters-list">
+                <div 
+                  v-for="chapter in volume.chapters" 
+                  :key="chapter.id" 
+                  class="chapter-item"
+                  :id="`chapter-${chapter.id}`"
+                  @click="openChapter(chapter)"
+                >
+                  <div class="chapter-info">
+                    <div class="chapter-number">{{ chapter.number }}</div>
+                    <div class="chapter-details">
+                      <h4 class="chapter-title">{{ chapter.title }}</h4>
+                      <div class="chapter-stats">
+                        <span class="word-count">{{ formatWordCount(chapter.wordCount) }}</span>
+                        <span class="last-edit">{{ formatDate(chapter.lastEdit) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chapter-actions">
+                    <button @click.stop="editChapter(chapter)" class="action-btn">
+                      <EditIcon class="icon" />
+                    </button>
+                    <button @click.stop="deleteChapter(chapter)" class="action-btn delete">
+                      <TrashIcon class="icon" />
+                    </button>
+                  </div>
+                </div>
+
+                <div v-if="volume.chapters.length === 0" class="empty-chapters">
+                  <p>此卷还没有章节</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 未分类章节 -->
+            <div v-if="unassignedChapters.length > 0" class="volume-section" id="unassigned-chapters">
+              <div class="volume-header">
+                <div class="volume-info">
+                  <h3 class="volume-title">未分类章节</h3>
+                  <span class="volume-chapter-count">{{ unassignedChapters.length }}章</span>
+                </div>
+              </div>
+              <div class="chapters-list">
+                <div 
+                  v-for="chapter in unassignedChapters" 
+                  :key="chapter.id" 
+                  class="chapter-item"
+                  :id="`chapter-${chapter.id}`"
+                  @click="openChapter(chapter)"
+                >
+                  <div class="chapter-info">
+                    <div class="chapter-number">{{ chapter.number }}</div>
+                    <div class="chapter-details">
+                      <h4 class="chapter-title">{{ chapter.title }}</h4>
+                      <div class="chapter-stats">
+                        <span class="word-count">{{ formatWordCount(chapter.wordCount) }}</span>
+                        <span class="last-edit">{{ formatDate(chapter.lastEdit) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chapter-actions">
+                    <button @click.stop="editChapter(chapter)" class="action-btn">
+                      <EditIcon class="icon" />
+                    </button>
+                    <button @click.stop="deleteChapter(chapter)" class="action-btn delete">
+                      <TrashIcon class="icon" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -246,7 +310,8 @@ import {
   EditIcon, 
   TrashIcon,
   XIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  FolderIcon
 } from 'lucide-vue-next'
 
 interface Chapter {
@@ -289,6 +354,8 @@ const showCreateChapterModal = ref(false)
 const editVolumeModal = ref({ visible: false, volume: null as Volume | null })
 const editChapterModal = ref({ visible: false, chapter: null as Chapter | null })
 const deleteModal = ref({ visible: false, item: null as Volume | Chapter | null, type: 'volume' as 'volume' | 'chapter' })
+
+
 
 const newVolume = reactive({ title: '', description: '' })
 const newChapter = reactive({ title: '', content: '', volumeId: '' })
@@ -555,6 +622,30 @@ const formatWordCount = (count: number): string => {
   return `${(count / 10000).toFixed(1)}万字`
 }
 
+
+
+// 滚动到指定位置
+const scrollToVolume = (volumeId: string) => {
+  const element = document.getElementById(`volume-${volumeId}`)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+const scrollToChapter = (chapterId: string) => {
+  const element = document.getElementById(`chapter-${chapterId}`)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+const scrollToUnassigned = () => {
+  const element = document.getElementById('unassigned-chapters')
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
 const formatDate = (date: Date): string => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
@@ -674,11 +765,145 @@ const formatDate = (date: Date): string => {
   box-shadow: var(--primary-btn-hover);
 }
 
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.navigation-sidebar {
+  width: 300px; /* Fixed width for the sidebar */
+  background: var(--sidebar-bg);
+  border-right: 2px solid var(--border);
+  box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+  z-index: 1; /* Ensure it's above content */
+  overflow-y: auto; /* Allow scrolling for content */
+  height: 100%;
+}
+
+
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  color: var(--title-color);
+  font-size: 1.2rem;
+}
+
+
+
+.sidebar-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+
+
+.navigation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.volume-nav-item {
+  background: var(--card-bg);
+  border-radius: 1.5rem;
+  padding: 1.2rem;
+  box-shadow: var(--card-shadow);
+  border: 2px solid var(--border);
+}
+
+.volume-nav-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  cursor: pointer;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.volume-nav-header:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.volume-nav-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--title-color);
+  flex: 1;
+}
+
+.chapter-count {
+  background: var(--accent);
+  color: #fff;
+  padding: 0.3rem 0.8rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chapters-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.chapter-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 0.5rem;
+  background: var(--input-bg);
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.chapter-nav-item:hover {
+  border-color: var(--accent);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.chapter-nav-number {
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-color);
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 4rem;
+  text-align: center;
+}
+
+.chapter-nav-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--title-color);
+  flex: 1;
+}
+
 .chapters-container {
-  margin: 0 auto;
-  width: 100%;
-  max-width: 1200px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   padding: 2.5rem 2vw;
+  overflow-y: auto; /* Allow scrolling for content */
 }
 
 .empty-state {
