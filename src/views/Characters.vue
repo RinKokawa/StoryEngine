@@ -1,20 +1,16 @@
 <template>
-  <div class="characters-container">
-    <header class="page-header">
-      <h1>角色管理</h1>
+  <Layout>
+    <header class="main-header">
+      <div class="header-title">角色管理</div>
       <div class="header-actions">
-        <button @click="showAddDialog = true" class="add-btn">
+        <button @click="showAddDialog = true" class="create-btn">
           <Plus class="icon" />
           添加角色
-        </button>
-        <button @click="goBack" class="back-btn">
-          <ArrowLeft class="icon" />
-          返回
         </button>
       </div>
     </header>
 
-    <div class="content">
+    <div class="characters-content">
       <!-- 搜索和筛选 -->
       <div class="search-section">
         <div class="search-box">
@@ -208,15 +204,14 @@
         </div>
       </div>
     </div>
-  </div>
+  </Layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import Layout from '../components/Layout.vue'
 import { 
   Plus, 
-  ArrowLeft, 
   Search, 
   Edit, 
   Trash2, 
@@ -237,8 +232,6 @@ interface Character {
   createdAt: Date
   updatedAt: Date
 }
-
-const router = useRouter()
 
 // 响应式数据
 const characters = ref<Character[]>([])
@@ -281,11 +274,6 @@ const filteredCharacters = computed(() => {
 
   return filtered
 })
-
-// 方法
-const goBack = () => {
-  router.back()
-}
 
 const loadCharacters = () => {
   const saved = localStorage.getItem('characters')
@@ -338,8 +326,6 @@ const loadCharacters = () => {
 const saveCharacters = () => {
   localStorage.setItem('characters', JSON.stringify(characters.value))
 }
-
-// 移除未使用的addCharacter函数，因为直接使用showAddDialog = true
 
 const editCharacter = (character: Character) => {
   editingCharacter.value = { ...character }
@@ -431,81 +417,75 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.characters-container {
-  padding: 2rem 3rem;
-  width: 100%;
-  min-height: 100vh;
-  background: #f5f5f7;
-}
-
-.page-header {
+.main-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  justify-content: space-between;
+  padding: 2.2rem 3vw 1.2rem 3vw;
+  background: var(--header-bg);
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-.page-header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1d1d1f;
-  margin: 0;
+.header-title {
+  font-size: 2.1rem;
+  font-weight: bold;
+  color: var(--title-color);
+  letter-spacing: 2px;
 }
 
 .header-actions {
   display: flex;
-  gap: 1rem;
+  gap: 1.2rem;
 }
 
-.add-btn, .back-btn {
+.create-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: 0.7rem;
+  padding: 0.9rem 2rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 2rem;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-color);
+  box-shadow: var(--card-shadow);
+  transition: all 0.22s cubic-bezier(.4,2,.6,1);
 }
 
-.add-btn {
-  background: #007aff;
-  color: white;
+.create-btn:hover {
+  transform: scale(1.06) translateY(-2px);
+  box-shadow: var(--primary-btn-hover);
 }
 
-.add-btn:hover {
-  background: #0056cc;
-}
-
-.back-btn {
-  background: #e5e5e7;
-  color: #1d1d1f;
-}
-
-.back-btn:hover {
-  background: #d1d1d6;
-}
-
-.icon {
-  width: 18px;
-  height: 18px;
-}
-
-.content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow: hidden;
+.characters-content {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1600px;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 2.5rem 2vw 2.5rem 2vw;
 }
 
 .search-section {
+  background: var(--card-bg);
+  border-radius: 2rem;
   padding: 2rem;
-  border-bottom: 1px solid #e5e5e7;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(8px);
+  border: 2px solid var(--border);
 }
 
 .search-box {
@@ -519,7 +499,7 @@ onMounted(() => {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #86868b;
+  color: var(--subtitle-color);
   width: 20px;
   height: 20px;
 }
@@ -527,15 +507,17 @@ onMounted(() => {
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 3rem;
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
+  border: 2px solid var(--border);
+  border-radius: 1rem;
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s ease;
+  background: var(--input-bg);
+  color: var(--title-color);
 }
 
 .search-input:focus {
-  border-color: #007aff;
+  border-color: var(--accent);
 }
 
 .filter-buttons {
@@ -545,40 +527,43 @@ onMounted(() => {
 
 .filter-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #e5e5e7;
-  background: white;
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  background: var(--input-bg);
+  border-radius: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  color: var(--accent);
+  font-size: 1rem;
 }
 
 .filter-btn.active {
-  background: #007aff;
-  color: white;
-  border-color: #007aff;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .characters-grid {
-  padding: 2rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
 }
 
 .character-card {
-  background: #f9f9f9;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: 1.5rem;
   padding: 1.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 2px solid transparent;
+  border: 2px solid var(--border);
   position: relative;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(8px);
 }
 
 .character-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  border-color: #007aff;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--card-hover-shadow);
+  border-color: var(--accent);
 }
 
 .character-avatar {
@@ -587,7 +572,7 @@ onMounted(() => {
   border-radius: 50%;
   overflow: hidden;
   margin-bottom: 1rem;
-  border: 3px solid #e5e5e7;
+  border: 3px solid var(--border);
 }
 
 .character-avatar img {
@@ -603,19 +588,19 @@ onMounted(() => {
 .character-name {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1d1d1f;
+  color: var(--title-color);
   margin: 0 0 0.5rem 0;
 }
 
 .character-role {
-  color: #007aff;
+  color: var(--accent);
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
 }
 
 .character-description {
-  color: #86868b;
+  color: var(--subtitle-color);
   font-size: 0.9rem;
   line-height: 1.5;
   margin: 0 0 1rem 0;
@@ -632,12 +617,13 @@ onMounted(() => {
 }
 
 .tag {
-  background: #e5e5e7;
-  color: #1d1d1f;
+  background: var(--input-bg);
+  color: var(--title-color);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
+  border: 1px solid var(--border);
 }
 
 .character-actions {
@@ -658,49 +644,48 @@ onMounted(() => {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 6px;
+  border-radius: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-}
-
-.action-btn.edit {
-  background: #34c759;
-  color: white;
+  background: var(--input-bg);
+  color: var(--accent);
+  border: 2px solid var(--border);
 }
 
 .action-btn.edit:hover {
-  background: #28a745;
-}
-
-.action-btn.delete {
-  background: #ff3b30;
+  background: #34c759;
   color: white;
+  border-color: #34c759;
 }
 
 .action-btn.delete:hover {
-  background: #dc3545;
+  background: #ff3b30;
+  color: white;
+  border-color: #ff3b30;
 }
 
 .empty-state {
   padding: 4rem 2rem;
   text-align: center;
-  color: #86868b;
+  color: var(--subtitle-color);
+  grid-column: 1 / -1;
 }
 
 .empty-icon {
   width: 64px;
   height: 64px;
   margin: 0 auto 1rem;
-  color: #c7c7cc;
+  color: var(--subtitle-color);
+  opacity: 0.5;
 }
 
 .empty-state h3 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: #1d1d1f;
+  color: var(--title-color);
 }
 
 /* 模态框样式 */
@@ -718,13 +703,15 @@ onMounted(() => {
 }
 
 .modal {
-  background: white;
-  border-radius: 12px;
+  background: var(--modal-bg);
+  border-radius: 2rem;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  box-shadow: var(--modal-shadow);
+  backdrop-filter: blur(12px);
+  border: 2px solid var(--border);
 }
 
 .modal-header {
@@ -732,13 +719,14 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e5e5e7;
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
+  color: var(--title-color);
 }
 
 .close-btn {
@@ -746,12 +734,13 @@ onMounted(() => {
   border: none;
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 6px;
+  border-radius: 1rem;
   transition: background 0.2s ease;
+  color: var(--accent);
 }
 
 .close-btn:hover {
-  background: #f2f2f2;
+  background: var(--input-bg);
 }
 
 .character-form {
@@ -766,7 +755,7 @@ onMounted(() => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--title-color);
 }
 
 .form-group input,
@@ -774,23 +763,26 @@ onMounted(() => {
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
+  border: 2px solid var(--border);
+  border-radius: 1rem;
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s ease;
+  background: var(--input-bg);
+  color: var(--title-color);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #007aff;
+  border-color: var(--accent);
 }
 
 .tags-input {
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
+  border: 2px solid var(--border);
+  border-radius: 1rem;
   padding: 0.5rem;
+  background: var(--input-bg);
 }
 
 .tags-list {
@@ -801,8 +793,8 @@ onMounted(() => {
 }
 
 .tag-input {
-  background: #e5e5e7;
-  color: #1d1d1f;
+  background: var(--accent);
+  color: #fff;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -823,10 +815,11 @@ onMounted(() => {
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s ease;
+  color: #fff;
 }
 
 .remove-tag:hover {
-  background: rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.2);
 }
 
 .form-actions {
@@ -835,34 +828,37 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e5e7;
+  border-top: 1px solid var(--border);
 }
 
 .cancel-btn, .save-btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .cancel-btn {
-  background: #e5e5e7;
-  color: #1d1d1f;
+  background: var(--input-bg);
+  color: var(--subtitle-color);
+  border: 2px solid var(--border);
 }
 
 .cancel-btn:hover {
-  background: #d1d1d6;
+  background: var(--accent);
+  color: #fff;
 }
 
 .save-btn {
-  background: #007aff;
-  color: white;
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-color);
 }
 
 .save-btn:hover {
-  background: #0056cc;
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: var(--primary-btn-hover);
 }
 
 /* 删除确认对话框 */
@@ -885,6 +881,7 @@ onMounted(() => {
 .delete-content p {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
+  color: var(--title-color);
 }
 
 .warning {
@@ -897,7 +894,7 @@ onMounted(() => {
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -907,13 +904,18 @@ onMounted(() => {
   background: #dc3545;
 }
 
+.icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .characters-container {
+  .characters-content {
     padding: 1rem;
   }
   
-  .page-header {
+  .main-header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
@@ -939,7 +941,6 @@ onMounted(() => {
   
   .characters-grid {
     grid-template-columns: 1fr;
-    padding: 1rem;
   }
   
   .modal {

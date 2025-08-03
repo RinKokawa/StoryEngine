@@ -1,122 +1,125 @@
 <template>
-  <div class="writing-desktop-layout">
-    <!-- 左侧章节导航栏 -->
-    <aside class="chapter-sidebar" :class="{ collapsed: sidebarCollapsed }"
-      @mouseenter="sidebarCollapsed = false"
-      @mouseleave="sidebarCollapsed = true">
-      <div class="sidebar-header">
-        <span v-if="!sidebarCollapsed" class="sidebar-title">章节目录</span>
-      </div>
-      <div v-if="!sidebarCollapsed" class="chapter-list">
-        <div 
-          v-for="chapter in chapters" 
-          :key="chapter.id"
-          class="chapter-item"
-          :class="{ active: currentChapter === chapter.id }"
-        >
-          <template v-if="editingChapterId === chapter.id">
-            <input
-              class="chapter-edit-input"
-              v-model="editingChapterTitle"
-              @keydown.enter="saveChapterTitle(chapter)"
-              @keydown.esc="cancelEditChapter"
-              @blur="saveChapterTitle(chapter)"
-              ref="editInputRef"
-              maxlength="30"
-              :placeholder="chapter.title"
-              autofocus
-            />
-            <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
-              <CheckIcon class="icon" />
-            </button>
-            <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
-              <XIcon class="icon" />
-            </button>
-          </template>
-          <template v-else>
-            <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
-              {{ chapter.title }}
-            </span>
-            <span class="chapter-words">{{ chapter.wordCount }}字</span>
-            <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
-              <EditIcon class="icon" />
-            </button>
-          </template>
+  <WritingLayout>
+    <div class="writing-desktop-layout">
+      <!-- 左侧章节导航栏 -->
+      <aside class="chapter-sidebar" :class="{ collapsed: sidebarCollapsed }"
+        @mouseenter="sidebarCollapsed = false"
+        @mouseleave="sidebarCollapsed = true">
+        <div class="sidebar-header">
+          <span v-if="!sidebarCollapsed" class="sidebar-title">章节目录</span>
         </div>
-        <button @click="() => addChapter()" class="add-chapter-btn">
-          <PlusIcon class="icon" /> 添加章节
-        </button>
-      </div>
-      <div v-else class="sidebar-collapsed-bar"></div>
-    </aside>
-
-    <div class="writing-main-area">
-      <!-- 顶部操作栏 -->
-      <header class="writing-main-header">
-        <div class="header-left">
-          <button @click="goBack" class="back-btn">
-            <ArrowLeftIcon class="icon" />
-            <span class="btn-text">返回</span>
-          </button>
-          <div class="novel-info">
-            <h1 class="novel-title">{{ currentNovel?.title || '未命名小说' }}</h1>
-            <span class="word-count">{{ wordCount }} 字</span>
+        <div v-if="!sidebarCollapsed" class="chapter-list">
+          <div 
+            v-for="chapter in chapters" 
+            :key="chapter.id"
+            class="chapter-item"
+            :class="{ active: currentChapter === chapter.id }"
+          >
+            <template v-if="editingChapterId === chapter.id">
+              <input
+                class="chapter-edit-input"
+                v-model="editingChapterTitle"
+                @keydown.enter="saveChapterTitle(chapter)"
+                @keydown.esc="cancelEditChapter"
+                @blur="saveChapterTitle(chapter)"
+                ref="editInputRef"
+                maxlength="30"
+                :placeholder="chapter.title"
+                autofocus
+              />
+              <button class="chapter-edit-confirm" @mousedown.prevent="saveChapterTitle(chapter)">
+                <CheckIcon class="icon" />
+              </button>
+              <button class="chapter-edit-cancel" @mousedown.prevent="cancelEditChapter">
+                <XIcon class="icon" />
+              </button>
+            </template>
+            <template v-else>
+              <span class="chapter-title" @dblclick="startEditChapter(chapter)" @click="switchChapter(chapter.id)">
+                {{ chapter.title }}
+              </span>
+              <span class="chapter-words">{{ chapter.wordCount }}字</span>
+              <button class="chapter-edit-btn" @click.stop="startEditChapter(chapter)">
+                <EditIcon class="icon" />
+              </button>
+            </template>
           </div>
-        </div>
-        <div class="header-right">
-          <button @click="saveContent" class="save-btn" :disabled="!hasUnsavedChanges">
-            <SaveIcon class="icon" />
-            <span class="btn-text">{{ hasUnsavedChanges ? '保存' : '已保存' }}</span>
-          </button>
-          <button @click="togglePreview" class="tool-btn">
-            <EyeIcon class="icon" />
-            <span class="btn-text">{{ showPreview ? '隐藏预览' : '显示预览' }}</span>
-          </button>
-          <button @click="exportContent" class="tool-btn">
-            <DownloadIcon class="icon" />
-            <span class="btn-text">导出</span>
-          </button>
-          <button @click="toggleFullscreen" class="fullscreen-btn">
-            <MaximizeIcon v-if="!isFullscreen" class="icon" />
-            <MinimizeIcon v-else class="icon" />
-            <span class="btn-text">{{ isFullscreen ? '退出全屏' : '全屏' }}</span>
+          <button @click="() => addChapter()" class="add-chapter-btn">
+            <PlusIcon class="icon" /> 添加章节
           </button>
         </div>
-      </header>
+        <div v-else class="sidebar-collapsed-bar"></div>
+      </aside>
 
-      <!-- 编辑器主区 -->
-      <main class="editor-main" :class="{ fullscreen: isFullscreen }">
-        <div class="editor-container">
-          <textarea
-            ref="editorRef"
-            v-model="content"
-            @input="onContentChange"
-            @scroll="syncScroll"
-            class="editor"
-            placeholder="开始你的创作..."
-            spellcheck="false"
-          ></textarea>
-          <div v-if="showPreview" class="preview-panel">
-            <div class="preview-content" v-html="formattedContent"></div>
+      <div class="writing-main-area">
+        <!-- 顶部操作栏 -->
+        <header class="writing-main-header">
+          <div class="header-left">
+            <button @click="goBack" class="back-btn">
+              <ArrowLeftIcon class="icon" />
+              <span class="btn-text">返回</span>
+            </button>
+            <div class="novel-info">
+              <h1 class="novel-title">{{ currentNovel?.title || '未命名小说' }}</h1>
+              <span class="word-count">{{ wordCount }} 字</span>
+            </div>
           </div>
-        </div>
-      </main>
+          <div class="header-right">
+            <button @click="saveContent" class="save-btn" :disabled="!hasUnsavedChanges">
+              <SaveIcon class="icon" />
+              <span class="btn-text">{{ hasUnsavedChanges ? '保存' : '已保存' }}</span>
+            </button>
+            <button @click="togglePreview" class="tool-btn">
+              <EyeIcon class="icon" />
+              <span class="btn-text">{{ showPreview ? '隐藏预览' : '显示预览' }}</span>
+            </button>
+            <button @click="exportContent" class="tool-btn">
+              <DownloadIcon class="icon" />
+              <span class="btn-text">导出</span>
+            </button>
+            <button @click="toggleFullscreen" class="fullscreen-btn">
+              <MaximizeIcon v-if="!isFullscreen" class="icon" />
+              <MinimizeIcon v-else class="icon" />
+              <span class="btn-text">{{ isFullscreen ? '退出全屏' : '全屏' }}</span>
+            </button>
+          </div>
+        </header>
 
-      <!-- 底部状态栏 -->
-      <footer class="writing-status-bar">
-        <div>章节：{{ currentChapterTitle }}</div>
-        <div>总字数：{{ totalWordCount }}</div>
-        <div>今日字数：{{ todayWordCount }}</div>
-        <div v-if="hasUnsavedChanges" class="unsaved">有未保存更改</div>
-        <div v-else class="saved">已保存</div>
-      </footer>
+        <!-- 编辑器主区 -->
+        <main class="editor-main" :class="{ fullscreen: isFullscreen }">
+          <div class="editor-container">
+            <textarea
+              ref="editorRef"
+              v-model="content"
+              @input="onContentChange"
+              @scroll="syncScroll"
+              class="editor"
+              placeholder="开始你的创作..."
+              spellcheck="false"
+            ></textarea>
+            <div v-if="showPreview" class="preview-panel">
+              <div class="preview-content" v-html="formattedContent"></div>
+            </div>
+          </div>
+        </main>
+
+        <!-- 底部状态栏 -->
+        <footer class="writing-status-bar">
+          <div>章节：{{ currentChapterTitle }}</div>
+          <div>总字数：{{ totalWordCount }}</div>
+          <div>今日字数：{{ todayWordCount }}</div>
+          <div v-if="hasUnsavedChanges" class="unsaved">有未保存更改</div>
+          <div v-else class="saved">已保存</div>
+        </footer>
+      </div>
     </div>
-  </div>
+  </WritingLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import WritingLayout from '../components/WritingLayout.vue'
 import {
   ArrowLeftIcon,
   SaveIcon,
@@ -395,91 +398,54 @@ function cancelEditChapter() {
 }
 </script>
 
-<style>
-:root,
-[data-theme='modern'] {
-  --writing-bg: linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%);
-  --writing-header-bg: #fff;
-  --writing-sidebar-bg: #f4f6fa;
-  --writing-card-bg: #fff;
-  --writing-border: #dee2e6;
-  --writing-accent: #667eea;
-  --writing-title: #2c3e50;
-  --writing-subtitle: #7f8c8d;
-  --writing-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-[data-theme='cyber'] {
-  --writing-bg: linear-gradient(120deg, #0f2027 0%, #2c5364 100%);
-  --writing-header-bg: rgba(20,20,40,0.95);
-  --writing-sidebar-bg: #181828;
-  --writing-card-bg: rgba(30,30,60,0.95);
-  --writing-border: #00fff7;
-  --writing-accent: #ff00cc;
-  --writing-title: #00fff7;
-  --writing-subtitle: #ff00cc;
-  --writing-shadow: 0 0 16px #00fff7, 0 2px 8px rgba(0,0,0,0.3);
-}
-[data-theme='glass'] {
-  --writing-bg: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-  --writing-header-bg: rgba(255,255,255,0.7);
-  --writing-sidebar-bg: rgba(255,255,255,0.5);
-  --writing-card-bg: rgba(255,255,255,0.5);
-  --writing-border: #b0c4de;
-  --writing-accent: #66a6ff;
-  --writing-title: #3a3a3a;
-  --writing-subtitle: #6c757d;
-  --writing-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
-}
-
-body, html, #app {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-  background: var(--writing-bg);
-}
-
+<style scoped>
 .writing-desktop-layout {
   display: flex;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
-  background: var(--writing-bg);
+  background: var(--main-bg);
 }
+
 .chapter-sidebar {
   width: 260px;
-  background: var(--writing-sidebar-bg);
+  background: var(--sidebar-bg);
   box-shadow: 2px 0 12px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   padding: 2.5rem 0 2rem 0;
-  border-right: 2px solid var(--writing-border);
+  border-right: 2px solid var(--border);
   z-index: 10;
   transition: width 0.22s cubic-bezier(.4,2,.6,1);
 }
+
 .chapter-sidebar.collapsed {
   width: 16px;
   min-width: 16px;
   padding: 2.5rem 0 2rem 0;
 }
+
 .sidebar-header {
   display: flex;
   align-items: center;
   gap: 0.7rem;
   padding: 0 1.2rem 1.2rem 1.2rem;
 }
+
 .sidebar-title {
   font-size: 1.1rem;
   font-weight: bold;
-  color: var(--writing-accent);
+  color: var(--accent);
   letter-spacing: 1px;
 }
+
 .chapter-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 0 1.2rem;
 }
+
 .chapter-item {
   display: flex;
   justify-content: space-between;
@@ -487,22 +453,24 @@ body, html, #app {
   padding: 0.7rem 1.1rem;
   border-radius: 0.8rem;
   cursor: pointer;
-  color: var(--writing-title);
+  color: var(--title-color);
   background: none;
   border: none;
   transition: background 0.18s, color 0.18s;
   position: relative;
 }
+
 .chapter-item.active, .chapter-item:hover {
-  background: var(--writing-accent);
+  background: var(--accent);
   color: #fff;
 }
+
 .add-chapter-btn {
   margin-top: 1.2rem;
   padding: 0.6rem 1.2rem;
   border-radius: 0.8rem;
   border: none;
-  background: var(--writing-accent);
+  background: var(--accent);
   color: #fff;
   font-size: 1rem;
   font-weight: 500;
@@ -512,9 +480,11 @@ body, html, #app {
   gap: 0.5rem;
   transition: background 0.18s;
 }
+
 .add-chapter-btn:hover {
-  background: var(--writing-title);
+  background: var(--title-color);
 }
+
 .chapter-title {
   flex: 1;
   font-weight: 500;
@@ -522,29 +492,32 @@ body, html, #app {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .chapter-edit-btn {
   background: none;
   border: none;
-  color: var(--writing-accent);
+  color: var(--accent);
   cursor: pointer;
   margin-left: 0.5rem;
   padding: 0.2rem 0.3rem;
   border-radius: 0.5rem;
   transition: background 0.15s;
 }
+
 .chapter-edit-btn:hover {
-  background: var(--writing-accent);
+  background: var(--accent);
   color: #fff;
 }
+
 .chapter-edit-input {
   flex: 1;
   font-size: 1rem;
-  border: 1.5px solid var(--writing-accent);
+  border: 1.5px solid var(--accent);
   border-radius: 0.5rem;
   padding: 0.3rem 0.7rem;
   outline: none;
-  color: var(--writing-title);
-  background: var(--writing-card-bg);
+  color: var(--title-color);
+  background: var(--card-bg);
   margin-right: 0.5rem;
 }
 
@@ -556,42 +529,49 @@ body, html, #app {
   height: 100vh;
   overflow: auto;
 }
+
 .writing-main-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 2.2rem 3vw 1.2rem 3vw;
-  background: var(--writing-header-bg);
-  border-bottom: 2px solid var(--writing-border);
+  background: var(--header-bg);
+  border-bottom: 2px solid var(--border);
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   position: sticky;
   top: 0;
   z-index: 2;
 }
+
 .header-left {
   display: flex;
   align-items: center;
   gap: 1.5rem;
 }
+
 .novel-info {
   display: flex;
   align-items: baseline;
   gap: 1.2rem;
 }
+
 .novel-title {
   font-size: 1.5rem;
   font-weight: bold;
-  color: var(--writing-title);
+  color: var(--title-color);
   letter-spacing: 1px;
 }
+
 .word-count {
-  color: var(--writing-accent);
+  color: var(--accent);
   font-size: 1.1rem;
 }
+
 .header-right {
   display: flex;
   gap: 1.2rem;
 }
+
 .save-btn, .tool-btn, .fullscreen-btn, .back-btn {
   display: flex;
   align-items: center;
@@ -602,18 +582,20 @@ body, html, #app {
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  background: var(--writing-accent);
+  background: var(--accent);
   color: #fff;
-  box-shadow: var(--writing-shadow);
+  box-shadow: var(--card-shadow);
   transition: background 0.18s, color 0.18s;
 }
+
 .save-btn[disabled] {
   background: #b0b0b0;
   color: #fff;
   cursor: not-allowed;
 }
+
 .save-btn:hover:not([disabled]), .tool-btn:hover, .fullscreen-btn:hover, .back-btn:hover {
-  background: var(--writing-title);
+  background: var(--title-color);
   color: #fff;
 }
 
@@ -621,15 +603,17 @@ body, html, #app {
   flex: 1;
   display: flex;
   align-items: stretch;
-  background: var(--writing-bg);
+  background: var(--main-bg);
   transition: background 0.5s;
 }
+
 .editor-container {
   flex: 1;
   display: flex;
   position: relative;
   height: 100%;
 }
+
 .editor {
   flex: 1;
   width: 100%;
@@ -640,29 +624,31 @@ body, html, #app {
   padding: 2.2rem 2.5rem;
   border: none;
   outline: none;
-  background: var(--writing-card-bg);
-  color: var(--writing-title);
+  background: var(--card-bg);
+  color: var(--title-color);
   border-radius: 1.5rem;
-  box-shadow: var(--writing-shadow);
+  box-shadow: var(--card-shadow);
   resize: none;
   transition: background 0.3s, color 0.3s;
 }
+
 .preview-panel {
   position: absolute;
   top: 0;
   right: 0;
   width: 48%;
   height: 100%;
-  background: var(--writing-card-bg);
+  background: var(--card-bg);
   border-radius: 1.5rem;
-  box-shadow: var(--writing-shadow);
+  box-shadow: var(--card-shadow);
   padding: 2.2rem 2.5rem;
   overflow-y: auto;
   z-index: 2;
-  border-left: 2px solid var(--writing-border);
+  border-left: 2px solid var(--border);
 }
+
 .preview-content {
-  color: var(--writing-title);
+  color: var(--title-color);
   font-size: 1.1rem;
   line-height: 1.8;
 }
@@ -672,21 +658,24 @@ body, html, #app {
   align-items: center;
   gap: 2.5rem;
   padding: 1rem 2.5rem;
-  background: var(--writing-header-bg);
-  border-top: 2px solid var(--writing-border);
-  color: var(--writing-subtitle);
+  background: var(--header-bg);
+  border-top: 2px solid var(--border);
+  color: var(--subtitle-color);
   font-size: 1rem;
   min-height: 48px;
   box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
 }
+
 .writing-status-bar .unsaved {
   color: #dc3545;
   font-weight: bold;
 }
+
 .writing-status-bar .saved {
-  color: var(--writing-accent);
+  color: var(--accent);
   font-weight: bold;
 }
+
 .icon {
   width: 1.2rem;
   height: 1.2rem;
@@ -706,7 +695,7 @@ body, html, #app {
 .sidebar-collapsed-bar {
   width: 6px;
   height: 100%;
-  background: var(--writing-accent);
+  background: var(--accent);
   border-radius: 3px;
   margin: 0 auto;
 }
@@ -714,17 +703,19 @@ body, html, #app {
 .chapter-edit-confirm, .chapter-edit-cancel {
   background: none;
   border: none;
-  color: var(--writing-accent);
+  color: var(--accent);
   cursor: pointer;
   margin-left: 0.2rem;
   padding: 0.2rem 0.3rem;
   border-radius: 0.5rem;
   transition: background 0.15s;
 }
+
 .chapter-edit-confirm:hover {
   background: #4caf50;
   color: #fff;
 }
+
 .chapter-edit-cancel:hover {
   background: #dc3545;
   color: #fff;
