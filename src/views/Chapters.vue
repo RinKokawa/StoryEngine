@@ -394,36 +394,41 @@ const deleteVolume = (volume: Volume) => {
 
 const createChapter = () => {
   if (!newChapter.title.trim()) return
+  
+  let targetVolume: Volume
+  
+  if (newChapter.volumeId) {
+    targetVolume = volumes.value.find(v => v.id === newChapter.volumeId)!
+  } else {
+    // 添加到第一个卷，如果没有卷则创建默认卷
+    if (volumes.value.length === 0) {
+      targetVolume = {
+        id: Date.now().toString(),
+        title: '第一卷',
+        chapters: [],
+        createdAt: new Date()
+      }
+      volumes.value.push(targetVolume)
+    } else {
+      targetVolume = volumes.value[0]
+    }
+  }
+  
   const chapter: Chapter = {
     id: Date.now().toString(),
     title: newChapter.title,
     content: newChapter.content,
-    number: generateChapterNumber(),
-    volumeId: newChapter.volumeId || undefined,
+    number: `第${targetVolume.chapters.length + 1}章`,
+    volumeId: targetVolume.id,
     wordCount: newChapter.content.length,
     lastEdit: new Date(),
     createdAt: new Date()
   }
   
-  if (newChapter.volumeId) {
-    const volume = volumes.value.find(v => v.id === newChapter.volumeId)
-    if (volume) {
-      volume.chapters.push(chapter)
-    }
-  } else {
-    // 添加到第一个卷，如果没有卷则创建默认卷
-    if (volumes.value.length === 0) {
-      const defaultVolume: Volume = {
-        id: Date.now().toString(),
-        title: '第一卷',
-        chapters: [chapter],
-        createdAt: new Date()
-      }
-      volumes.value.push(defaultVolume)
-    } else {
-      volumes.value[0].chapters.push(chapter)
-    }
-  }
+  targetVolume.chapters.push(chapter)
+  
+  // 重新生成所有章节的编号
+  regenerateChapterNumbers()
   
   saveNovel()
   closeChapterModal()
@@ -468,6 +473,9 @@ const updateChapter = () => {
         volumes.value[0].chapters.push(chapter)
       }
     }
+    
+    // 重新生成所有章节的编号
+    regenerateChapterNumbers()
   }
   
   saveNovel()
@@ -491,6 +499,9 @@ const confirmDelete = () => {
     volumes.value.forEach(volume => {
       volume.chapters = volume.chapters.filter(c => c.id !== chapter.id)
     })
+    
+    // 删除章节后重新生成编号
+    regenerateChapterNumbers()
   }
   
   saveNovel()
@@ -501,6 +512,19 @@ const openChapter = (chapter: Chapter) => {
   localStorage.setItem('currentNovelId', currentNovel.value!.id)
   localStorage.setItem('currentChapterId', chapter.id)
   router.push('/writing')
+}
+
+const regenerateChapterNumbers = () => {
+  // 为每个卷内的章节重新生成编号
+  volumes.value.forEach(volume => {
+    volume.chapters.forEach((chapter, index) => {
+      chapter.number = `第${index + 1}章`
+      // 如果章节标题是默认的"第X章"格式，也更新标题
+      if (chapter.title.match(/^第\d+章$/)) {
+        chapter.title = `第${index + 1}章`
+      }
+    })
+  })
 }
 
 const generateChapterNumber = (): string => {

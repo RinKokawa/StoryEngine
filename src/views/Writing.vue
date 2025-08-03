@@ -316,28 +316,34 @@ const loadChapters = (novelId: string) => {
 }
 
 const addChapter = (title?: string) => {
+  // 添加到第一个卷，如果没有卷则创建默认卷
+  let targetVolume: Volume
+  if (volumes.value.length === 0) {
+    targetVolume = {
+      id: Date.now().toString(),
+      title: '第一卷',
+      chapters: [],
+      createdAt: new Date()
+    }
+    volumes.value.push(targetVolume)
+  } else {
+    targetVolume = volumes.value[0]
+  }
+  
   const newChapter: Chapter = {
     id: Date.now().toString(),
-    title: title || `第${volumes.value.flatMap(v => v.chapters).length + 1}章`,
+    title: title || `第${targetVolume.chapters.length + 1}章`,
     content: '',
-    number: generateChapterNumber(),
+    number: `第${targetVolume.chapters.length + 1}章`,
     wordCount: 0,
     lastEdit: new Date(),
     createdAt: new Date()
   }
   
-  // 添加到第一个卷，如果没有卷则创建默认卷
-  if (volumes.value.length === 0) {
-    const defaultVolume: Volume = {
-      id: Date.now().toString(),
-      title: '第一卷',
-      chapters: [newChapter],
-      createdAt: new Date()
-    }
-    volumes.value.push(defaultVolume)
-  } else {
-    volumes.value[0].chapters.push(newChapter)
-  }
+  targetVolume.chapters.push(newChapter)
+  
+  // 重新生成所有章节的编号
+  regenerateChapterNumbers()
   
   saveNovel()
   switchChapter(newChapter.id)
@@ -415,6 +421,19 @@ const updateChapterWordCount = () => {
   }
 }
 
+const regenerateChapterNumbers = () => {
+  // 为每个卷内的章节重新生成编号
+  volumes.value.forEach(volume => {
+    volume.chapters.forEach((chapter, index) => {
+      chapter.number = `第${index + 1}章`
+      // 如果章节标题是默认的"第X章"格式，也更新标题
+      if (chapter.title.match(/^第\d+章$/)) {
+        chapter.title = `第${index + 1}章`
+      }
+    })
+  })
+}
+
 const generateChapterNumber = (): string => {
   const allChapters = volumes.value.flatMap(v => v.chapters)
   return `第${allChapters.length + 1}章`
@@ -446,16 +465,21 @@ const togglePreview = () => {
 }
 
 const exportContent = () => {
-  const allChapters = volumes.value.flatMap(v => v.chapters)
-  const sortedChapters = allChapters.sort((a, b) => {
-    const aNum = parseInt(a.number.match(/\d+/)?.[0] || '0')
-    const bNum = parseInt(b.number.match(/\d+/)?.[0] || '0')
-    return aNum - bNum
-  })
+  // 按卷和章节顺序导出
+  let allContent = ''
   
-  const allContent = sortedChapters
-    .map(chapter => `${chapter.title}\n\n${chapter.content}`)
-    .join('\n\n---\n\n')
+  volumes.value.forEach((volume, volumeIndex) => {
+    if (volumeIndex > 0) {
+      allContent += '\n\n=== 第' + (volumeIndex + 1) + '卷 ===\n\n'
+    }
+    
+    volume.chapters.forEach((chapter, chapterIndex) => {
+      if (chapterIndex > 0) {
+        allContent += '\n\n---\n\n'
+      }
+      allContent += `${chapter.title}\n\n${chapter.content}`
+    })
+  })
   
   const blob = new Blob([allContent], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
@@ -527,6 +551,22 @@ function saveChapterTitle(chapter: Chapter) {
   const newTitle = editingChapterTitle.value.trim()
   if (newTitle && newTitle !== chapter.title) {
     chapter.title = newTitle
+    
+    // 如果用户输入的是默认章节格式（如"第一章"），更新章节编号
+    const match = newTitle.match(/^第(\d+)章$/)
+    if (match) {
+      const chapterIndex = parseInt(match[1]) - 1
+      const allChapters = volumes.value.flatMap(v => v.chapters)
+      const currentIndex = allChapters.findIndex(c => c.id === chapter.id)
+      
+      // 如果章节位置与编号不匹配，重新排序
+      if (currentIndex !== chapterIndex && chapterIndex >= 0 && chapterIndex < allChapters.length) {
+        // 这里可以添加章节重新排序的逻辑
+        // 暂时只是重新生成编号
+        regenerateChapterNumbers()
+      }
+    }
+    
     saveNovel()
   }
   editingChapterId.value = null
