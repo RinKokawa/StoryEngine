@@ -105,8 +105,9 @@
               v-model="content"
               @input="onContentChange"
               @scroll="syncScroll"
+              @keydown="handleEditorKeydown"
               class="editor"
-              placeholder="开始你的创作..."
+              placeholder="开始你的创作... 输入 @ 可以选择角色"
               spellcheck="false"
             ></textarea>
             <div v-if="showPreview" class="preview-panel">
@@ -114,6 +115,33 @@
             </div>
           </div>
         </main>
+
+        <!-- 角色选择下拉框 -->
+        <div v-if="showCharacterSuggestions" class="character-suggestions" :style="suggestionPosition">
+          <div 
+            v-for="(character, index) in filteredCharacters" 
+            :key="character.id"
+            class="character-suggestion-item"
+            :class="{ active: selectedCharacterIndex === index }"
+            @click="selectCharacter(character)"
+            @mouseenter="selectedCharacterIndex = index"
+          >
+            <div class="character-avatar">
+              <img 
+                :src="character.avatar || '/src/assets/default-avatar.svg'" 
+                :alt="character.name"
+                @error="handleImageError"
+              />
+            </div>
+            <div class="character-info">
+              <div class="character-name">{{ character.name }}</div>
+              <div class="character-role">{{ character.role }}</div>
+            </div>
+          </div>
+          <div v-if="filteredCharacters.length === 0" class="no-characters">
+            没有找到角色，请先在角色管理页面添加角色
+          </div>
+        </div>
 
         <!-- 底部状态栏 -->
         <footer class="writing-status-bar">
@@ -144,6 +172,19 @@ import {
   CheckIcon,
   XIcon
 } from 'lucide-vue-next'
+
+interface Character {
+  id: string
+  name: string
+  role: string
+  avatar?: string
+  description: string
+  tags: string[]
+  age?: number
+  gender: string
+  createdAt: Date
+  updatedAt: Date
+}
 
 interface Chapter {
   id: string
@@ -191,6 +232,13 @@ const editingChapterId = ref<string | null>(null)
 const editingChapterTitle = ref('')
 const editInputRef = ref<HTMLInputElement>()
 
+// 角色选择相关状态
+const characters = ref<Character[]>([])
+const showCharacterSuggestions = ref(false)
+const selectedCharacterIndex = ref(0)
+const suggestionPosition = ref({ top: '0px', left: '0px' })
+const characterSearchQuery = ref('')
+
 const wordCount = computed(() => content.value.replace(/\s/g, '').length)
 const totalWordCount = computed(() => {
   const allChapters = volumes.value.flatMap(v => v.chapters)
@@ -202,10 +250,23 @@ const currentChapterTitle = computed(() => {
   return allChapters.find(c => c.id === currentChapter.value)?.title || ''
 })
 
+// 过滤角色列表
+const filteredCharacters = computed(() => {
+  if (!characterSearchQuery.value) {
+    return characters.value
+  }
+  const query = characterSearchQuery.value.toLowerCase()
+  return characters.value.filter(char => 
+    char.name.toLowerCase().includes(query) ||
+    char.role.toLowerCase().includes(query) ||
+    char.tags.some(tag => tag.toLowerCase().includes(query))
+  )
+})
 
 onMounted(() => {
   loadCurrentNovel()
   loadTodayStats()
+  loadCharacters()
   document.addEventListener('keydown', handleKeyboard)
   setInterval(autoSave, 30000)
 })
@@ -216,6 +277,13 @@ watch(content, () => {
   hasUnsavedChanges.value = true
   updateChapterWordCount()
 })
+
+const loadCharacters = () => {
+  const saved = localStorage.getItem('characters')
+  if (saved) {
+    characters.value = JSON.parse(saved)
+  }
+}
 
 const loadCurrentNovel = () => {
   const novelId = localStorage.getItem('currentNovelId')
@@ -490,6 +558,103 @@ const handleKeyboard = (e: KeyboardEvent) => {
     e.preventDefault()
     toggleFullscreen()
   }
+}
+
+// 处理编辑器键盘事件
+const handleEditorKeydown = (e: KeyboardEvent) => {
+  if (showCharacterSuggestions.value) {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        selectedCharacterIndex.value = Math.min(selectedCharacterIndex.value + 1, filteredCharacters.value.length - 1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        selectedCharacterIndex.value = Math.max(selectedCharacterIndex.value - 1, 0)
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (filteredCharacters.value[selectedCharacterIndex.value]) {
+          selectCharacter(filteredCharacters.value[selectedCharacterIndex.value])
+        }
+        break
+      case 'Escape':
+        e.preventDefault()
+        hideCharacterSuggestions()
+        break
+    }
+  } else if (e.key === '@') {
+    // 检测到 @ 符号，显示角色建议
+    nextTick(() => {
+      showCharacterSuggestionsAtCursor()
+    })
+  }
+}
+
+// 在光标位置显示角色建议
+const showCharacterSuggestionsAtCursor = () => {
+  if (!editorRef.value) return
+  
+  const textarea = editorRef.value
+  const rect = textarea.getBoundingClientRect()
+  const textBeforeCursor = content.value.substring(0, textarea.selectionStart)
+  const lines = textBeforeCursor.split('\n')
+  const currentLine = lines[lines.length - 1]
+  
+  // 计算光标位置
+  const lineHeight = 20 // 估算行高
+  const charWidth = 10 // 估算字符宽度
+  const top = rect.top + (lines.length - 1) * lineHeight
+  const left = rect.left + (currentLine.length * charWidth)
+  
+  suggestionPosition.value = {
+    top: `${top}px`,
+    left: `${left}px`
+  }
+  
+  showCharacterSuggestions.value = true
+  selectedCharacterIndex.value = 0
+  characterSearchQuery.value = ''
+}
+
+// 选择角色
+const selectCharacter = (character: Character) => {
+  if (!editorRef.value) return
+  
+  const textarea = editorRef.value
+  const cursorPos = textarea.selectionStart
+  const textBeforeCursor = content.value.substring(0, cursorPos)
+  const textAfterCursor = content.value.substring(cursorPos)
+  
+  // 找到 @ 符号的位置
+  const atIndex = textBeforeCursor.lastIndexOf('@')
+  if (atIndex === -1) return
+  
+  // 替换 @ 为角色名称
+  const newText = textBeforeCursor.substring(0, atIndex) + character.name + textAfterCursor
+  content.value = newText
+  
+  // 设置光标位置到角色名称后
+  const newCursorPos = atIndex + character.name.length
+  nextTick(() => {
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+    textarea.focus()
+  })
+  
+  hideCharacterSuggestions()
+}
+
+// 隐藏角色建议
+const hideCharacterSuggestions = () => {
+  showCharacterSuggestions.value = false
+  selectedCharacterIndex.value = 0
+  characterSearchQuery.value = ''
+}
+
+// 处理图片加载错误
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.src = '/src/assets/default-avatar.svg'
 }
 
 function startEditChapter(chapter: Chapter) {
@@ -835,6 +1000,81 @@ const formatWordCount = (count: number): string => {
   color: var(--title-color);
   font-size: 1.1rem;
   line-height: 1.8;
+}
+
+/* 角色建议下拉框样式 */
+.character-suggestions {
+  position: fixed;
+  background: var(--modal-bg);
+  border-radius: 1rem;
+  box-shadow: var(--modal-shadow);
+  border: 2px solid var(--border);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  min-width: 250px;
+  backdrop-filter: blur(12px);
+}
+
+.character-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid var(--border);
+}
+
+.character-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.character-suggestion-item:hover,
+.character-suggestion-item.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.character-suggestion-item .character-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
+.character-suggestion-item .character-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.character-suggestion-item .character-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.character-suggestion-item .character-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-suggestion-item .character-role {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.no-characters {
+  padding: 1rem;
+  text-align: center;
+  color: var(--subtitle-color);
+  font-size: 0.9rem;
 }
 
 .writing-status-bar {
