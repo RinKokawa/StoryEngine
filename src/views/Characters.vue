@@ -44,7 +44,7 @@
         >
           <div class="character-avatar">
             <img 
-              :src="character.avatar || '/src/assets/default-avatar.svg'" 
+              :src="character.avatar || '/avatar_default.png'" 
               :alt="character.name"
               @error="handleImageError"
             />
@@ -407,7 +407,7 @@ const removeTag = (index: number) => {
 
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
-  img.src = '/src/assets/default-avatar.svg'
+  img.src = '/avatar_default.png'
 }
 
 // 生命周期
