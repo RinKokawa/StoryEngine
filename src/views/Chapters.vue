@@ -247,7 +247,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Layout from '../components/Layout.vue'
 import { 
@@ -512,10 +512,7 @@ const regenerateChapterNumbers = () => {
   })
 }
 
-const generateChapterNumber = (): string => {
-  const allChapters = volumes.value.flatMap(v => v.chapters)
-  return `第${allChapters.length + 1}章`
-}
+
 
 const saveNovel = () => {
   if (!currentNovel.value) return

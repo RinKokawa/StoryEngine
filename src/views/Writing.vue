@@ -300,10 +300,10 @@ const loadCurrentNovel = () => {
     return
   }
 
-  loadChapters(novelId)
+  loadChapters()
 }
 
-const loadChapters = (novelId: string) => {
+const loadChapters = () => {
   // 从小说数据中加载卷和章节
   if (currentNovel.value && currentNovel.value.volumes) {
     volumes.value = currentNovel.value.volumes.map((v: any) => ({
@@ -457,10 +457,7 @@ const regenerateChapterNumbers = () => {
   })
 }
 
-const generateChapterNumber = (): string => {
-  const allChapters = volumes.value.flatMap(v => v.chapters)
-  return `第${allChapters.length + 1}章`
-}
+
 
 const autoSave = () => {
   if (hasUnsavedChanges.value) {
