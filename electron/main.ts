@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import os from 'node:os'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -22,16 +23,30 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
+// 设置缓存目录到临时文件夹，避免权限问题
+const cacheDir = path.join(os.tmpdir(), 'storyengine-cache')
+app.setPath('userData', cacheDir)
+
+// 禁用硬件加速以避免 GPU 缓存问题
+app.disableHardwareAcceleration()
+
+// 设置命令行参数以解决缓存问题
+app.commandLine.appendSwitch('--disable-gpu-sandbox')
+app.commandLine.appendSwitch('--disable-software-rasterizer')
+app.commandLine.appendSwitch('--disable-background-timer-throttling')
+
 let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
+    width: 1200,
+    height: 800,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
-    fullscreen: true, // 启动时全屏
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: true
     },
   })
 
