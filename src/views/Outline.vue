@@ -2,9 +2,11 @@
   <Layout>
     <header class="main-header">
       <div class="header-title">
-        <span>大纲管理</span>
-        <span v-if="currentNovelTitle" class="novel-subtitle">{{ currentNovelTitle }}</span>
-        <span v-else class="no-novel-warning">⚠️ 请先在首页选择一个小说项目</span>
+        <span v-if="currentNovelTitle">《{{ currentNovelTitle }}》大纲管理</span>
+        <span v-else>
+          <span>大纲管理</span>
+          <span class="no-novel-warning">⚠️ 请先在首页选择一个小说项目</span>
+        </span>
       </div>
       <div class="header-actions">
         <button class="create-btn">

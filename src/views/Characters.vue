@@ -2,9 +2,11 @@
   <Layout>
     <header class="main-header">
       <div class="header-title">
-        <span>角色管理</span>
-        <span v-if="currentNovelTitle" class="novel-subtitle">{{ currentNovelTitle }}</span>
-        <span v-else class="no-novel-warning">⚠️ 请先选择一个小说项目</span>
+        <span v-if="currentNovelTitle">《{{ currentNovelTitle }}》角色管理</span>
+        <span v-else>
+          <span>角色管理</span>
+          <span class="no-novel-warning">⚠️ 请先选择一个小说项目</span>
+        </span>
       </div>
       <div class="header-actions">
         <button @click="showAddDialog = true" class="create-btn">

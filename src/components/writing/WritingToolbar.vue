@@ -6,7 +6,7 @@
         <span class="btn-text">返回</span>
       </button>
       <div class="novel-info">
-        <h1 class="novel-title">{{ novelTitle }}</h1>
+        <h1 class="novel-title">《{{ novelTitle }}》写作工具</h1>
         <span class="word-count">{{ formatWordCount(wordCount) }} 字</span>
       </div>
     </div>
