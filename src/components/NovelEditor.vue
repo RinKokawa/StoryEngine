@@ -29,6 +29,8 @@
         placeholder="开始你的创作之旅..."
         @input="handleContentChange"
         @scroll="handleScroll"
+        @contextmenu="handleContextMenu"
+        @click="hideContextMenu"
       ></textarea>
       
       <!-- 行号显示 -->
@@ -40,6 +42,51 @@
         >
           {{ n }}
         </div>
+      </div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div 
+      v-if="contextMenu.visible" 
+      class="context-menu"
+      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+      @click.stop
+    >
+      <div class="menu-item" @click="copyText">
+        <span class="menu-icon">📋</span>
+        复制
+        <span class="menu-shortcut">Ctrl+C</span>
+      </div>
+      <div class="menu-item" @click="cutText">
+        <span class="menu-icon">✂️</span>
+        剪切
+        <span class="menu-shortcut">Ctrl+X</span>
+      </div>
+      <div class="menu-item" @click="pasteText">
+        <span class="menu-icon">📄</span>
+        粘贴
+        <span class="menu-shortcut">Ctrl+V</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" @click="selectAll">
+        <span class="menu-icon">🔘</span>
+        全选
+        <span class="menu-shortcut">Ctrl+A</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" @click="findReplace">
+        <span class="menu-icon">🔍</span>
+        查找替换
+        <span class="menu-shortcut">Ctrl+F</span>
+      </div>
+      <div class="menu-item" @click="insertDateTime">
+        <span class="menu-icon">📅</span>
+        插入日期时间
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" @click="wordCountDetails">
+        <span class="menu-icon">📊</span>
+        字数统计
       </div>
     </div>
 
@@ -70,6 +117,11 @@ export default {
     const currentColumn = ref(1)
     const editor = ref(null)
     const lineNumbers = ref(null)
+    const contextMenu = ref({
+      visible: false,
+      x: 0,
+      y: 0
+    })
 
     // 计算字数（去除空格和换行）
     const wordCount = computed(() => {
@@ -111,6 +163,158 @@ export default {
       if (editor.value && lineNumbers.value) {
         lineNumbers.value.scrollTop = editor.value.scrollTop
       }
+    }
+
+    // 处理右键菜单
+    const handleContextMenu = (event) => {
+      event.preventDefault()
+      contextMenu.value.visible = true
+      contextMenu.value.x = event.clientX
+      contextMenu.value.y = event.clientY
+    }
+
+    // 隐藏右键菜单
+    const hideContextMenu = () => {
+      contextMenu.value.visible = false
+    }
+
+    // 复制文本
+    const copyText = async () => {
+      if (editor.value) {
+        const selectedText = editor.value.value.substring(
+          editor.value.selectionStart,
+          editor.value.selectionEnd
+        )
+        if (selectedText) {
+          try {
+            await navigator.clipboard.writeText(selectedText)
+          } catch (err) {
+            console.error('复制失败:', err)
+          }
+        }
+      }
+      hideContextMenu()
+    }
+
+    // 剪切文本
+    const cutText = async () => {
+      if (editor.value) {
+        const start = editor.value.selectionStart
+        const end = editor.value.selectionEnd
+        const selectedText = editor.value.value.substring(start, end)
+        
+        if (selectedText) {
+          try {
+            await navigator.clipboard.writeText(selectedText)
+            // 删除选中的文本
+            content.value = content.value.substring(0, start) + content.value.substring(end)
+            // 设置光标位置
+            nextTick(() => {
+              editor.value.setSelectionRange(start, start)
+              editor.value.focus()
+            })
+          } catch (err) {
+            console.error('剪切失败:', err)
+          }
+        }
+      }
+      hideContextMenu()
+    }
+
+    // 粘贴文本
+    const pasteText = async () => {
+      if (editor.value) {
+        try {
+          const clipboardText = await navigator.clipboard.readText()
+          const start = editor.value.selectionStart
+          const end = editor.value.selectionEnd
+          
+          // 在光标位置插入文本
+          content.value = content.value.substring(0, start) + clipboardText + content.value.substring(end)
+          
+          // 设置光标位置到插入文本的末尾
+          nextTick(() => {
+            const newPosition = start + clipboardText.length
+            editor.value.setSelectionRange(newPosition, newPosition)
+            editor.value.focus()
+          })
+        } catch (err) {
+          console.error('粘贴失败:', err)
+        }
+      }
+      hideContextMenu()
+    }
+
+    // 全选
+    const selectAll = () => {
+      if (editor.value) {
+        editor.value.select()
+        editor.value.focus()
+      }
+      hideContextMenu()
+    }
+
+    // 查找替换（简单实现）
+    const findReplace = () => {
+      const searchText = prompt('请输入要查找的文本:')
+      if (searchText) {
+        const replaceText = prompt('请输入替换文本（留空则只查找）:')
+        if (replaceText !== null) {
+          if (replaceText === '') {
+            // 只查找
+            const index = content.value.indexOf(searchText)
+            if (index !== -1) {
+              editor.value.setSelectionRange(index, index + searchText.length)
+              editor.value.focus()
+            } else {
+              alert('未找到指定文本')
+            }
+          } else {
+            // 替换所有
+            content.value = content.value.replaceAll(searchText, replaceText)
+          }
+        }
+      }
+      hideContextMenu()
+    }
+
+    // 插入日期时间
+    const insertDateTime = () => {
+      if (editor.value) {
+        const now = new Date()
+        const dateTimeString = now.toLocaleString('zh-CN')
+        const start = editor.value.selectionStart
+        
+        // 在光标位置插入日期时间
+        content.value = content.value.substring(0, start) + dateTimeString + content.value.substring(start)
+        
+        // 设置光标位置到插入文本的末尾
+        nextTick(() => {
+          const newPosition = start + dateTimeString.length
+          editor.value.setSelectionRange(newPosition, newPosition)
+          editor.value.focus()
+        })
+      }
+      hideContextMenu()
+    }
+
+    // 显示字数统计详情
+    const wordCountDetails = () => {
+      const text = content.value
+      const characters = text.length
+      const charactersNoSpaces = text.replace(/\s/g, '').length
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0
+      const lines = text.split('\n').length
+      const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim()).length
+      
+      alert(`字数统计详情：
+字符数（含空格）: ${characters}
+字符数（不含空格）: ${charactersNoSpaces}
+词数: ${words}
+行数: ${lines}
+段落数: ${paragraphs}`)
+      
+      hideContextMenu()
     }
 
     // 保存小说
@@ -156,16 +360,28 @@ export default {
 
     // 键盘快捷键
     const handleKeydown = (event) => {
+      // 隐藏右键菜单
+      if (contextMenu.value.visible) {
+        hideContextMenu()
+      }
+      
       // Ctrl+S 保存
       if (event.ctrlKey && event.key === 's') {
         event.preventDefault()
         saveNovel()
+      }
+      // Ctrl+F 查找
+      else if (event.ctrlKey && event.key === 'f') {
+        event.preventDefault()
+        findReplace()
       }
     }
 
     onMounted(() => {
       // 添加键盘事件监听
       document.addEventListener('keydown', handleKeydown)
+      // 添加点击事件监听，用于隐藏右键菜单
+      document.addEventListener('click', hideContextMenu)
       
       // 初始化光标位置
       nextTick(() => {
@@ -184,9 +400,19 @@ export default {
       lineCount,
       editor,
       lineNumbers,
+      contextMenu,
       handleContentChange,
       handleTitleChange,
       handleScroll,
+      handleContextMenu,
+      hideContextMenu,
+      copyText,
+      cutText,
+      pasteText,
+      selectAll,
+      findReplace,
+      insertDateTime,
+      wordCountDetails,
       saveNovel,
       updateCursorPosition
     }
@@ -328,6 +554,51 @@ export default {
 .status-left {
   display: flex;
   gap: 20px;
+}
+
+/* 右键菜单样式 */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 180px;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.menu-item:hover {
+  background: #f5f5f5;
+}
+
+.menu-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.menu-shortcut {
+  margin-left: auto;
+  color: #999;
+  font-size: 12px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
 }
 
 /* 滚动条样式 */
