@@ -1,7 +1,11 @@
 <template>
   <Layout>
     <header class="main-header">
-      <div class="header-title">角色管理</div>
+      <div class="header-title">
+        <span>角色管理</span>
+        <span v-if="currentNovelTitle" class="novel-subtitle">{{ currentNovelTitle }}</span>
+        <span v-else class="no-novel-warning">⚠️ 请先选择一个小说项目</span>
+      </div>
       <div class="header-actions">
         <button @click="showAddDialog = true" class="create-btn">
           <Plus class="icon" />
@@ -232,6 +236,20 @@ interface Character {
   createdAt: Date
   updatedAt: Date
 }
+
+// 当前小说信息
+const currentNovelTitle = computed(() => {
+  const currentNovelId = localStorage.getItem('currentNovelId')
+  if (!currentNovelId) return null
+  
+  const stored = localStorage.getItem('novels')
+  if (stored) {
+    const novels = JSON.parse(stored)
+    const novel = novels.find((n: any) => n.id === currentNovelId)
+    return novel?.title || null
+  }
+  return null
+})
 
 // 响应式数据
 const characters = ref<Character[]>([])

@@ -1,7 +1,11 @@
 <template>
   <Layout>
     <header class="main-header">
-      <div class="header-title">世界地图</div>
+      <div class="header-title">
+        <span>世界地图</span>
+        <span v-if="currentNovelTitle" class="novel-subtitle">{{ currentNovelTitle }}</span>
+        <span v-else class="no-novel-warning">⚠️ 请先在首页选择一个小说项目</span>
+      </div>
       <div class="header-actions">
         <button class="create-btn">
           <PlusIcon class="icon" /> 新建地图
@@ -52,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import Layout from '../components/Layout.vue'
 import { 
   PlusIcon, 
@@ -60,6 +65,20 @@ import {
   TrashIcon,
   MapIcon
 } from 'lucide-vue-next'
+
+// 当前小说信息
+const currentNovelTitle = computed(() => {
+  const currentNovelId = localStorage.getItem('currentNovelId')
+  if (!currentNovelId) return null
+  
+  const stored = localStorage.getItem('novels')
+  if (stored) {
+    const novels = JSON.parse(stored)
+    const novel = novels.find((n: any) => n.id === currentNovelId)
+    return novel?.title || null
+  }
+  return null
+})
 </script>
 
 <style scoped>

@@ -10,7 +10,8 @@ const routes = [
   {
     path: '/writing',
     name: 'Writing',
-    component: () => import('../views/Writing.vue')
+    component: () => import('../views/Writing.vue'),
+    meta: { requiresNovel: true }
   },
   {
     path: '/chapters/:id',
@@ -18,19 +19,22 @@ const routes = [
     component: () => import('../views/Chapters.vue')
   },
   {
-    path: '/characters',
+    path: '/characters/:id?',
     name: 'Characters',
-    component: () => import('../views/Characters.vue')
+    component: () => import('../views/Characters.vue'),
+    meta: { requiresNovel: true }
   },
   {
-    path: '/outline',
+    path: '/outline/:id?',
     name: 'Outline',
-    component: () => import('../views/Outline.vue')
+    component: () => import('../views/Outline.vue'),
+    meta: { requiresNovel: true }
   },
   {
-    path: '/worldmap',
+    path: '/worldmap/:id?',
     name: 'WorldMap',
-    component: () => import('../views/WorldMap.vue')
+    component: () => import('../views/WorldMap.vue'),
+    meta: { requiresNovel: true }
   },
   {
     path: '/ai-test',
@@ -42,6 +46,19 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes
+})
+
+// 路由守卫：检查是否选择了小说
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresNovel) {
+    const currentNovelId = localStorage.getItem('currentNovelId')
+    if (!currentNovelId) {
+      // 如果没有选择小说，跳转到首页
+      next('/')
+      return
+    }
+  }
+  next()
 })
 
 export default router 
