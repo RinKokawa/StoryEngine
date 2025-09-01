@@ -1,16 +1,31 @@
 <template>
   <div id="app">
-    <NovelEditor />
+    <Sidebar @sidebar-toggle="handleSidebarToggle" />
+    <div class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+      <NovelEditor />
+    </div>
   </div>
 </template>
 
 <script>
 import NovelEditor from './components/NovelEditor.vue'
+import Sidebar from './components/Sidebar.vue'
 
 export default {
   name: 'App',
   components: {
-    NovelEditor
+    NovelEditor,
+    Sidebar
+  },
+  data() {
+    return {
+      sidebarCollapsed: false
+    }
+  },
+  methods: {
+    handleSidebarToggle(collapsed) {
+      this.sidebarCollapsed = collapsed
+    }
   }
 }
 </script>
@@ -25,6 +40,21 @@ export default {
 #app {
   height: 100vh;
   overflow: hidden;
+  display: flex;
+}
+
+.main-content {
+  margin-left: 250px;
+  flex: 1;
+  width: calc(100vw - 250px);
+  height: 100vh;
+  overflow: hidden;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: 60px;
+  width: calc(100vw - 60px);
 }
 
 body {

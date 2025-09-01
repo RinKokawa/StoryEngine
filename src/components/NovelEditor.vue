@@ -433,6 +433,7 @@ export default {
 .novel-editor {
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100vh;
   background: #f5f5f5;
   font-family: 'Microsoft YaHei', sans-serif;
