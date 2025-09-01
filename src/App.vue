@@ -1,30 +1,56 @@
 <template>
   <div id="app">
-    <Sidebar @sidebar-toggle="handleSidebarToggle" />
+    <Sidebar 
+      :currentPage="currentPage"
+      @sidebar-toggle="handleSidebarToggle" 
+      @navigate="handleNavigation"
+    />
     <div class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-      <NovelEditor />
+      <Dashboard v-if="currentPage === 'dashboard'" @navigate="handleNavigation" />
+      <NovelEditor v-else-if="currentPage === 'editor'" />
+      <div v-else class="page-placeholder">
+        <h2>{{ getPageTitle() }}</h2>
+        <p>此页面正在开发中...</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import NovelEditor from './components/NovelEditor.vue'
+import Dashboard from './components/Dashboard.vue'
 import Sidebar from './components/Sidebar.vue'
 
 export default {
   name: 'App',
   components: {
     NovelEditor,
+    Dashboard,
     Sidebar
   },
   data() {
     return {
-      sidebarCollapsed: false
+      sidebarCollapsed: false,
+      currentPage: 'dashboard'
     }
   },
   methods: {
     handleSidebarToggle(collapsed) {
       this.sidebarCollapsed = collapsed
+    },
+    handleNavigation(page, params = {}) {
+      this.currentPage = page
+      console.log('导航到:', page, params)
+    },
+    getPageTitle() {
+      const titles = {
+        dashboard: '仪表盘',
+        editor: '故事编辑',
+        characters: '角色管理',
+        worldview: '世界设定',
+        settings: '设置'
+      }
+      return titles[this.currentPage] || '未知页面'
     }
   }
 }
@@ -48,13 +74,27 @@ export default {
   flex: 1;
   width: calc(100vw - 250px);
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
   transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
 .main-content.sidebar-collapsed {
   margin-left: 60px;
   width: calc(100vw - 60px);
+}
+
+.page-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #666;
+}
+
+.page-placeholder h2 {
+  margin-bottom: 10px;
+  color: #2c3e50;
 }
 
 body {

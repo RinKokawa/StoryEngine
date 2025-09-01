@@ -10,31 +10,31 @@
     <nav class="sidebar-nav">
       <ul>
         <li class="nav-item">
-          <a href="#" class="nav-link active">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'dashboard' }" @click="navigate('dashboard')">
+            <i class="icon">📊</i>
+            <span v-show="!isCollapsed">仪表盘</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'editor' }" @click="navigate('editor')">
             <i class="icon">📖</i>
-            <span v-show="!isCollapsed">故事管理</span>
+            <span v-show="!isCollapsed">故事编辑</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
-            <i class="icon">✏️</i>
-            <span v-show="!isCollapsed">创建故事</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#" class="nav-link" @click="navigate('characters')">
             <i class="icon">👥</i>
             <span v-show="!isCollapsed">角色管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#" class="nav-link" @click="navigate('worldview')">
             <i class="icon">🌍</i>
             <span v-show="!isCollapsed">世界设定</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#" class="nav-link" @click="navigate('settings')">
             <i class="icon">⚙️</i>
             <span v-show="!isCollapsed">设置</span>
           </a>
@@ -47,6 +47,12 @@
 <script>
 export default {
   name: 'Sidebar',
+  props: {
+    currentPage: {
+      type: String,
+      default: 'dashboard'
+    }
+  },
   data() {
     return {
       isCollapsed: false
@@ -56,6 +62,9 @@ export default {
     toggleSidebar() {
       this.isCollapsed = !this.isCollapsed
       this.$emit('sidebar-toggle', this.isCollapsed)
+    },
+    navigate(page) {
+      this.$emit('navigate', page)
     }
   }
 }
