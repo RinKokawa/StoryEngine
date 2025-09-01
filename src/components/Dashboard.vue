@@ -54,6 +54,52 @@
             <h3>写作日历</h3>
           </div>
           <div class="card-content">
+            <!-- 年月选择器 -->
+            <div class="calendar-header">
+              <button class="nav-btn" @click="previousMonth" title="上一月">
+                <i class="icon">‹</i>
+              </button>
+              <div class="date-selector" @click.stop="toggleDatePicker">
+                <span class="current-date">{{ currentYearMonth }}</span>
+                <i class="icon dropdown-icon" :class="{ 'rotated': showDatePicker }">▼</i>
+                
+                <!-- 日期选择器下拉 -->
+                <div v-if="showDatePicker" class="date-picker-dropdown" @click.stop>
+                  <div class="year-month-selector">
+                    <div class="year-selector">
+                      <label>年份</label>
+                      <select v-model="selectedYear" @change="updateCalendar">
+                        <option v-for="year in availableYears" :key="year" :value="year">
+                          {{ year }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="month-selector">
+                      <label>月份</label>
+                      <select v-model="selectedMonth" @change="updateCalendar">
+                        <option v-for="(month, index) in monthNames" :key="index" :value="index">
+                          {{ month }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="date-picker-actions">
+                    <button class="today-btn" @click="goToToday">今天</button>
+                    <button class="close-btn" @click.stop="showDatePicker = false">关闭</button>
+                  </div>
+                </div>
+              </div>
+              <button class="nav-btn" @click="nextMonth" title="下一月">
+                <i class="icon">›</i>
+              </button>
+            </div>
+
+            <!-- 星期标题 -->
+            <div class="weekdays">
+              <div v-for="day in weekdayNames" :key="day" class="weekday">{{ day }}</div>
+            </div>
+
+            <!-- 日历网格 -->
             <div class="calendar-grid">
               <div 
                 v-for="day in calendarDays" 
@@ -62,7 +108,8 @@
                 :class="{ 
                   'has-writing': day.wordCount > 0,
                   'today': day.isToday,
-                  'future': day.isFuture
+                  'future': day.isFuture,
+                  'other-month': day.isOtherMonth
                 }"
                 :title="`${day.date}: ${day.wordCount} 字`"
               >
@@ -110,7 +157,12 @@ export default {
       targetWords: 50000,
       todayWords: 0,
       weekWords: 0,
-      writingStats: null
+      writingStats: null,
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth(),
+      showDatePicker: false,
+      monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+      weekdayNames: ['日', '一', '二', '三', '四', '五', '六']
     }
   },
   mounted() {
@@ -130,21 +182,36 @@ export default {
     progressPercentage() {
       return Math.min((this.totalWords / this.targetWords) * 100, 100)
     },
-    activeEntries() {
-      return this.activeTab === 'characters' ? this.characters : this.worldview
+    currentYearMonth() {
+      return `${this.selectedYear}年${this.monthNames[this.selectedMonth]}`
+    },
+    availableYears() {
+      const currentYear = new Date().getFullYear()
+      const years = []
+      for (let i = currentYear - 5; i <= currentYear + 1; i++) {
+        years.push(i)
+      }
+      return years
     },
     calendarDays() {
       const days = []
       const today = new Date()
-      const currentMonth = today.getMonth()
-      const currentYear = today.getFullYear()
+      const firstDay = new Date(this.selectedYear, this.selectedMonth, 1)
+      const lastDay = new Date(this.selectedYear, this.selectedMonth + 1, 0)
+      const startDate = new Date(firstDay)
       
-      // 生成当月日历数据
-      for (let i = 1; i <= 30; i++) {
-        const date = new Date(currentYear, currentMonth, i)
-        const isToday = i === today.getDate()
-        const isFuture = i > today.getDate()
-        const dateString = date.toDateString()
+      // 调整到周日开始
+      startDate.setDate(startDate.getDate() - startDate.getDay())
+      
+      // 生成6周的日历（42天）
+      for (let i = 0; i < 42; i++) {
+        const currentDate = new Date(startDate)
+        currentDate.setDate(startDate.getDate() + i)
+        
+        const isCurrentMonth = currentDate.getMonth() === this.selectedMonth
+        const isToday = currentDate.toDateString() === today.toDateString()
+        const isFuture = currentDate > today
+        const dateString = currentDate.toDateString()
         
         // 从写作统计中获取当日字数
         const dayWords = this.writingStats && this.writingStats.dailyWords 
@@ -152,11 +219,12 @@ export default {
           : 0
         
         days.push({
-          day: i,
-          date: date.toLocaleDateString(),
+          day: currentDate.getDate(),
+          date: currentDate.toLocaleDateString(),
           wordCount: dayWords,
           isToday,
-          isFuture
+          isFuture,
+          isOtherMonth: !isCurrentMonth
         })
       }
       
@@ -192,6 +260,59 @@ export default {
           this.loadProjectStats(projectId)
         }
       }
+    },
+    previousMonth() {
+      if (this.selectedMonth === 0) {
+        this.selectedMonth = 11
+        this.selectedYear--
+      } else {
+        this.selectedMonth--
+      }
+    },
+    nextMonth() {
+      if (this.selectedMonth === 11) {
+        this.selectedMonth = 0
+        this.selectedYear++
+      } else {
+        this.selectedMonth++
+      }
+    },
+    toggleDatePicker() {
+      console.log('切换年月选择器:', !this.showDatePicker)
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      console.log('切换年月选择器:', !this.showDatePicker)
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      console.log('切换年月选择器:', !this.showDatePicker)
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      console.log('切换年月选择器:', !this.showDatePicker)
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      this.showDatePicker = !this.showDatePicker
+    },
+    toggleDatePicker() {
+      this.showDatePicker = !this.showDatePicker
+    },
+    updateCalendar() {
+      this.showDatePicker = false
+    },
+    goToToday() {
+      const today = new Date()
+      this.selectedYear = today.getFullYear()
+      this.selectedMonth = today.getMonth()
+      this.showDatePicker = false
     },
     createNewChapter() {
       this.$emit('navigate', 'editor')
@@ -275,6 +396,14 @@ export default {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   overflow: hidden;
+}
+
+.card.writing-calendar {
+  overflow: hidden;
+}
+
+.writing-calendar.card {
+  overflow: visible;
 }
 
 .card-header {
@@ -425,6 +554,162 @@ export default {
 }
 
 /* 写作日历 */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding: 0 5px;
+  position: relative;
+}
+
+.nav-btn {
+  background: none;
+  border: 1px solid #ddd;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.nav-btn:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.date-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+  position: relative;
+}
+
+.date-selector:hover {
+  background: #f8f9fa;
+}
+
+.current-date {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.dropdown-icon {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.3s;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.date-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  padding: 15px;
+  margin-top: 5px;
+  min-width: 250px;
+  width: 280px;
+  max-height: 200px;
+}
+
+.year-month-selector {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.year-selector,
+.month-selector {
+  flex: 1;
+}
+
+.year-selector label,
+.month-selector label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.year-selector select,
+.month-selector select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.date-picker-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.today-btn,
+.close-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+.today-btn {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.today-btn:hover {
+  background: #0056b3;
+}
+
+.close-btn {
+  background: #f8f9fa;
+  color: #666;
+}
+
+.close-btn:hover {
+  background: #e9ecef;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  padding: 8px 4px;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -442,6 +727,7 @@ export default {
   font-size: 12px;
   cursor: pointer;
   transition: all 0.3s;
+  position: relative;
 }
 
 .calendar-day.has-writing {
@@ -458,6 +744,15 @@ export default {
   color: #ccc;
 }
 
+.calendar-day.other-month {
+  color: #ccc;
+  background: #fafafa;
+}
+
+.calendar-day.other-month.has-writing {
+  background: #f0f8ff;
+}
+
 .day-number {
   font-weight: 500;
 }
@@ -465,6 +760,19 @@ export default {
 .day-words {
   font-size: 10px;
   color: #666;
+  margin-top: 2px;
+}
+
+.calendar-day.today .day-words {
+  color: rgba(255,255,255,0.8);
+}
+
+.writing-calendar {
+  position: relative;
+}
+
+.writing-calendar.card {
+  overflow: visible;
 }
 
 /* 待办任务 */
