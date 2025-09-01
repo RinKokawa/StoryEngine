@@ -11,9 +11,6 @@
         />
       </div>
       <div class="toolbar-right">
-        <div class="word-count">
-          字数: {{ wordCount }}
-        </div>
         <button @click="saveNovel" class="save-btn" :disabled="saving">
           {{ saving ? '保存中...' : '保存' }}
         </button>
@@ -64,6 +61,7 @@
       <div class="status-left">
         <span>行: {{ currentLine }}</span>
         <span>列: {{ currentColumn }}</span>
+        <span>字数: {{ wordCount }}</span>
       </div>
       <div class="status-right">
         <span>最后保存: {{ lastSaveTime }}</span>
