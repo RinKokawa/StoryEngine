@@ -8,7 +8,7 @@
     <div class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <Dashboard v-if="currentPage === 'dashboard'" @navigate="handleNavigation" />
       <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
-      <NovelEditor v-else-if="currentPage === 'editor'" />
+      <NovelEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <div v-else class="page-placeholder">
         <h2>{{ getPageTitle() }}</h2>
         <p>此页面正在开发中...</p>

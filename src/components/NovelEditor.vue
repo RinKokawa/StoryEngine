@@ -3,12 +3,23 @@
     <!-- 顶部工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <input 
-          v-model="novelTitle" 
-          class="title-input" 
-          placeholder="请输入小说标题..."
-          @input="handleTitleChange"
-        />
+        <select 
+          v-model="selectedProjectId" 
+          class="project-selector"
+          @change="handleProjectChange"
+        >
+          <option value="" disabled>选择项目</option>
+          <option 
+            v-for="project in availableProjects" 
+            :key="project.id" 
+            :value="project.id"
+          >
+            {{ project.name }}
+          </option>
+        </select>
+        <span v-if="currentProjectName" class="current-project">
+          当前项目：{{ currentProjectName }}
+        </span>
       </div>
       <div class="toolbar-right">
         <button @click="saveNovel" class="save-btn" :disabled="saving">
@@ -72,7 +83,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import ContextMenu from './ContextMenu.vue'
 
 export default {
@@ -80,8 +91,19 @@ export default {
   components: {
     ContextMenu
   },
-  setup() {
-    const novelTitle = ref('未命名小说')
+  props: {
+    currentProject: {
+      type: Object,
+      default: null
+    }
+  },
+  setup(props, { emit }) {
+    const selectedProjectId = ref('')
+    const availableProjects = ref([
+      { id: 1, name: '我的第一部小说' },
+      { id: 2, name: '科幻短篇集' },
+      { id: 3, name: '奇幻冒险' }
+    ])
     const content = ref('')
     const saving = ref(false)
     const lastSaveTime = ref('从未保存')
@@ -94,6 +116,27 @@ export default {
       x: 0,
       y: 0
     })
+
+    // 计算当前项目名称
+    const currentProjectName = computed(() => {
+      if (props.currentProject) {
+        return props.currentProject.name
+      }
+      if (selectedProjectId.value) {
+        const project = availableProjects.value.find(p => p.id === selectedProjectId.value)
+        return project ? project.name : ''
+      }
+      return ''
+    })
+
+    // 监听传入的当前项目
+    watch(() => props.currentProject, (newProject) => {
+      if (newProject) {
+        selectedProjectId.value = newProject.id
+        // 可以在这里加载项目相关的内容
+        loadProjectContent(newProject)
+      }
+    }, { immediate: true })
 
     // 计算字数（去除空格和换行）
     const wordCount = computed(() => {
@@ -146,9 +189,26 @@ export default {
       }
     }
 
-    // 处理标题变化
-    const handleTitleChange = () => {
-      // 可以在这里添加标题变化的处理逻辑
+    // 处理项目切换
+    const handleProjectChange = () => {
+      const project = availableProjects.value.find(p => p.id === selectedProjectId.value)
+      if (project) {
+        emit('project-changed', project)
+        loadProjectContent(project)
+      }
+    }
+
+    // 加载项目内容
+    const loadProjectContent = (project) => {
+      // 这里可以加载项目相关的内容
+      // 暂时使用示例内容
+      if (project.id === 1) {
+        content.value = '　　这是第一部小说的内容...'
+      } else if (project.id === 2) {
+        content.value = '　　科幻短篇集的内容...'
+      } else if (project.id === 3) {
+        content.value = '　　奇幻冒险的内容...'
+      }
     }
 
     // 更新光标位置
@@ -397,7 +457,9 @@ export default {
     })
 
     return {
-      novelTitle,
+      selectedProjectId,
+      availableProjects,
+      currentProjectName,
       content,
       saving,
       lastSaveTime,
@@ -409,7 +471,8 @@ export default {
       lineNumbers,
       contextMenu,
       handleContentChange,
-      handleTitleChange,
+      handleProjectChange,
+      loadProjectContent,
       handleScroll,
       handleContextMenu,
       hideContextMenu,
@@ -451,23 +514,33 @@ export default {
 
 .toolbar-left {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-.title-input {
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
+.project-selector {
+  font-size: 16px;
+  font-weight: 500;
+  border: 1px solid #ddd;
   outline: none;
   padding: 8px 12px;
   border-radius: 4px;
   background: #f8f9fa;
-  min-width: 300px;
-  transition: background-color 0.3s;
+  min-width: 200px;
+  transition: all 0.3s;
 }
 
-.title-input:focus {
+.project-selector:focus {
   background: #fff;
-  box-shadow: 0 0 0 2px #007bff;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.current-project {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
 }
 
 .toolbar-right {
