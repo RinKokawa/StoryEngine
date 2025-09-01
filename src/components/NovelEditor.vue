@@ -45,50 +45,19 @@
       </div>
     </div>
 
-    <!-- 右键菜单 -->
-    <div 
-      v-if="contextMenu.visible" 
-      class="context-menu"
-      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
-      @click.stop
-    >
-      <div class="menu-item" @click="copyText">
-        <span class="menu-icon">📋</span>
-        复制
-        <span class="menu-shortcut">Ctrl+C</span>
-      </div>
-      <div class="menu-item" @click="cutText">
-        <span class="menu-icon">✂️</span>
-        剪切
-        <span class="menu-shortcut">Ctrl+X</span>
-      </div>
-      <div class="menu-item" @click="pasteText">
-        <span class="menu-icon">📄</span>
-        粘贴
-        <span class="menu-shortcut">Ctrl+V</span>
-      </div>
-      <div class="menu-divider"></div>
-      <div class="menu-item" @click="selectAll">
-        <span class="menu-icon">🔘</span>
-        全选
-        <span class="menu-shortcut">Ctrl+A</span>
-      </div>
-      <div class="menu-divider"></div>
-      <div class="menu-item" @click="findReplace">
-        <span class="menu-icon">🔍</span>
-        查找替换
-        <span class="menu-shortcut">Ctrl+F</span>
-      </div>
-      <div class="menu-item" @click="insertDateTime">
-        <span class="menu-icon">📅</span>
-        插入日期时间
-      </div>
-      <div class="menu-divider"></div>
-      <div class="menu-item" @click="wordCountDetails">
-        <span class="menu-icon">📊</span>
-        字数统计
-      </div>
-    </div>
+    <!-- 右键菜单组件 -->
+    <ContextMenu
+      :visible="contextMenu.visible"
+      :position="{ x: contextMenu.x, y: contextMenu.y }"
+      @close="hideContextMenu"
+      @copy="copyText"
+      @cut="cutText"
+      @paste="pasteText"
+      @select-all="selectAll"
+      @find-replace="findReplace"
+      @insert-datetime="insertDateTime"
+      @word-count="wordCountDetails"
+    />
 
     <!-- 底部状态栏 -->
     <div class="status-bar">
@@ -105,9 +74,13 @@
 
 <script>
 import { ref, computed, onMounted, nextTick } from 'vue'
+import ContextMenu from './ContextMenu.vue'
 
 export default {
   name: 'NovelEditor',
+  components: {
+    ContextMenu
+  },
   setup() {
     const novelTitle = ref('未命名小说')
     const content = ref('')
@@ -556,50 +529,7 @@ export default {
   gap: 20px;
 }
 
-/* 右键菜单样式 */
-.context-menu {
-  position: fixed;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 4px 0;
-  min-width: 180px;
-  z-index: 1000;
-  font-size: 14px;
-}
 
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  user-select: none;
-}
-
-.menu-item:hover {
-  background: #f5f5f5;
-}
-
-.menu-icon {
-  margin-right: 8px;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
-}
-
-.menu-shortcut {
-  margin-left: auto;
-  color: #999;
-  font-size: 12px;
-}
-
-.menu-divider {
-  height: 1px;
-  background: #e0e0e0;
-  margin: 4px 0;
-}
 
 /* 滚动条样式 */
 .editor::-webkit-scrollbar {
