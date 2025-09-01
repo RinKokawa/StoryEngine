@@ -8,7 +8,7 @@
     <div class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <Dashboard v-if="currentPage === 'dashboard'" :current-project="currentProject" @navigate="handleNavigation" @project-changed="handleProjectSelected" />
       <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
-      <NovelEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
+      <StoryEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <div v-else class="page-placeholder">
         <h2>{{ getPageTitle() }}</h2>
         <p>此页面正在开发中...</p>
@@ -18,16 +18,16 @@
 </template>
 
 <script>
-import NovelEditor from './components/NovelEditor.vue'
 import Dashboard from './components/Dashboard.vue'
 import ProjectManager from './components/ProjectManager.vue'
 import Sidebar from './components/Sidebar.vue'
+import StoryEditor from './views/StoryEditor.vue'
 import storageManager from './utils/storage.js'
 
 export default {
   name: 'App',
   components: {
-    NovelEditor,
+    StoryEditor,
     Dashboard,
     ProjectManager,
     Sidebar

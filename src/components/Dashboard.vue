@@ -278,31 +278,6 @@ export default {
       }
     },
     toggleDatePicker() {
-      console.log('切换年月选择器:', !this.showDatePicker)
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
-      console.log('切换年月选择器:', !this.showDatePicker)
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
-      console.log('切换年月选择器:', !this.showDatePicker)
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
-      console.log('切换年月选择器:', !this.showDatePicker)
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
-      this.showDatePicker = !this.showDatePicker
-    },
-    toggleDatePicker() {
       this.showDatePicker = !this.showDatePicker
     },
     updateCalendar() {

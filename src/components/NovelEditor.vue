@@ -83,7 +83,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import ContextMenu from './ContextMenu.vue'
 import storageManager from '../utils/storage.js'
 
@@ -247,6 +247,7 @@ export default {
     // 处理右键菜单
     const handleContextMenu = (event) => {
       event.preventDefault()
+      event.stopPropagation() // 阻止事件冒泡
       contextMenu.value.visible = true
       contextMenu.value.x = event.clientX
       contextMenu.value.y = event.clientY
@@ -460,6 +461,14 @@ export default {
       }
     }
 
+    // 处理文档点击事件
+    const handleDocumentClick = (event) => {
+      // 确保点击事件不是来自编辑器内部
+      if (editor.value && !editor.value.contains(event.target)) {
+        hideContextMenu()
+      }
+    }
+    
     onMounted(() => {
       // 加载可用项目
       loadAvailableProjects()
@@ -474,13 +483,19 @@ export default {
       // 添加键盘事件监听
       document.addEventListener('keydown', handleKeydown)
       // 添加点击事件监听，用于隐藏右键菜单
-      document.addEventListener('click', hideContextMenu)
+      document.addEventListener('click', handleDocumentClick)
       
       // 初始化内容缩进和光标位置
       nextTick(() => {
         initializeContent()
         updateCursorPosition()
       })
+    })
+    
+    onUnmounted(() => {
+      // 清理事件监听器
+      document.removeEventListener('keydown', handleKeydown)
+      document.removeEventListener('click', handleDocumentClick)
     })
 
     return {
