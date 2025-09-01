@@ -153,44 +153,7 @@ export default {
         targetWords: 50000,
         description: ''
       },
-      projects: [
-        {
-          id: 1,
-          name: '我的第一部小说',
-          genre: '小说',
-          wordCount: 45680,
-          targetWords: 80000,
-          chapters: 12,
-          characters: 8,
-          status: 'active',
-          lastModified: '2小时前',
-          description: '一个关于成长的故事...'
-        },
-        {
-          id: 2,
-          name: '科幻短篇集',
-          genre: '小说',
-          wordCount: 23400,
-          targetWords: 50000,
-          chapters: 6,
-          characters: 15,
-          status: 'draft',
-          lastModified: '昨天',
-          description: '探索未来世界的短篇故事集合'
-        },
-        {
-          id: 3,
-          name: '奇幻冒险',
-          genre: '小说',
-          wordCount: 78900,
-          targetWords: 120000,
-          chapters: 18,
-          characters: 12,
-          status: 'completed',
-          lastModified: '3天前',
-          description: '魔法世界的冒险故事'
-        }
-      ]
+      projects: []
     }
   },
   methods: {

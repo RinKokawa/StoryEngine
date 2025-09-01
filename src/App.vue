@@ -33,7 +33,7 @@ export default {
   },
   data() {
     return {
-      sidebarCollapsed: false,
+      sidebarCollapsed: true,
       currentPage: 'dashboard',
       currentProject: null
     }

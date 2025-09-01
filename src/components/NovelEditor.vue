@@ -99,11 +99,7 @@ export default {
   },
   setup(props, { emit }) {
     const selectedProjectId = ref('')
-    const availableProjects = ref([
-      { id: 1, name: '我的第一部小说' },
-      { id: 2, name: '科幻短篇集' },
-      { id: 3, name: '奇幻冒险' }
-    ])
+    const availableProjects = ref([])
     const content = ref('')
     const saving = ref(false)
     const lastSaveTime = ref('从未保存')
@@ -201,14 +197,8 @@ export default {
     // 加载项目内容
     const loadProjectContent = (project) => {
       // 这里可以加载项目相关的内容
-      // 暂时使用示例内容
-      if (project.id === 1) {
-        content.value = '　　这是第一部小说的内容...'
-      } else if (project.id === 2) {
-        content.value = '　　科幻短篇集的内容...'
-      } else if (project.id === 3) {
-        content.value = '　　奇幻冒险的内容...'
-      }
+      // 清空内容，等待实际数据加载
+      content.value = '　　'
     }
 
     // 更新光标位置
@@ -396,8 +386,8 @@ export default {
           lastModified: new Date().toISOString()
         }
         
-        // 模拟保存过程
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // 实际保存逻辑将在这里实现
+        await new Promise(resolve => setTimeout(resolve, 500))
         
         // 更新保存时间
         lastSaveTime.value = new Date().toLocaleString('zh-CN')

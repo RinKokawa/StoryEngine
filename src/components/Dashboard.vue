@@ -97,65 +97,11 @@ export default {
     return {
       currentProject: 1,
       activeTab: 'characters',
-      projects: [
-        { id: 1, name: '我的第一部小说' },
-        { id: 2, name: '科幻短篇集' },
-        { id: 3, name: '奇幻冒险' }
-      ],
-      recentChapters: [
-        {
-          id: 1,
-          title: '第一章：开端',
-          wordCount: 2500,
-          lastModified: '2小时前',
-          status: 'draft'
-        },
-        {
-          id: 2,
-          title: '第二章：转折',
-          wordCount: 1800,
-          lastModified: '昨天',
-          status: 'reviewing'
-        },
-        {
-          id: 3,
-          title: '第三章：高潮',
-          wordCount: 3200,
-          lastModified: '3天前',
-          status: 'completed'
-        }
-      ],
-      totalWords: 45680,
-      targetWords: 80000,
-      todayWords: 1200,
-      weekWords: 8500,
-      tasks: [
-        { id: 1, text: '完善主角背景设定', completed: false, priority: 'high' },
-        { id: 2, text: '修改第二章情节', completed: true, priority: 'medium' },
-        { id: 3, text: '研究历史背景资料', completed: false, priority: 'low' }
-      ],
-      characters: [
-        {
-          id: 1,
-          name: '李明',
-          description: '主角，年轻的程序员',
-          lastModified: '1小时前'
-        },
-        {
-          id: 2,
-          name: '张雨',
-          description: '女主角，设计师',
-          lastModified: '昨天'
-        }
-      ],
-      worldview: [
-        {
-          id: 1,
-          name: '未来都市',
-          description: '2050年的智能城市设定',
-          lastModified: '2天前'
-        }
-      ]
+      projects: [],
+      totalWords: 0,
+      targetWords: 50000,
+      todayWords: 0,
+      weekWords: 0
     }
   },
   computed: {
@@ -171,7 +117,7 @@ export default {
       const currentMonth = today.getMonth()
       const currentYear = today.getFullYear()
       
-      // 生成当月日历数据（简化版）
+      // 生成当月日历数据（空数据）
       for (let i = 1; i <= 30; i++) {
         const date = new Date(currentYear, currentMonth, i)
         const isToday = i === today.getDate()
@@ -180,7 +126,7 @@ export default {
         days.push({
           day: i,
           date: date.toLocaleDateString(),
-          wordCount: Math.random() > 0.7 ? Math.floor(Math.random() * 2000) : 0,
+          wordCount: 0,
           isToday,
           isFuture
         })
