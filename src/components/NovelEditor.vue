@@ -25,6 +25,7 @@
         class="editor"
         placeholder="开始你的创作之旅..."
         @input="handleContentChange"
+        @keydown="handleKeyPress"
         @scroll="handleScroll"
         @contextmenu="handleContextMenu"
         @click="hideContextMenu"
@@ -109,6 +110,40 @@ export default {
       updateCursorPosition()
       // 自动保存（可选）
       // autoSave()
+    }
+
+    // 处理键盘输入事件
+    const handleKeyPress = (event) => {
+      // 回车键自动缩进
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        const textarea = editor.value
+        const cursorPos = textarea.selectionStart
+        const textBeforeCursor = content.value.substring(0, cursorPos)
+        const textAfterCursor = content.value.substring(cursorPos)
+        
+        // 插入换行和缩进
+        const indent = '　　' // 两个全角空格作为段落缩进
+        content.value = textBeforeCursor + '\n' + indent + textAfterCursor
+        
+        // 设置光标位置到缩进后
+        nextTick(() => {
+          const newPosition = cursorPos + 1 + indent.length
+          textarea.setSelectionRange(newPosition, newPosition)
+        })
+      }
+    }
+
+    // 初始化内容缩进
+    const initializeContent = () => {
+      if (content.value === '' || !content.value.startsWith('　　')) {
+        content.value = '　　' + content.value
+        nextTick(() => {
+          if (editor.value) {
+            editor.value.setSelectionRange(2, 2) // 光标放在缩进后
+          }
+        })
+      }
     }
 
     // 处理标题变化
@@ -354,8 +389,9 @@ export default {
       // 添加点击事件监听，用于隐藏右键菜单
       document.addEventListener('click', hideContextMenu)
       
-      // 初始化光标位置
+      // 初始化内容缩进和光标位置
       nextTick(() => {
+        initializeContent()
         updateCursorPosition()
       })
     })
@@ -385,7 +421,9 @@ export default {
       insertDateTime,
       wordCountDetails,
       saveNovel,
-      updateCursorPosition
+      updateCursorPosition,
+      handleKeyPress,
+      initializeContent
     }
   }
 }
