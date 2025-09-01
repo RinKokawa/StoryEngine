@@ -16,6 +16,12 @@
           </a>
         </li>
         <li class="nav-item">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'projects' }" @click="navigate('projects')">
+            <i class="icon">📚</i>
+            <span v-show="!isCollapsed">项目管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a href="#" class="nav-link" :class="{ active: currentPage === 'editor' }" @click="navigate('editor')">
             <i class="icon">📖</i>
             <span v-show="!isCollapsed">故事编辑</span>

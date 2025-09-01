@@ -7,6 +7,7 @@
     />
     <div class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <Dashboard v-if="currentPage === 'dashboard'" @navigate="handleNavigation" />
+      <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
       <NovelEditor v-else-if="currentPage === 'editor'" />
       <div v-else class="page-placeholder">
         <h2>{{ getPageTitle() }}</h2>
@@ -19,6 +20,7 @@
 <script>
 import NovelEditor from './components/NovelEditor.vue'
 import Dashboard from './components/Dashboard.vue'
+import ProjectManager from './components/ProjectManager.vue'
 import Sidebar from './components/Sidebar.vue'
 
 export default {
@@ -26,12 +28,14 @@ export default {
   components: {
     NovelEditor,
     Dashboard,
+    ProjectManager,
     Sidebar
   },
   data() {
     return {
       sidebarCollapsed: false,
-      currentPage: 'dashboard'
+      currentPage: 'dashboard',
+      currentProject: null
     }
   },
   methods: {
@@ -42,9 +46,14 @@ export default {
       this.currentPage = page
       console.log('导航到:', page, params)
     },
+    handleProjectSelected(project) {
+      this.currentProject = project
+      console.log('选择项目:', project)
+    },
     getPageTitle() {
       const titles = {
         dashboard: '仪表盘',
+        projects: '项目管理',
         editor: '故事编辑',
         characters: '角色管理',
         worldview: '世界设定',
