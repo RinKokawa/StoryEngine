@@ -85,6 +85,7 @@
 <script>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import ContextMenu from './ContextMenu.vue'
+import storageManager from '../utils/storage.js'
 
 export default {
   name: 'NovelEditor',
@@ -125,11 +126,15 @@ export default {
       return ''
     })
 
+    // 加载可用项目列表
+    const loadAvailableProjects = () => {
+      availableProjects.value = storageManager.getProjects()
+    }
+
     // 监听传入的当前项目
     watch(() => props.currentProject, (newProject) => {
       if (newProject) {
         selectedProjectId.value = newProject.id
-        // 可以在这里加载项目相关的内容
         loadProjectContent(newProject)
       }
     }, { immediate: true })
@@ -147,8 +152,8 @@ export default {
     // 处理内容变化
     const handleContentChange = () => {
       updateCursorPosition()
-      // 自动保存（可选）
-      // autoSave()
+      // 触发自动保存
+      autoSaveContent()
     }
 
     // 处理键盘输入事件
@@ -196,10 +201,28 @@ export default {
 
     // 加载项目内容
     const loadProjectContent = (project) => {
-      // 这里可以加载项目相关的内容
-      // 清空内容，等待实际数据加载
-      content.value = '　　'
+      if (project && project.id) {
+        content.value = storageManager.getProjectContent(project.id)
+      } else {
+        content.value = '　　'
+      }
     }
+
+    // 自动保存内容
+    const autoSaveContent = (() => {
+      let timer = null
+      return () => {
+        if (timer) clearTimeout(timer)
+        timer = setTimeout(() => {
+          if (selectedProjectId.value && content.value.trim()) {
+            storageManager.saveProjectContent(selectedProjectId.value, content.value)
+            // 更新写作统计
+            const wordCount = content.value.replace(/\s/g, '').length
+            storageManager.updateTodayWriting(selectedProjectId.value, wordCount)
+          }
+        }, 2000) // 2秒后自动保存
+      }
+    })()
 
     // 更新光标位置
     const updateCursorPosition = () => {
@@ -375,24 +398,28 @@ export default {
 
     // 保存小说
     const saveNovel = async () => {
+      if (!selectedProjectId.value) {
+        alert('请先选择一个项目')
+        return
+      }
+
       saving.value = true
       try {
-        // 这里可以调用Electron的文件保存API
-        // 或者发送到后端保存
-        const novelData = {
-          title: novelTitle.value,
-          content: content.value,
-          wordCount: wordCount.value,
-          lastModified: new Date().toISOString()
+        // 保存内容到本地存储
+        const success = storageManager.saveProjectContent(selectedProjectId.value, content.value)
+        
+        if (success) {
+          // 更新写作统计
+          const wordCount = content.value.replace(/\s/g, '').length
+          storageManager.updateTodayWriting(selectedProjectId.value, wordCount)
+          
+          // 更新保存时间
+          lastSaveTime.value = new Date().toLocaleString('zh-CN')
+          
+          console.log('内容已保存')
+        } else {
+          throw new Error('保存失败')
         }
-        
-        // 实际保存逻辑将在这里实现
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // 更新保存时间
-        lastSaveTime.value = new Date().toLocaleString('zh-CN')
-        
-        console.log('小说已保存:', novelData)
       } catch (error) {
         console.error('保存失败:', error)
         alert('保存失败，请重试')
@@ -434,6 +461,16 @@ export default {
     }
 
     onMounted(() => {
+      // 加载可用项目
+      loadAvailableProjects()
+      
+      // 加载当前项目（如果有的话）
+      const currentProject = storageManager.getCurrentProject()
+      if (currentProject) {
+        selectedProjectId.value = currentProject.id
+        loadProjectContent(currentProject)
+      }
+      
       // 添加键盘事件监听
       document.addEventListener('keydown', handleKeydown)
       // 添加点击事件监听，用于隐藏右键菜单
@@ -463,6 +500,8 @@ export default {
       handleContentChange,
       handleProjectChange,
       loadProjectContent,
+      loadAvailableProjects,
+      autoSaveContent,
       handleScroll,
       handleContextMenu,
       hideContextMenu,

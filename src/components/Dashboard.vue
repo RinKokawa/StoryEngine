@@ -3,7 +3,8 @@
     <div class="dashboard-header">
       <h1>写作仪表盘</h1>
       <div class="project-selector">
-        <select v-model="currentProject" @change="switchProject">
+        <select :value="currentProject?.id || ''" @change="switchProject">
+          <option value="" disabled>选择项目</option>
           <option v-for="project in projects" :key="project.id" :value="project.id">
             {{ project.name }}
           </option>
@@ -91,17 +92,38 @@
 </template>
 
 <script>
+import storageManager from '../utils/storage.js'
+
 export default {
   name: 'Dashboard',
+  props: {
+    currentProject: {
+      type: Object,
+      default: null
+    }
+  },
   data() {
     return {
-      currentProject: 1,
       activeTab: 'characters',
       projects: [],
       totalWords: 0,
       targetWords: 50000,
       todayWords: 0,
-      weekWords: 0
+      weekWords: 0,
+      writingStats: null
+    }
+  },
+  mounted() {
+    this.loadData()
+  },
+  watch: {
+    currentProject: {
+      handler(newProject) {
+        if (newProject) {
+          this.loadProjectStats(newProject.id)
+        }
+      },
+      immediate: true
     }
   },
   computed: {
@@ -117,16 +139,22 @@ export default {
       const currentMonth = today.getMonth()
       const currentYear = today.getFullYear()
       
-      // 生成当月日历数据（空数据）
+      // 生成当月日历数据
       for (let i = 1; i <= 30; i++) {
         const date = new Date(currentYear, currentMonth, i)
         const isToday = i === today.getDate()
         const isFuture = i > today.getDate()
+        const dateString = date.toDateString()
+        
+        // 从写作统计中获取当日字数
+        const dayWords = this.writingStats && this.writingStats.dailyWords 
+          ? (this.writingStats.dailyWords[dateString] || 0) 
+          : 0
         
         days.push({
           day: i,
           date: date.toLocaleDateString(),
-          wordCount: 0,
+          wordCount: dayWords,
           isToday,
           isFuture
         })
@@ -136,9 +164,34 @@ export default {
     }
   },
   methods: {
-    switchProject() {
-      // 切换项目逻辑
-      console.log('切换到项目:', this.currentProject)
+    loadData() {
+      this.projects = storageManager.getProjects()
+      const current = storageManager.getCurrentProject()
+      if (current) {
+        this.loadProjectStats(current.id)
+      }
+    },
+    loadProjectStats(projectId) {
+      const project = storageManager.getProject(projectId)
+      if (project) {
+        this.totalWords = project.wordCount || 0
+        this.targetWords = project.targetWords || 50000
+      }
+      
+      this.writingStats = storageManager.getWritingStats(projectId)
+      this.todayWords = this.writingStats.todayWords || 0
+      this.weekWords = this.writingStats.weekWords || 0
+    },
+    switchProject(event) {
+      const projectId = parseInt(event.target.value)
+      if (projectId) {
+        const project = this.projects.find(p => p.id === projectId)
+        if (project) {
+          storageManager.setCurrentProject(project)
+          this.$emit('project-changed', project)
+          this.loadProjectStats(projectId)
+        }
+      }
     },
     createNewChapter() {
       this.$emit('navigate', 'editor')

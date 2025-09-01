@@ -141,6 +141,8 @@
 </template>
 
 <script>
+import storageManager from '../utils/storage.js'
+
 export default {
   name: 'ProjectManager',
   data() {
@@ -156,8 +158,16 @@ export default {
       projects: []
     }
   },
+  mounted() {
+    this.loadProjects()
+  },
   methods: {
+    loadProjects() {
+      this.projects = storageManager.getProjects()
+    },
     selectProject(project) {
+      // 保存当前项目到存储
+      storageManager.setCurrentProject(project)
       // 切换到选中的项目
       this.$emit('project-selected', project)
       // 可以跳转到仪表盘
@@ -174,9 +184,8 @@ export default {
     },
     deleteProject(project) {
       if (confirm(`确定要删除项目"${project.name}"吗？此操作不可恢复。`)) {
-        const index = this.projects.findIndex(p => p.id === project.id)
-        if (index > -1) {
-          this.projects.splice(index, 1)
+        if (storageManager.deleteProject(project.id)) {
+          this.loadProjects()
         }
       }
     },
@@ -185,14 +194,14 @@ export default {
 
       if (this.editingProject) {
         // 编辑现有项目
-        const project = this.projects.find(p => p.id === this.editingProject.id)
-        if (project) {
-          project.name = this.projectForm.name
-          project.genre = this.projectForm.genre
-          project.targetWords = this.projectForm.targetWords
-          project.description = this.projectForm.description
-          project.lastModified = '刚刚'
+        const updatedProject = {
+          ...this.editingProject,
+          name: this.projectForm.name,
+          genre: this.projectForm.genre,
+          targetWords: this.projectForm.targetWords,
+          description: this.projectForm.description
         }
+        storageManager.saveProject(updatedProject)
       } else {
         // 创建新项目
         const newProject = {
@@ -204,12 +213,13 @@ export default {
           chapters: 0,
           characters: 0,
           status: 'draft',
-          lastModified: '刚刚',
-          description: this.projectForm.description
+          description: this.projectForm.description,
+          createdAt: new Date().toISOString()
         }
-        this.projects.push(newProject)
+        storageManager.saveProject(newProject)
       }
 
+      this.loadProjects()
       this.closeDialog()
     },
     closeDialog() {

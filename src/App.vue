@@ -6,7 +6,7 @@
       @navigate="handleNavigation"
     />
     <div class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-      <Dashboard v-if="currentPage === 'dashboard'" @navigate="handleNavigation" />
+      <Dashboard v-if="currentPage === 'dashboard'" :current-project="currentProject" @navigate="handleNavigation" @project-changed="handleProjectSelected" />
       <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
       <NovelEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <div v-else class="page-placeholder">
@@ -22,6 +22,7 @@ import NovelEditor from './components/NovelEditor.vue'
 import Dashboard from './components/Dashboard.vue'
 import ProjectManager from './components/ProjectManager.vue'
 import Sidebar from './components/Sidebar.vue'
+import storageManager from './utils/storage.js'
 
 export default {
   name: 'App',
@@ -37,6 +38,10 @@ export default {
       currentPage: 'dashboard',
       currentProject: null
     }
+  },
+  mounted() {
+    // 启动时加载当前项目
+    this.currentProject = storageManager.getCurrentProject()
   },
   methods: {
     handleSidebarToggle(collapsed) {
