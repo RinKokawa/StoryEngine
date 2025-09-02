@@ -544,6 +544,7 @@ export default {
   height: 100vh;
   background: #f5f5f5;
   font-family: 'Microsoft YaHei', sans-serif;
+  padding-bottom: 40px; /* 为底部状态栏留出空间 */
 }
 
 .toolbar {
@@ -668,6 +669,10 @@ export default {
 }
 
 .status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -676,6 +681,7 @@ export default {
   border-top: 1px solid #e0e0e0;
   font-size: 12px;
   color: #666;
+  z-index: 1000;
 }
 
 .status-left {
