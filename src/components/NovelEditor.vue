@@ -387,12 +387,7 @@ export default {
       const lines = text.split('\n').length
       const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim()).length
       
-      alert(`字数统计详情：
-字符数（含空格）: ${characters}
-字符数（不含空格）: ${charactersNoSpaces}
-词数: ${words}
-行数: ${lines}
-段落数: ${paragraphs}`)
+      alert(`字数统计详情：\n字符数（含空格）: ${characters}\n字符数（不含空格）: ${charactersNoSpaces}\n词数: ${words}\n行数: ${lines}\n段落数: ${paragraphs}`)
       
       hideContextMenu()
     }
@@ -671,7 +666,7 @@ export default {
 .status-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: 250px; /* 从侧边栏宽度开始 */
   right: 0;
   display: flex;
   justify-content: space-between;
@@ -681,7 +676,8 @@ export default {
   border-top: 1px solid #e0e0e0;
   font-size: 12px;
   color: #666;
-  z-index: 1000;
+  z-index: 100;
+  transition: left 0.3s ease;
 }
 
 .status-left {
@@ -689,7 +685,14 @@ export default {
   gap: 20px;
 }
 
+/* 侧边栏适应样式 */
+.sidebar-collapsed .status-bar {
+  left: 60px; /* 侧边栏收起时的宽度 */
+}
 
+.sidebar-expanded .status-bar {
+  left: 250px; /* 侧边栏展开时的宽度 */
+}
 
 /* 滚动条样式 */
 .editor::-webkit-scrollbar {
@@ -721,11 +724,6 @@ export default {
     justify-content: space-between;
   }
   
-  .title-input {
-    min-width: auto;
-    width: 100%;
-  }
-  
   .editor-container {
     margin: 10px;
   }
@@ -737,6 +735,10 @@ export default {
   .editor {
     padding: 15px;
     font-size: 14px;
+  }
+  
+  .status-bar {
+    left: 0; /* 移动端时状态栏占满宽度 */
   }
 }
 </style>
