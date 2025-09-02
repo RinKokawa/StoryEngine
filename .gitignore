@@ -28,3 +28,4 @@ dist-electron
 # Build outputs
 build/
 out/
+**.md

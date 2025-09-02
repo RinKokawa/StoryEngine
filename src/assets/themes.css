@@ -1,0 +1,105 @@
+/* 深色主题样式 */
+body.dark-theme {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+/* 深色主题下的通用组件样式 */
+body.dark-theme .main-content {
+  background-color: #1a1a1a;
+}
+
+body.dark-theme .page-placeholder {
+  background-color: #2d2d2d;
+  color: #ffffff;
+}
+
+body.dark-theme .page-placeholder h2 {
+  color: #ffffff;
+}
+
+/* 深色主题下的表单元素 */
+body.dark-theme input[type="range"] {
+  background-color: #404040;
+}
+
+body.dark-theme select {
+  background-color: #404040;
+  color: #ffffff;
+  border-color: #555;
+}
+
+body.dark-theme select option {
+  background-color: #404040;
+  color: #ffffff;
+}
+
+body.dark-theme input[type="file"] {
+  background-color: #404040;
+  color: #ffffff;
+  border-color: #555;
+}
+
+/* 深色主题下的按钮 */
+body.dark-theme .btn-secondary {
+  background-color: #555;
+  border-color: #666;
+}
+
+body.dark-theme .btn-secondary:hover {
+  background-color: #666;
+}
+
+/* 深色主题下的滚动条 */
+body.dark-theme ::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.dark-theme ::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* 自动主题检测 */
+@media (prefers-color-scheme: dark) {
+  body.auto-theme {
+    background-color: #1a1a1a;
+    color: #ffffff;
+  }
+  
+  body.auto-theme .main-content {
+    background-color: #1a1a1a;
+  }
+  
+  body.auto-theme .settings-container {
+    background-color: #1a1a1a;
+  }
+  
+  body.auto-theme .settings-header,
+  body.auto-theme .settings-nav,
+  body.auto-theme .settings-panel,
+  body.auto-theme .settings-footer {
+    background-color: #2d2d2d;
+    border-color: #404040;
+  }
+  
+  body.auto-theme .settings-header h2,
+  body.auto-theme .settings-section h3,
+  body.auto-theme .setting-item label {
+    color: #ffffff;
+  }
+  
+  body.auto-theme .settings-header p,
+  body.auto-theme .setting-description,
+  body.auto-theme .save-status {
+    color: #b0b0b0;
+  }
+}

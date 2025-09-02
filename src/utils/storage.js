@@ -226,22 +226,32 @@ class StorageManager {
   getSettings() {
     try {
       const settings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS)
-      return settings ? JSON.parse(settings) : {
-        autoSave: true,
-        autoSaveInterval: 30000, // 30秒
-        theme: 'light',
-        fontSize: 16,
-        lineHeight: 1.5
-      }
+      return settings ? JSON.parse(settings) : this.getDefaultSettings()
     } catch (error) {
       console.error('获取设置失败:', error)
-      return {
-        autoSave: true,
-        autoSaveInterval: 30000,
-        theme: 'light',
-        fontSize: 16,
-        lineHeight: 1.5
-      }
+      return this.getDefaultSettings()
+    }
+  }
+
+  // 获取默认设置
+  getDefaultSettings() {
+    return {
+      // 编辑器设置
+      autoSave: true,
+      autoSaveInterval: 30000, // 30秒
+      fontSize: 16,
+      lineHeight: 1.5,
+      autoIndent: true,
+      
+      // 界面设置
+      theme: 'light',
+      sidebarCollapsed: true,
+      windowSize: 'normal',
+      
+      // 应用设置
+      openLastProject: true,
+      minimizeToTray: false,
+      checkUpdates: true
     }
   }
 
