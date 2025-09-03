@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import os from 'node:os'
+import fs from 'node:fs/promises'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -78,16 +78,87 @@ ipcMain.handle('open-external', async (_event, url: string) => {
   }
 })
 
-// 打开存储位置（为设置页面的功能预留）
+// 获取应用数据目录
+function getAppDataPath() {
+  return path.join(app.getPath('userData'), 'StoryEngine')
+}
+
+// 确保应用数据目录存在
+async function ensureAppDataDir() {
+  const appDataPath = getAppDataPath()
+  try {
+    await fs.access(appDataPath)
+  } catch {
+    await fs.mkdir(appDataPath, { recursive: true })
+  }
+  return appDataPath
+}
+
+// 打开存储位置
 ipcMain.handle('open-storage-location', async () => {
   try {
-    // 在实际应用中，这里应该打开应用数据存储目录
-    // 目前先打开用户文档目录作为示例
-    const documentsPath = path.join(os.homedir(), 'Documents')
-    await shell.openPath(documentsPath)
-    return { success: true }
+    const appDataPath = await ensureAppDataDir()
+    await shell.openPath(appDataPath)
+    return { success: true, path: appDataPath }
   } catch (error) {
     console.error('Failed to open storage location:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+// 读取文件
+ipcMain.handle('read-file', async (_event, fileName: string) => {
+  try {
+    const appDataPath = await ensureAppDataDir()
+    const filePath = path.join(appDataPath, fileName)
+    const data = await fs.readFile(filePath, 'utf-8')
+    return { success: true, data }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { success: true, data: null } // 文件不存在
+    }
+    console.error('Failed to read file:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+// 写入文件
+ipcMain.handle('write-file', async (_event, fileName: string, data: string) => {
+  try {
+    const appDataPath = await ensureAppDataDir()
+    const filePath = path.join(appDataPath, fileName)
+    await fs.writeFile(filePath, data, 'utf-8')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to write file:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+// 删除文件
+ipcMain.handle('delete-file', async (_event, fileName: string) => {
+  try {
+    const appDataPath = await ensureAppDataDir()
+    const filePath = path.join(appDataPath, fileName)
+    await fs.unlink(filePath)
+    return { success: true }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { success: true } // 文件不存在，视为删除成功
+    }
+    console.error('Failed to delete file:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+// 列出文件
+ipcMain.handle('list-files', async () => {
+  try {
+    const appDataPath = await ensureAppDataDir()
+    const files = await fs.readdir(appDataPath)
+    return { success: true, files }
+  } catch (error) {
+    console.error('Failed to list files:', error)
     return { success: false, error: (error as Error).message }
   }
 })

@@ -26,5 +26,11 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 // --------- Expose Electron APIs to the Renderer process ---------
 contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
-  openStorageLocation: () => ipcRenderer.invoke('open-storage-location')
+  openStorageLocation: () => ipcRenderer.invoke('open-storage-location'),
+  
+  // 文件操作API
+  readFile: (fileName: string) => ipcRenderer.invoke('read-file', fileName),
+  writeFile: (fileName: string, data: string) => ipcRenderer.invoke('write-file', fileName, data),
+  deleteFile: (fileName: string) => ipcRenderer.invoke('delete-file', fileName),
+  listFiles: () => ipcRenderer.invoke('list-files')
 })
