@@ -2,7 +2,7 @@
 
 一个基于 Vue 3 + Vite + Electron 的跨平台桌面写作应用。内置项目管理、沉浸式故事编辑器（行号、右键菜单、自动缩进/自动保存、快捷键）、写作仪表盘（统计与写作日历），帮助作者高效管理创作过程。
 
-<!-- 提示：包名当前为 my-novel-app，待修改。 -->
+**应用标识**：`com.rinkokawa.storyengine`
 
 ## 目录
 - 项目简介
@@ -41,7 +41,7 @@ StoryEngine 面向长篇小说/剧本等文本创作场景，提供全流程支�
 - 应用设置
   - 编辑器设置：字体大小、行高、自动保存、自动缩进
   - 界面设置：主题切换（浅色/深色/自动）、侧边栏状态、窗口大小
-  - 数据管理：导出/导入/清空数据
+  - 数据管理：导出/导入/清空数据、打开存储位置
   - 应用行为：启动项目、系统托盘、更新检查
 - 数据持久化
   - 使用 localStorage 存储项目列表、当前项目、项目内容与每日写作统计
@@ -83,6 +83,9 @@ npm run build
 ```
 - 这将执行：类型检查（vue-tsc）→ Vite 构建渲染进程 → electron-builder 打包
 - 打包产物默认输出到 release/<version>/ 目录（见 electron-builder.json5）
+- 生成两个版本：
+  - `StoryEngine-Windows-0.0.0-Setup.exe`：安装程序版本
+  - `StoryEngine-Windows-0.0.0-Portable.exe`：便携版，无需安装直接运行
 
 4) 仅预览前端构建产物（非 Electron）
 ```bash
@@ -106,9 +109,16 @@ npm run preview
   - 写作日历按天展示写作字数，支持左右切换月份与选择年份/月份
   - 可在顶部下拉切换当前项目
 
-### 数据导出/导入（尚未实现）
+### 数据管理
 
-应用通过 storageManager（src/utils/storage.js）管理数据。你可以在渲染进程中直接调用它进行导出/导入（或在 DevTools Console 调试）。
+应用通过 storageManager（src/utils/storage.js）管理数据，在设置页面提供完整的数据管理功能：
+
+- **导出数据**：将所有项目和设置导出为JSON文件
+- **导入数据**：从JSON文件恢复数据（会覆盖现有数据）
+- **打开存储位置**：在桌面应用中直接打开数据存储文件夹
+- **清空数据**：永久删除所有数据（危险操作）
+
+你也可以在渲染进程中直接调用 storageManager 进行操作（或在 DevTools Console 调试）：
 
 ```js
 // 导出数据（JSON 字符串）
