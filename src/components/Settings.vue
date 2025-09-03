@@ -177,6 +177,17 @@
             <p class="setting-description">从JSON文件恢复数据，将覆盖现有数据</p>
           </div>
 
+          <div class="setting-item">
+            <label>打开存储位置</label>
+            <div class="setting-control">
+              <button class="btn btn-secondary" @click="openStorageLocation">
+                <i class="icon">📁</i>
+                打开文件夹
+              </button>
+            </div>
+            <p class="setting-description">在文件管理器中打开应用数据存储位置</p>
+          </div>
+
           <div class="setting-item danger-zone">
             <label>危险操作</label>
             <div class="setting-control">
@@ -412,6 +423,17 @@ export default {
           }
           this.showConfirmDialog = false
         }
+      }
+    },
+    
+    openStorageLocation() {
+      // 检查是否在Electron环境中
+      if (window.electronAPI && window.electronAPI.openStorageLocation) {
+        // 如果在Electron中，调用主进程方法打开文件夹
+        window.electronAPI.openStorageLocation()
+      } else {
+        // 如果在浏览器中，显示存储信息
+        alert('当前在浏览器环境中运行，数据存储在浏览器的localStorage中。在桌面应用版本中，您可以直接打开存储文件夹。')
       }
     }
   }

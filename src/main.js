@@ -8,6 +8,7 @@ import router from './router'
 if (import.meta.env.DEV) {
   import('./utils/settingsTest.js')
   import('./utils/settingsValidator.js')
+  import('./utils/storageInspector.js')
 }
 
 const app = createApp(App)
