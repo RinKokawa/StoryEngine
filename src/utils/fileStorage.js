@@ -267,6 +267,40 @@ class FileStorageManager {
     }
   }
 
+  // 获取项目角色
+  async getProjectCharacters(projectId) {
+    try {
+      const fileName = `project-characters-${projectId}.json`
+      const data = await this.readJsonFile(fileName)
+      return data || []
+    } catch (error) {
+      console.error('获取项目角色失败:', error)
+      return []
+    }
+  }
+
+  // 保存项目角色
+  async saveProjectCharacters(projectId, characters) {
+    try {
+      const fileName = `project-characters-${projectId}.json`
+      return await this.writeJsonFile(fileName, characters)
+    } catch (error) {
+      console.error('保存项目角色失败:', error)
+      return false
+    }
+  }
+
+  // 删除项目角色
+  async deleteProjectCharacters(projectId) {
+    try {
+      const fileName = `project-characters-${projectId}.json`
+      return await this.deleteFile(fileName)
+    } catch (error) {
+      console.error('删除项目角色失败:', error)
+      return false
+    }
+  }
+
   // 保存应用设置
   async saveSettings(settings) {
     try {

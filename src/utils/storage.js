@@ -86,22 +86,22 @@ class StorageManager {
 
   // 获取项目角色列表
   getProjectCharacters(projectId) {
-    return []
+    return this.adapter.getProjectCharacters(projectId)
   }
 
   // 创建角色
   createCharacter(projectId, characterData) {
-    return true
+    return this.adapter.createCharacter(projectId, characterData)
   }
 
   // 更新角色
   updateCharacter(projectId, characterData) {
-    return true
+    return this.adapter.updateCharacter(projectId, characterData)
   }
 
   // 删除角色
   deleteCharacter(projectId, characterId) {
-    return true
+    return this.adapter.deleteCharacter(projectId, characterId)
   }
 
   // 更新今日写作统计

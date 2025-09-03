@@ -315,7 +315,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import ProjectSelector from '../components/common/ProjectSelector.vue'
 import storageManager from '../utils/storage.js'
 
@@ -335,7 +335,7 @@ export default {
     const selectedCharacter = ref(null)
     const sidebarOpen = ref(false)
     
-    const characterForm = ref({
+    const characterForm = reactive({
       name: '',
       role: '',
       age: '',
@@ -395,7 +395,7 @@ export default {
     }
 
     const resetForm = () => {
-      characterForm.value = {
+      Object.assign(characterForm, {
         name: '',
         role: '',
         age: '',
@@ -405,11 +405,11 @@ export default {
         personality: '',
         background: '',
         description: ''
-      }
+      })
     }
 
     const editCharacter = (character) => {
-      characterForm.value = { ...character }
+      Object.assign(characterForm, { ...character })
       showEditDialog.value = true
       showCreateDialog.value = false
     }
@@ -421,7 +421,7 @@ export default {
     }
 
     const saveCharacter = () => {
-      if (!characterForm.value.name.trim()) {
+      if (!characterForm.name.trim()) {
         alert('请输入角色姓名')
         return
       }
@@ -432,9 +432,9 @@ export default {
       }
 
       const characterData = {
-        ...characterForm.value,
+        ...characterForm,
         projectId: selectedProjectId.value,
-        createdAt: showCreateDialog.value ? new Date().toISOString() : characterForm.value.createdAt,
+        createdAt: showCreateDialog.value ? new Date().toISOString() : characterForm.createdAt,
         updatedAt: new Date().toISOString()
       }
 
@@ -443,7 +443,8 @@ export default {
         characterData.id = Date.now().toString()
         const success = storageManager.createCharacter(selectedProjectId.value, characterData)
         if (success) {
-          characters.value.push(characterData)
+          // 重新加载角色列表以确保数据同步
+          loadCharacters()
           closeDialogs()
         } else {
           alert('创建角色失败')
@@ -452,10 +453,8 @@ export default {
         // 更新角色
         const success = storageManager.updateCharacter(selectedProjectId.value, characterData)
         if (success) {
-          const index = characters.value.findIndex(c => c.id === characterData.id)
-          if (index !== -1) {
-            characters.value[index] = characterData
-          }
+          // 重新加载角色列表以确保数据同步
+          loadCharacters()
           if (selectedCharacter.value && selectedCharacter.value.id === characterData.id) {
             selectedCharacter.value = characterData
           }
@@ -470,7 +469,8 @@ export default {
       if (confirm(`确定要删除角色"${character.name}"吗？此操作不可恢复。`)) {
         const success = storageManager.deleteCharacter(selectedProjectId.value, character.id)
         if (success) {
-          characters.value = characters.value.filter(c => c.id !== character.id)
+          // 重新加载角色列表以确保数据同步
+          loadCharacters()
           if (selectedCharacter.value && selectedCharacter.value.id === character.id) {
             closeSidebar()
           }

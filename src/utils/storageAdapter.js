@@ -151,6 +151,73 @@ class StorageAdapter {
     return true
   }
 
+  // 角色管理方法
+  getProjectCharacters(projectId) {
+    if (this.cache.projectCharacters[projectId] !== undefined) {
+      return this.cache.projectCharacters[projectId]
+    }
+    
+    // 异步加载角色数据
+    this.fileStorage.getProjectCharacters(projectId).then(characters => {
+      this.cache.projectCharacters[projectId] = characters
+    }).catch(console.error)
+    
+    return [] // 默认返回空数组
+  }
+
+  createCharacter(projectId, characterData) {
+    const characters = this.getProjectCharacters(projectId)
+    const newCharacter = {
+      ...characterData,
+      id: characterData.id || Date.now().toString(),
+      projectId: projectId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    characters.push(newCharacter)
+    this.cache.projectCharacters[projectId] = characters
+    
+    // 异步保存
+    this.fileStorage.saveProjectCharacters(projectId, characters).catch(console.error)
+    
+    return true
+  }
+
+  updateCharacter(projectId, characterData) {
+    const characters = this.getProjectCharacters(projectId)
+    const index = characters.findIndex(c => c.id === characterData.id)
+    
+    if (index >= 0) {
+      characters[index] = {
+        ...characters[index],
+        ...characterData,
+        updatedAt: new Date().toISOString()
+      }
+      
+      this.cache.projectCharacters[projectId] = characters
+      
+      // 异步保存
+      this.fileStorage.saveProjectCharacters(projectId, characters).catch(console.error)
+      
+      return true
+    }
+    
+    return false
+  }
+
+  deleteCharacter(projectId, characterId) {
+    const characters = this.getProjectCharacters(projectId)
+    const filteredCharacters = characters.filter(c => c.id !== characterId)
+    
+    this.cache.projectCharacters[projectId] = filteredCharacters
+    
+    // 异步保存
+    this.fileStorage.saveProjectCharacters(projectId, filteredCharacters).catch(console.error)
+    
+    return true
+  }
+
   // 异步方法 - 新的API
   async getProjectsAsync() {
     return await this.fileStorage.getProjects()
