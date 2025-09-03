@@ -218,6 +218,91 @@ class StorageAdapter {
     return true
   }
 
+  // 世界设定管理方法
+  getProjectWorldItems(projectId) {
+    if (this.cache.projectWorldItems && this.cache.projectWorldItems[projectId] !== undefined) {
+      return this.cache.projectWorldItems[projectId]
+    }
+    
+    // 初始化缓存
+    if (!this.cache.projectWorldItems) {
+      this.cache.projectWorldItems = {}
+    }
+    
+    // 异步加载世界设定数据
+    this.fileStorage.getProjectWorldItems(projectId).then(worldItems => {
+      this.cache.projectWorldItems[projectId] = worldItems
+    }).catch(console.error)
+    
+    return [] // 默认返回空数组
+  }
+
+  createWorldItem(projectId, worldData) {
+    const worldItems = this.getProjectWorldItems(projectId)
+    const newWorldItem = {
+      ...worldData,
+      id: worldData.id || Date.now().toString(),
+      projectId: projectId,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    }
+    
+    worldItems.push(newWorldItem)
+    
+    // 确保缓存存在
+    if (!this.cache.projectWorldItems) {
+      this.cache.projectWorldItems = {}
+    }
+    this.cache.projectWorldItems[projectId] = worldItems
+    
+    // 异步保存
+    this.fileStorage.saveProjectWorldItems(projectId, worldItems).catch(console.error)
+    
+    return true
+  }
+
+  updateWorldItem(projectId, worldData) {
+    const worldItems = this.getProjectWorldItems(projectId)
+    const index = worldItems.findIndex(w => w.id === worldData.id)
+    
+    if (index >= 0) {
+      worldItems[index] = {
+        ...worldItems[index],
+        ...worldData,
+        lastModified: new Date().toISOString()
+      }
+      
+      // 确保缓存存在
+      if (!this.cache.projectWorldItems) {
+        this.cache.projectWorldItems = {}
+      }
+      this.cache.projectWorldItems[projectId] = worldItems
+      
+      // 异步保存
+      this.fileStorage.saveProjectWorldItems(projectId, worldItems).catch(console.error)
+      
+      return true
+    }
+    
+    return false
+  }
+
+  deleteWorldItem(projectId, worldId) {
+    const worldItems = this.getProjectWorldItems(projectId)
+    const filteredWorldItems = worldItems.filter(w => w.id !== worldId)
+    
+    // 确保缓存存在
+    if (!this.cache.projectWorldItems) {
+      this.cache.projectWorldItems = {}
+    }
+    this.cache.projectWorldItems[projectId] = filteredWorldItems
+    
+    // 异步保存
+    this.fileStorage.saveProjectWorldItems(projectId, filteredWorldItems).catch(console.error)
+    
+    return true
+  }
+
   // 异步方法 - 新的API
   async getProjectsAsync() {
     return await this.fileStorage.getProjects()

@@ -146,6 +146,7 @@ class FileStorageManager {
     await this.deleteProjectContent(projectId)
     await this.deleteWritingStats(projectId)
     await this.deleteProjectCharacters(projectId)
+    await this.deleteProjectWorldItems(projectId)
     
     return await this.saveProjects(filteredProjects)
   }
@@ -297,6 +298,40 @@ class FileStorageManager {
       return await this.deleteFile(fileName)
     } catch (error) {
       console.error('删除项目角色失败:', error)
+      return false
+    }
+  }
+
+  // 获取项目世界设定
+  async getProjectWorldItems(projectId) {
+    try {
+      const fileName = `project-world-${projectId}.json`
+      const data = await this.readJsonFile(fileName)
+      return data || []
+    } catch (error) {
+      console.error('获取项目世界设定失败:', error)
+      return []
+    }
+  }
+
+  // 保存项目世界设定
+  async saveProjectWorldItems(projectId, worldItems) {
+    try {
+      const fileName = `project-world-${projectId}.json`
+      return await this.writeJsonFile(fileName, worldItems)
+    } catch (error) {
+      console.error('保存项目世界设定失败:', error)
+      return false
+    }
+  }
+
+  // 删除项目世界设定
+  async deleteProjectWorldItems(projectId) {
+    try {
+      const fileName = `project-world-${projectId}.json`
+      return await this.deleteFile(fileName)
+    } catch (error) {
+      console.error('删除项目世界设定失败:', error)
       return false
     }
   }

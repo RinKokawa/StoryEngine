@@ -104,6 +104,26 @@ class StorageManager {
     return this.adapter.deleteCharacter(projectId, characterId)
   }
 
+  // 获取项目世界设定列表
+  getProjectWorldItems(projectId) {
+    return this.adapter.getProjectWorldItems(projectId)
+  }
+
+  // 创建世界设定
+  createWorldItem(projectId, worldData) {
+    return this.adapter.createWorldItem(projectId, worldData)
+  }
+
+  // 更新世界设定
+  updateWorldItem(projectId, worldData) {
+    return this.adapter.updateWorldItem(projectId, worldData)
+  }
+
+  // 删除世界设定
+  deleteWorldItem(projectId, worldId) {
+    return this.adapter.deleteWorldItem(projectId, worldId)
+  }
+
   // 更新今日写作统计
   updateTodayWriting(projectId, wordCount) {
     const stats = this.getWritingStats(projectId)
