@@ -47,6 +47,17 @@
         </li>
       </ul>
     </nav>
+    
+    <!-- GitHub 角标 -->
+    <div class="sidebar-footer">
+      <a href="#" 
+         @click.prevent="openGitHub"
+         class="github-link"
+         :title="isCollapsed ? 'GitHub' : '在 GitHub 上查看源码'">
+        <i class="icon">🐙</i>
+        <span v-show="!isCollapsed">GitHub</span>
+      </a>
+    </div>
   </div>
 </template>
 
@@ -71,6 +82,18 @@ export default {
     },
     navigate(page) {
       this.$emit('navigate', page)
+    },
+    openGitHub() {
+      const url = 'https://github.com/RinKokawa/StoryEngine'
+      
+      // 检查是否在Electron环境中
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        // 使用Electron的shell.openExternal打开外部链接
+        window.electronAPI.openExternal(url)
+      } else {
+        // 在浏览器环境中使用window.open
+        window.open(url, '_blank')
+      }
     }
   }
 }
@@ -188,5 +211,41 @@ export default {
 
 .nav-link span {
   font-size: 14px;
+}
+
+/* GitHub 角标样式 */
+.sidebar-footer {
+  padding: 15px 0;
+  border-top: 1px solid #34495e;
+  margin-top: auto;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  color: #95a5a6;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 13px;
+}
+
+.collapsed .github-link {
+  justify-content: center;
+  padding: 10px;
+}
+
+.github-link:hover {
+  background-color: #34495e;
+  color: #ecf0f1;
+}
+
+.github-link .icon {
+  margin-right: 10px;
+  font-size: 14px;
+}
+
+.collapsed .github-link .icon {
+  margin-right: 0;
 }
 </style>

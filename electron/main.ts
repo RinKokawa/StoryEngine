@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import os from 'node:os'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -64,3 +65,29 @@ app.on('activate', () => {
 })
 
 app.whenReady().then(createWindow)
+
+// --------- IPC handlers ---------
+// 打开外部链接
+ipcMain.handle('open-external', async (_event, url: string) => {
+  try {
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to open external URL:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+// 打开存储位置（为设置页面的功能预留）
+ipcMain.handle('open-storage-location', async () => {
+  try {
+    // 在实际应用中，这里应该打开应用数据存储目录
+    // 目前先打开用户文档目录作为示例
+    const documentsPath = path.join(os.homedir(), 'Documents')
+    await shell.openPath(documentsPath)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to open storage location:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
