@@ -28,4 +28,7 @@ dist-electron
 # Build outputs
 build/
 out/
+release/
+
+# 除了README
 **.md
