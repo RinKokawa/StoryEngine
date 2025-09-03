@@ -9,6 +9,7 @@
       <Dashboard v-if="currentPage === 'dashboard'" :current-project="currentProject" @navigate="handleNavigation" @project-changed="handleProjectSelected" />
       <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
       <StoryEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
+      <CharacterManagement v-else-if="currentPage === 'characters'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <Settings v-else-if="currentPage === 'settings'" @settings-changed="handleSettingsChanged" />
       <div v-else class="page-placeholder">
         <h2>{{ getPageTitle() }}</h2>
@@ -23,6 +24,7 @@ import Dashboard from './components/Dashboard.vue'
 import ProjectManager from './components/ProjectManager.vue'
 import Sidebar from './components/Sidebar.vue'
 import StoryEditor from './views/StoryEditor.vue'
+import CharacterManagement from './views/CharacterManagement.vue'
 import Settings from './components/Settings.vue'
 import storageManager from './utils/storage.js'
 
@@ -33,6 +35,7 @@ export default {
     Dashboard,
     ProjectManager,
     Sidebar,
+    CharacterManagement,
     Settings
   },
   data() {

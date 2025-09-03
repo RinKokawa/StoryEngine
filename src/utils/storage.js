@@ -179,6 +179,65 @@ class StorageManager {
     }
   }
 
+  // 角色管理相关方法
+  // 获取项目角色列表
+  getProjectCharacters(projectId) {
+    try {
+      const key = `project_characters_${projectId}`
+      const characters = localStorage.getItem(key)
+      return characters ? JSON.parse(characters) : []
+    } catch (error) {
+      console.error('获取角色列表失败:', error)
+      return []
+    }
+  }
+
+  // 创建角色
+  createCharacter(projectId, characterData) {
+    try {
+      const characters = this.getProjectCharacters(projectId)
+      characters.push(characterData)
+      const key = `project_characters_${projectId}`
+      localStorage.setItem(key, JSON.stringify(characters))
+      return true
+    } catch (error) {
+      console.error('创建角色失败:', error)
+      return false
+    }
+  }
+
+  // 更新角色
+  updateCharacter(projectId, characterData) {
+    try {
+      const characters = this.getProjectCharacters(projectId)
+      const index = characters.findIndex(c => c.id === characterData.id)
+      if (index !== -1) {
+        characters[index] = characterData
+        const key = `project_characters_${projectId}`
+        localStorage.setItem(key, JSON.stringify(characters))
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('更新角色失败:', error)
+      return false
+    }
+  }
+
+  // 删除角色
+  deleteCharacter(projectId, characterId) {
+    try {
+      const characters = this.getProjectCharacters(projectId)
+      const filteredCharacters = characters.filter(c => c.id !== characterId)
+      const key = `project_characters_${projectId}`
+      localStorage.setItem(key, JSON.stringify(filteredCharacters))
+      return true
+    } catch (error) {
+      console.error('删除角色失败:', error)
+      return false
+    }
+  }
+
   // 更新今日写作统计
   updateTodayWriting(projectId, wordCount) {
     const stats = this.getWritingStats(projectId)

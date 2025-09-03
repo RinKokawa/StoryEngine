@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import './style.css'
 import './assets/themes.css'
 import App from './App.vue'
+import router from './router'
 
 // 开发环境下导入测试工具
 if (import.meta.env.DEV) {
@@ -10,4 +11,5 @@ if (import.meta.env.DEV) {
 }
 
 const app = createApp(App)
+app.use(router)
 app.mount('#app')
