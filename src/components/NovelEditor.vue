@@ -3,20 +3,11 @@
     <!-- 顶部工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <select 
-          v-model="selectedProjectId" 
-          class="project-selector"
+        <ProjectSelector 
+          v-model="selectedProjectId"
+          :projects="availableProjects"
           @change="handleProjectChange"
-        >
-          <option value="" disabled>选择项目</option>
-          <option 
-            v-for="project in availableProjects" 
-            :key="project.id" 
-            :value="project.id"
-          >
-            {{ project.name }}
-          </option>
-        </select>
+        />
         <span v-if="currentProjectName" class="current-project">
           当前项目：{{ currentProjectName }}
         </span>
@@ -85,12 +76,14 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import ContextMenu from './ContextMenu.vue'
+import ProjectSelector from './common/ProjectSelector.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'NovelEditor',
   components: {
-    ContextMenu
+    ContextMenu,
+    ProjectSelector
   },
   props: {
     currentProject: {
@@ -191,11 +184,17 @@ export default {
     }
 
     // 处理项目切换
-    const handleProjectChange = () => {
-      const project = availableProjects.value.find(p => p.id === selectedProjectId.value)
+    const handleProjectChange = (project) => {
       if (project) {
         emit('project-changed', project)
         loadProjectContent(project)
+      } else {
+        // 如果没有传递项目对象，则根据selectedProjectId查找
+        const foundProject = availableProjects.value.find(p => p.id === selectedProjectId.value)
+        if (foundProject) {
+          emit('project-changed', foundProject)
+          loadProjectContent(foundProject)
+        }
       }
     }
 
@@ -559,23 +558,7 @@ export default {
   gap: 15px;
 }
 
-.project-selector {
-  font-size: 16px;
-  font-weight: 500;
-  border: 1px solid #ddd;
-  outline: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background: #f8f9fa;
-  min-width: 200px;
-  transition: all 0.3s;
-}
 
-.project-selector:focus {
-  background: #fff;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-}
 
 .current-project {
   font-size: 14px;
