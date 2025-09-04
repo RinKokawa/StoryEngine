@@ -81,35 +81,24 @@ export default {
     // 加载章节列表
     const loadChapters = () => {
       if (currentProject.value) {
-        chapters.value = storageManager.getProjectChapters(currentProject.value.id)
-        
-        // 如果没有章节，创建第一章
-        if (chapters.value.length === 0) {
-          const firstChapter = storageManager.createChapter(currentProject.value.id, {
-            title: '第一章',
-            order: 1,
-            content: '　　'
-          })
-          if (firstChapter) {
-            chapters.value = [firstChapter]
-            currentChapterId.value = firstChapter.id
-            storageManager.setCurrentChapter(currentProject.value.id, firstChapter.id)
-          }
-        }
+        chapters.value = storageManager.getProjectChapters(currentProject.value.id) || []
       }
     }
 
     // 加载当前编辑的章节
     const loadCurrentChapter = () => {
-      if (currentProject.value) {
+      if (currentProject.value && chapters.value.length > 0) {
         const chapterId = storageManager.getCurrentChapter(currentProject.value.id)
         if (chapterId && chapters.value.find(c => c.id === chapterId)) {
           currentChapterId.value = chapterId
-        } else if (chapters.value.length > 0) {
+        } else {
           // 如果没有设置当前章节，默认选择第一章
           currentChapterId.value = chapters.value[0].id
           storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
         }
+      } else {
+        // 如果没有章节，清空当前章节ID
+        currentChapterId.value = null
       }
     }
 

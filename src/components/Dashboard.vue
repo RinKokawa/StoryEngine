@@ -1,18 +1,44 @@
 <template>
   <div class="dashboard">
-    <div class="dashboard-header">
-      <h1>写作仪表盘</h1>
-      <div class="project-selector">
-        <select :value="currentProject?.id || ''" @change="switchProject">
-          <option value="" disabled>选择项目</option>
-          <option v-for="project in projects" :key="project.id" :value="project.id">
-            {{ project.name }}
-          </option>
-        </select>
+    <!-- 加载中状态 -->
+    <div v-if="isLoading" class="loading-dashboard">
+      <div class="loading-spinner"></div>
+      <p>加载中...</p>
+    </div>
+    
+    <!-- 无项目引导界面 -->
+    <div v-else-if="!hasProjects" class="empty-dashboard">
+      <div class="empty-state-container">
+        <div class="empty-icon">📝</div>
+        <h2>欢迎使用故事引擎</h2>
+        <p>看起来您还没有创建任何项目</p>
+        <button class="create-project-btn" @click="createNewProject">创建第一个项目</button>
+        <div class="empty-tips">
+          <h3>开始您的写作之旅</h3>
+          <ul>
+            <li>创建一个新项目来组织您的故事</li>
+            <li>添加卷和章节来构建故事结构</li>
+            <li>使用编辑器开始您的创作</li>
+          </ul>
+        </div>
       </div>
     </div>
 
-    <div class="dashboard-grid">
+    <!-- 有项目时显示仪表盘 -->
+    <div v-else>
+      <div class="dashboard-header">
+        <h1>写作仪表盘</h1>
+        <div class="project-selector">
+          <select :value="currentProject?.id || ''" @change="switchProject">
+            <option value="" disabled>选择项目</option>
+            <option v-for="project in projects" :key="project.id" :value="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
       <!-- 写作进度和写作日历并排 -->
       <div class="stats-row">
         <!-- 字数统计 -->
@@ -135,6 +161,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -162,11 +189,18 @@ export default {
       selectedMonth: new Date().getMonth(),
       showDatePicker: false,
       monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-      weekdayNames: ['日', '一', '二', '三', '四', '五', '六']
+      weekdayNames: ['日', '一', '二', '三', '四', '五', '六'],
+      isLoading: true
     }
   },
   mounted() {
     this.loadData()
+    // 添加事件监听，当存储变化时重新加载数据
+    window.addEventListener('storage-changed', this.handleStorageChange)
+  },
+  beforeUnmount() {
+    // 移除事件监听
+    window.removeEventListener('storage-changed', this.handleStorageChange)
   },
   watch: {
     currentProject: {
@@ -179,6 +213,10 @@ export default {
     }
   },
   computed: {
+    hasProjects() {
+      // 确保projects数组已经加载完成并且有项目
+      return Array.isArray(this.projects) && this.projects.length > 0
+    },
     progressPercentage() {
       return Math.min((this.totalWords / this.targetWords) * 100, 100)
     },
@@ -233,20 +271,49 @@ export default {
   },
   methods: {
     loadData() {
-      this.projects = storageManager.getProjects()
-      const current = storageManager.getCurrentProject()
-      if (current) {
-        this.loadProjectStats(current.id)
-      }
+      // 设置加载状态
+      this.isLoading = true
+      
+      // 使用setTimeout确保UI先更新为加载状态
+      setTimeout(() => {
+        try {
+          // 获取所有项目
+          this.projects = storageManager.getProjects() || []
+          
+          // 获取当前项目
+          const current = storageManager.getCurrentProject()
+          
+          // 如果有当前项目，加载其统计数据
+          if (current && current.id) {
+            this.loadProjectStats(current.id)
+          } else if (this.projects.length > 0) {
+            // 如果没有当前项目但有项目列表，设置第一个项目为当前项目
+            storageManager.setCurrentProject(this.projects[0])
+            this.$emit('project-changed', this.projects[0])
+            this.loadProjectStats(this.projects[0].id)
+          }
+        } catch (error) {
+          console.error('加载数据失败:', error)
+        } finally {
+          // 完成加载
+          this.isLoading = false
+        }
+      }, 300) // 短暂延迟以确保UI更新
+    },
+    handleStorageChange() {
+      // 当存储变化时重新加载数据
+      this.loadData()
     },
     loadProjectStats(projectId) {
+      if (!projectId) return
+      
       const project = storageManager.getProject(projectId)
       if (project) {
         this.totalWords = project.wordCount || 0
         this.targetWords = project.targetWords || 50000
       }
       
-      this.writingStats = storageManager.getWritingStats(projectId)
+      this.writingStats = storageManager.getWritingStats(projectId) || {}
       this.todayWords = this.writingStats.todayWords || 0
       this.weekWords = this.writingStats.weekWords || 0
     },
@@ -297,6 +364,9 @@ export default {
     },
     editEntry(entry) {
       console.log('编辑条目:', entry)
+    },
+    createNewProject() {
+      this.$emit('navigate', 'projects', { action: 'create' })
     },
     addTask() {
       const text = prompt('请输入任务内容:')
@@ -882,6 +952,108 @@ export default {
   font-style: italic;
 }
 
+/* 加载中状态 */
+.loading-dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #f8f9fa;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-dashboard p {
+  color: #666;
+  font-size: 16px;
+}
+
+/* 空项目状态 */
+.empty-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #f8f9fa;
+}
+
+.empty-state-container {
+  text-align: center;
+  max-width: 500px;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.empty-state-container h2 {
+  margin: 0 0 10px;
+  color: #2c3e50;
+}
+
+.empty-state-container p {
+  margin: 0 0 30px;
+  color: #666;
+  font-size: 16px;
+}
+
+.create-project-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.create-project-btn:hover {
+  background: #0056b3;
+}
+
+.empty-tips {
+  margin-top: 40px;
+  text-align: left;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.empty-tips h3 {
+  margin: 0 0 15px;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.empty-tips ul {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.empty-tips li {
+  margin-bottom: 8px;
+  color: #666;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .stats-row {
@@ -892,6 +1064,11 @@ export default {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
+  }
+  
+  .empty-state-container {
+    margin: 20px;
+    padding: 30px;
   }
 }
 </style>

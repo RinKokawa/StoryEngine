@@ -20,7 +20,7 @@
     </div>
 
     <!-- 编辑区域 -->
-    <div class="editor-container">
+    <div v-if="currentChapter" class="editor-container">
       <textarea
         ref="editor"
         v-model="content"
@@ -42,6 +42,15 @@
         >
           {{ n }}
         </div>
+      </div>
+    </div>
+    
+    <!-- 未选择章节提示 -->
+    <div v-else class="no-chapter-selected">
+      <div class="no-chapter-message">
+        <div class="message-icon">📝</div>
+        <h3>请先选择或创建一个章节</h3>
+        <p>在左侧章节面板中选择一个章节，或创建新章节开始编辑</p>
       </div>
     </div>
 
@@ -699,6 +708,42 @@ export default {
 
 .sidebar-expanded .status-bar {
   left: 250px; /* 侧边栏展开时的宽度 */
+}
+
+/* 未选择章节提示样式 */
+.no-chapter-selected {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  margin: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.no-chapter-message {
+  text-align: center;
+  padding: 40px;
+  max-width: 400px;
+}
+
+.message-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.no-chapter-message h3 {
+  margin: 0 0 10px;
+  color: #2c3e50;
+  font-size: 20px;
+}
+
+.no-chapter-message p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* 滚动条样式 */
