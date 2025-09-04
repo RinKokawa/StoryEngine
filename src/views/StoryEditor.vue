@@ -21,10 +21,10 @@
     <div class="editor-layout">
       <!-- 左侧章节选择器 -->
       <div v-if="sidebarVisible" class="sidebar">
-        <ChapterSelector
+        <VolumeChapterSelector
           v-if="currentProject"
           :project-id="currentProject.id"
-          :current-chapter-id="currentChapterId"
+          :selected-chapter="currentChapter"
           @chapter-selected="handleChapterSelected"
           @chapter-created="handleChapterCreated"
           @chapter-updated="handleChapterUpdated"
@@ -47,14 +47,14 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import NovelEditor from '../components/NovelEditor.vue'
-import ChapterSelector from '../components/common/ChapterSelector.vue'
+import VolumeChapterSelector from '../components/common/VolumeChapterSelector.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'StoryEditor',
   components: {
     NovelEditor,
-    ChapterSelector
+    VolumeChapterSelector
   },
   setup() {
     const currentProject = ref(null)

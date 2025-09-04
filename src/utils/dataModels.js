@@ -139,12 +139,75 @@ export class ProjectMetadataModel {
 }
 
 /**
+ * 卷数据模型
+ */
+export class VolumeModel {
+  constructor(data = {}) {
+    this.id = data.id || this.generateId()
+    this.projectId = data.projectId || ''
+    this.title = data.title || ''
+    this.description = data.description || ''
+    this.order = data.order || 0
+    this.wordCount = data.wordCount || 0
+    this.chapterCount = data.chapterCount || 0
+    this.status = data.status || 'draft' // draft, writing, completed
+    this.createdAt = data.createdAt || new Date().toISOString()
+    this.lastModified = data.lastModified || new Date().toISOString()
+  }
+
+  generateId() {
+    return `volume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  // 更新统计信息
+  updateStats(stats = {}) {
+    if (stats.wordCount !== undefined) this.wordCount = stats.wordCount
+    if (stats.chapterCount !== undefined) this.chapterCount = stats.chapterCount
+    this.lastModified = new Date().toISOString()
+  }
+
+  validate() {
+    const errors = []
+    if (!this.title || this.title.trim().length === 0) {
+      errors.push('卷标题不能为空')
+    }
+    if (!this.projectId) {
+      errors.push('卷必须属于一个项目')
+    }
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  toStorageFormat() {
+    return {
+      id: this.id,
+      projectId: this.projectId,
+      title: this.title,
+      description: this.description,
+      order: this.order,
+      wordCount: this.wordCount,
+      chapterCount: this.chapterCount,
+      status: this.status,
+      createdAt: this.createdAt,
+      lastModified: this.lastModified
+    }
+  }
+
+  static fromStorageFormat(data) {
+    return new VolumeModel(data)
+  }
+}
+
+/**
  * 章节数据模型
  */
 export class ChapterModel {
   constructor(data = {}) {
     this.id = data.id || this.generateId()
     this.projectId = data.projectId || ''
+    this.volumeId = data.volumeId || '' // 添加卷ID
     this.title = data.title || ''
     this.content = data.content || ''
     this.wordCount = data.wordCount || 0
@@ -190,6 +253,7 @@ export class ChapterModel {
     return {
       id: this.id,
       projectId: this.projectId,
+      volumeId: this.volumeId,
       title: this.title,
       content: this.content,
       wordCount: this.wordCount,
@@ -848,6 +912,7 @@ export default {
   ProjectModel,
   ProjectSettingsModel,
   ProjectMetadataModel,
+  VolumeModel,
   ChapterModel,
   ChapterOutlineModel,
   CharacterModel,

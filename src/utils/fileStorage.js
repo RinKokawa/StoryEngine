@@ -354,6 +354,102 @@ class FileStorageManager {
     }
   }
 
+  // ==================== 卷管理方法 ====================
+  
+  // 获取项目的所有卷
+  async getProjectVolumes(projectId) {
+    try {
+      const fileName = `project-volumes-${projectId}.json`
+      const data = await this.readJsonFile(fileName)
+      return data || []
+    } catch (error) {
+      console.error('获取项目卷失败:', error)
+      return []
+    }
+  }
+
+  // 保存项目的所有卷
+  async saveProjectVolumes(projectId, volumes) {
+    try {
+      const fileName = `project-volumes-${projectId}.json`
+      return await this.writeJsonFile(fileName, volumes)
+    } catch (error) {
+      console.error('保存项目卷失败:', error)
+      return false
+    }
+  }
+
+  // 创建新卷
+  async createVolume(projectId, volumeData) {
+    try {
+      const volumes = await this.getProjectVolumes(projectId)
+      volumes.push(volumeData)
+      await this.saveProjectVolumes(projectId, volumes)
+      return volumeData
+    } catch (error) {
+      console.error('创建卷失败:', error)
+      return null
+    }
+  }
+
+  // 更新卷
+  async updateVolume(projectId, volumeData) {
+    try {
+      const volumes = await this.getProjectVolumes(projectId)
+      const index = volumes.findIndex(v => v.id === volumeData.id)
+      if (index !== -1) {
+        volumes[index] = volumeData
+        await this.saveProjectVolumes(projectId, volumes)
+        return volumeData
+      }
+      return null
+    } catch (error) {
+      console.error('更新卷失败:', error)
+      return null
+    }
+  }
+
+  // 删除卷
+  async deleteVolume(projectId, volumeId) {
+    try {
+      const volumes = await this.getProjectVolumes(projectId)
+      const filteredVolumes = volumes.filter(v => v.id !== volumeId)
+      await this.saveProjectVolumes(projectId, filteredVolumes)
+      
+      // 同时删除该卷下的所有章节
+      const chapters = await this.getProjectChapters(projectId)
+      const filteredChapters = chapters.filter(c => c.volumeId !== volumeId)
+      await this.saveProjectChapters(projectId, filteredChapters)
+      
+      return true
+    } catch (error) {
+      console.error('删除卷失败:', error)
+      return false
+    }
+  }
+
+  // 重新排序卷
+  async reorderVolumes(projectId, volumeIds) {
+    try {
+      const volumes = await this.getProjectVolumes(projectId)
+      const reorderedVolumes = []
+      
+      volumeIds.forEach((id, index) => {
+        const volume = volumes.find(v => v.id === id)
+        if (volume) {
+          volume.order = index + 1
+          reorderedVolumes.push(volume)
+        }
+      })
+      
+      await this.saveProjectVolumes(projectId, reorderedVolumes)
+      return true
+    } catch (error) {
+      console.error('重新排序卷失败:', error)
+      return false
+    }
+  }
+
   // ==================== 章节管理方法 ====================
   
   // 获取项目章节
@@ -387,6 +483,38 @@ class FileStorageManager {
     } catch (error) {
       console.error('删除项目章节失败:', error)
       return false
+    }
+  }
+
+  // 创建新章节
+  async createChapter(projectId, volumeId, chapterData) {
+    try {
+      const chapters = await this.getProjectChapters(projectId)
+      const volumeChapters = chapters.filter(c => c.volumeId === volumeId)
+      
+      const newChapter = {
+        ...chapterData,
+        id: chapterData.id || `chapter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        projectId: projectId,
+        volumeId: volumeId,
+        order: chapterData.order || volumeChapters.length + 1,
+        content: chapterData.content || '　　',
+        wordCount: 0,
+        status: chapterData.status || 'draft',
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+      
+      // 计算字数
+      newChapter.wordCount = newChapter.content.replace(/\s/g, '').length
+      
+      chapters.push(newChapter)
+      await this.saveProjectChapters(projectId, chapters)
+      
+      return newChapter
+    } catch (error) {
+      console.error('创建章节失败:', error)
+      return null
     }
   }
 

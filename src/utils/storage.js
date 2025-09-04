@@ -84,11 +84,48 @@ class StorageManager {
     return true
   }
 
+  // ==================== 卷管理方法 ====================
+  
+  // 获取项目的所有卷
+  getProjectVolumes(projectId) {
+    return this.adapter.getProjectVolumes(projectId)
+  }
+
+  // 获取单个卷
+  getVolume(projectId, volumeId) {
+    return this.adapter.getVolume(projectId, volumeId)
+  }
+
+  // 创建新卷
+  createVolume(projectId, volumeData) {
+    return this.adapter.createVolume(projectId, volumeData)
+  }
+
+  // 更新卷
+  updateVolume(projectId, volumeData) {
+    return this.adapter.updateVolume(projectId, volumeData)
+  }
+
+  // 删除卷
+  deleteVolume(projectId, volumeId) {
+    return this.adapter.deleteVolume(projectId, volumeId)
+  }
+
+  // 重新排序卷
+  reorderVolumes(projectId, volumeIds) {
+    return this.adapter.reorderVolumes(projectId, volumeIds)
+  }
+
   // ==================== 章节管理方法 ====================
   
   // 获取项目的所有章节
   getProjectChapters(projectId) {
     return this.adapter.getProjectChapters(projectId)
+  }
+
+  // 获取卷的所有章节
+  getVolumeChapters(projectId, volumeId) {
+    return this.adapter.getVolumeChapters(projectId, volumeId)
   }
 
   // 获取单个章节
@@ -97,8 +134,8 @@ class StorageManager {
   }
 
   // 创建新章节
-  createChapter(projectId, chapterData) {
-    return this.adapter.createChapter(projectId, chapterData)
+  createChapter(projectId, volumeId, chapterData) {
+    return this.adapter.createChapter(projectId, volumeId, chapterData)
   }
 
   // 更新章节

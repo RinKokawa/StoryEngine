@@ -12,6 +12,7 @@ class StorageAdapter {
       projectContents: {},
       writingStats: {},
       projectCharacters: {},
+      projectVolumes: {},
       projectChapters: {},
       currentChapters: {}
     }
@@ -307,6 +308,112 @@ class StorageAdapter {
     return true
   }
 
+  // ==================== 卷管理方法 ====================
+  
+  // 获取项目的所有卷
+  getProjectVolumes(projectId) {
+    if (this.cache.projectVolumes[projectId] !== undefined) {
+      return this.cache.projectVolumes[projectId]
+    }
+    
+    // 异步加载卷数据
+    this.fileStorage.getProjectVolumes(projectId).then(volumes => {
+      this.cache.projectVolumes[projectId] = volumes
+    }).catch(error => {
+      console.error('加载项目卷数据失败:', error)
+      this.cache.projectVolumes[projectId] = []
+    })
+    
+    return []
+  }
+
+  // 获取单个卷
+  getVolume(projectId, volumeId) {
+    const volumes = this.getProjectVolumes(projectId)
+    return volumes.find(v => v.id === volumeId) || null
+  }
+
+  // 创建新卷
+  createVolume(projectId, volumeData) {
+    const volumes = this.getProjectVolumes(projectId)
+    const newVolume = {
+      id: `volume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      projectId,
+      title: volumeData.title || '新卷',
+      order: volumeData.order || volumes.length + 1,
+      status: volumeData.status || 'draft',
+      description: volumeData.description || '',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      ...volumeData
+    }
+    
+    volumes.push(newVolume)
+    this.cache.projectVolumes[projectId] = volumes
+    
+    // 异步保存
+    this.fileStorage.createVolume(projectId, newVolume).catch(console.error)
+    
+    return newVolume
+  }
+
+  // 更新卷
+  updateVolume(projectId, volumeData) {
+    const volumes = this.getProjectVolumes(projectId)
+    const index = volumes.findIndex(v => v.id === volumeData.id)
+    
+    if (index !== -1) {
+      volumes[index] = { ...volumes[index], ...volumeData, lastModified: new Date().toISOString() }
+      this.cache.projectVolumes[projectId] = volumes
+      
+      // 异步保存
+      this.fileStorage.updateVolume(projectId, volumes[index]).catch(console.error)
+      
+      return volumes[index]
+    }
+    
+    return null
+  }
+
+  // 删除卷
+  deleteVolume(projectId, volumeId) {
+    const volumes = this.getProjectVolumes(projectId)
+    const filteredVolumes = volumes.filter(v => v.id !== volumeId)
+    
+    this.cache.projectVolumes[projectId] = filteredVolumes
+    
+    // 异步删除
+    this.fileStorage.deleteVolume(projectId, volumeId).catch(console.error)
+    
+    // 同时删除该卷下的所有章节
+    const chapters = this.getProjectChapters(projectId)
+    const filteredChapters = chapters.filter(c => c.volumeId !== volumeId)
+    this.cache.projectChapters[projectId] = filteredChapters
+    
+    return true
+  }
+
+  // 重新排序卷
+  reorderVolumes(projectId, volumeIds) {
+    const volumes = this.getProjectVolumes(projectId)
+    const reorderedVolumes = []
+    
+    volumeIds.forEach((id, index) => {
+      const volume = volumes.find(v => v.id === id)
+      if (volume) {
+        volume.order = index + 1
+        reorderedVolumes.push(volume)
+      }
+    })
+    
+    this.cache.projectVolumes[projectId] = reorderedVolumes
+    
+    // 异步保存
+    this.fileStorage.reorderVolumes(projectId, volumeIds).catch(console.error)
+    
+    return true
+  }
+
   // ==================== 章节管理方法 ====================
   
   // 获取项目的所有章节
@@ -323,6 +430,12 @@ class StorageAdapter {
     return [] // 默认返回空数组
   }
 
+  // 获取卷的所有章节
+  getVolumeChapters(projectId, volumeId) {
+    const chapters = this.getProjectChapters(projectId)
+    return chapters.filter(c => c.volumeId === volumeId).sort((a, b) => a.order - b.order)
+  }
+
   // 获取单个章节
   getChapter(projectId, chapterId) {
     const chapters = this.getProjectChapters(projectId)
@@ -330,13 +443,14 @@ class StorageAdapter {
   }
 
   // 创建新章节
-  createChapter(projectId, chapterData) {
+  createChapter(projectId, volumeId, chapterData) {
     const chapters = this.getProjectChapters(projectId)
     const newChapter = {
       ...chapterData,
       id: chapterData.id || `chapter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       projectId: projectId,
-      order: chapterData.order || chapters.length + 1,
+      volumeId: volumeId,
+      order: chapterData.order || chapters.filter(c => c.volumeId === volumeId).length + 1,
       content: chapterData.content || '　　',
       wordCount: 0,
       status: chapterData.status || 'draft',
