@@ -2,7 +2,13 @@
   <div class="story-editor">
     <div class="editor-header">
       <div class="title-section">
-        <h1>故事编辑</h1>
+        <div class="title-row">
+          <button @click="toggleSidebar" class="sidebar-toggle" :title="sidebarVisible ? '隐藏章节面板' : '显示章节面板'">
+            <span v-if="sidebarVisible">◀</span>
+            <span v-else>▶</span>
+          </button>
+          <h1>故事编辑</h1>
+        </div>
         <div v-if="currentProject" class="subtitle">
           {{ currentProject.name }}
           <span v-if="currentChapter" class="chapter-info">
@@ -14,7 +20,7 @@
     
     <div class="editor-layout">
       <!-- 左侧章节选择器 -->
-      <div class="sidebar">
+      <div v-if="sidebarVisible" class="sidebar">
         <ChapterSelector
           v-if="currentProject"
           :project-id="currentProject.id"
@@ -27,7 +33,7 @@
       </div>
       
       <!-- 右侧编辑器 -->
-      <div class="editor-content">
+      <div class="editor-content" :class="{ 'full-width': !sidebarVisible }">
         <NovelEditor 
           :current-project="currentProject"
           :current-chapter="currentChapter"
@@ -54,6 +60,7 @@ export default {
     const currentProject = ref(null)
     const currentChapterId = ref(null)
     const chapters = ref([])
+    const sidebarVisible = ref(true)
 
     // 当前章节
     const currentChapter = computed(() => {
@@ -156,6 +163,11 @@ export default {
       }
     }
 
+    // 切换侧边栏显示状态
+    const toggleSidebar = () => {
+      sidebarVisible.value = !sidebarVisible.value
+    }
+
     onMounted(() => {
       loadCurrentProject()
     })
@@ -164,6 +176,8 @@ export default {
       currentProject,
       currentChapterId,
       currentChapter,
+      sidebarVisible,
+      toggleSidebar,
       handleProjectChanged,
       handleChapterSelected,
       handleChapterCreated,
@@ -187,6 +201,33 @@ export default {
   padding: 16px 20px;
   border-bottom: 1px solid #e0e0e0;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.sidebar-toggle:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
 }
 
 .title-section h1 {
@@ -218,6 +259,8 @@ export default {
   border-right: 1px solid #e0e0e0;
   padding: 16px;
   overflow-y: auto;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .editor-content {
@@ -225,6 +268,11 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.editor-content.full-width {
+  width: 100%;
 }
 
 /* 响应式设计 */

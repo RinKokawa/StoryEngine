@@ -137,7 +137,7 @@ export default {
 
     // 监听当前章节变化
     watch(() => props.currentChapter, (newChapter) => {
-      if (newChapter) {
+      if (newChapter && props.currentProject) {
         loadChapterContent(newChapter)
       } else {
         content.value = '　　'
@@ -199,13 +199,11 @@ export default {
     const handleProjectChange = (project) => {
       if (project) {
         emit('project-changed', project)
-        loadProjectContent(project)
       } else {
         // 如果没有传递项目对象，则根据selectedProjectId查找
         const foundProject = availableProjects.value.find(p => p.id === selectedProjectId.value)
         if (foundProject) {
           emit('project-changed', foundProject)
-          loadProjectContent(foundProject)
         }
       }
     }
@@ -213,7 +211,19 @@ export default {
     // 加载章节内容
     const loadChapterContent = (chapter) => {
       if (chapter && chapter.id && props.currentProject) {
-        content.value = storageManager.getChapterContent(props.currentProject.id, chapter.id)
+        try {
+          const chapterContent = storageManager.getChapterContent(props.currentProject.id, chapter.id)
+          content.value = chapterContent || '　　'
+          
+          // 初始化内容缩进
+          nextTick(() => {
+            initializeContent()
+            updateCursorPosition()
+          })
+        } catch (error) {
+          console.error('加载章节内容失败:', error)
+          content.value = '　　'
+        }
       } else {
         content.value = '　　'
       }
@@ -225,11 +235,15 @@ export default {
       return () => {
         if (timer) clearTimeout(timer)
         timer = setTimeout(() => {
-          if (props.currentProject && props.currentChapter && content.value.trim()) {
-            storageManager.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
-            // 更新写作统计
-            const wordCount = content.value.replace(/\s/g, '').length
-            storageManager.updateTodayWriting(props.currentProject.id, wordCount)
+          if (props.currentProject && props.currentChapter && content.value && content.value.trim()) {
+            try {
+              storageManager.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
+              // 更新写作统计
+              const wordCount = content.value.replace(/\s/g, '').length
+              storageManager.updateTodayWriting(props.currentProject.id, wordCount)
+            } catch (error) {
+              console.error('自动保存失败:', error)
+            }
           }
         }, 2000) // 2秒后自动保存
       }
