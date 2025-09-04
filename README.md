@@ -5,55 +5,65 @@
 **应用标识**：`com.rinkokawa.storyengine`
 
 ## 目录
-- 项目简介
-- 主要功能
-- 技术栈
-- 环境要求
-- 安装与运行
-- 使用说明
-- 配置选项
-- 脚本命令
-- 截图（占位与路径约定）
-- 贡献指南
-- 许可证
+- [StoryEngine（故事引擎）](#storyengine故事引擎)
+  - [目录](#目录)
+  - [项目简介](#项目简介)
+  - [主要功能](#主要功能)
+  - [技术栈](#技术栈)
+  - [环境要求](#环境要求)
+  - [安装与运行](#安装与运行)
+  - [使用说明](#使用说明)
+  - [数据管理](#数据管理)
+  - [脚本命令](#脚本命令)
+  - [贡献指南](#贡献指南)
+  - [许可证](#许可证)
+  - [附：目录结构（简要）](#附目录结构简要)
 
 ---
 
 ## 项目简介
 
-StoryEngine 面向长篇小说/剧本等文本创作场景，提供全流程支持：从项目建档、目标设定、写作编辑，到统计与回顾。应用采用本地存储（localStorage），无需后端即可使用。
+StoryEngine 面向长篇小说/剧本等文本创作场景，提供全流程支持：从项目建档、目标设定、写作编辑，到统计与回顾。应用采用本地文件存储，支持离线使用，保障创作数据安全。
 
 ## 主要功能
 
-- 项目管理
+- **项目管理**
   - 新建/编辑/删除项目、目标字数设定、状态与更新时间维护
   - 选择当前项目（在仪表盘与编辑器使用）
-- 故事编辑器
+- **故事编辑器**
   - 行号侧栏、沉浸式编辑界面
   - 右键菜单：复制/剪切/粘贴、全选、查找替换、插入日期时间、字数统计
   - 自动缩进（段首全角空格）、自动保存（2 秒）、手动保存
   - 快捷键：Ctrl+S 保存、Ctrl+F 查找
   - 底部状态栏：行/列位置、字数、最后保存时间
-- 写作仪表盘
+- **卷章节管理**
+  - 支持多卷多章节结构
+  - 章节排序、状态管理
+  - 章节内容独立存储与编辑
+- **角色与世界观管理**
+  - 角色档案创建与管理
+  - 世界设定记录与查询
+- **写作仪表盘**
   - 总字数、目标进度、今日/本周字数
   - 写作日历（支持年月选择、今天快捷回到）
   - 项目快速切换
-- 应用设置
+- **应用设置**
   - 编辑器设置：字体大小、行高、自动保存、自动缩进
   - 界面设置：主题切换（浅色/深色/自动）、侧边栏状态、窗口大小
   - 数据管理：导出/导入/清空数据、打开存储位置
   - 应用行为：启动项目、系统托盘、更新检查
-- 数据持久化
-  - 使用 localStorage 存储项目列表、当前项目、项目内容与每日写作统计
+- **数据持久化**
+  - 使用文件系统存储项目列表、当前项目、项目内容与每日写作统计
   - 支持数据导出/导入（JSON）
+  - 浏览器环境下自动降级使用 localStorage
 
 ## 技术栈
 
-- 前端：Vue 3（Composition API / Options API 混用）、CSS
-- 构建：Vite 5、@vitejs/plugin-vue
-- 桌面：Electron 30、vite-plugin-electron（simple）
-- 打包：electron-builder 24
-- 语言：TypeScript（主流程与配置），部分渲染代码为 JS
+- **前端**：Vue 3（Composition API / Options API 混用）、CSS
+- **构建**：Vite 5、@vitejs/plugin-vue
+- **桌面**：Electron 30、vite-plugin-electron
+- **打包**：electron-builder 24
+- **语言**：TypeScript（主流程与配置），部分渲染代码为 JS
 
 ## 环境要求
 
@@ -104,12 +114,16 @@ npm run preview
   - 右键菜单包含：复制、剪切、粘贴、全选、查找替换、插入日期时间、字数统计(尚未完全实现)
   - 状态栏显示当前行列位置与字数，保存后显示时间
   - 快捷键：Ctrl+S 保存，Ctrl+F 查找
-- 仪表盘
+- **章节管理**
+  - 在左侧章节面板中创建和管理卷与章节
+  - 选择章节后在编辑器中编辑内容
+  - 支持章节重排序和状态管理
+- **仪表盘**
   - 显示总字数、目标进度、今日与本周字数
   - 写作日历按天展示写作字数，支持左右切换月份与选择年份/月份
   - 可在顶部下拉切换当前项目
 
-### 数据管理
+## 数据管理
 
 应用通过 storageManager（src/utils/storage.js）管理数据，在设置页面提供完整的数据管理功能：
 
@@ -118,7 +132,12 @@ npm run preview
 - **打开存储位置**：在桌面应用中直接打开数据存储文件夹
 - **清空数据**：永久删除所有数据（危险操作）
 
-你也可以在渲染进程中直接调用 storageManager 进行操作（或在 DevTools Console 调试）：
+数据存储架构：
+- 在 Electron 环境中使用文件系统存储（userData 目录）
+- 在浏览器环境中自动降级使用 localStorage
+- 通过 storageAdapter 提供统一的同步/异步 API
+
+你也可以在渲染进程中直接调用 storageManager 进行操作：
 
 ```js
 // 导出数据（JSON 字符串）
@@ -132,13 +151,13 @@ const ok = storageManager.importData(json)
 console.log('导入结果:', ok)
 ```
 
-注意：数据保存在本机 localStorage。清理应用数据或重装系统可能导致丢失，建议定期导出备份。
+注意：数据保存在本机文件系统或 localStorage。清理应用数据或重装系统可能导致丢失，建议定期导出备份。
 
 ## 脚本命令
 
-- dev：启动 Vite 开发服务器，并自动启动 Electron
-- build：类型检查 + 前端构建 + Electron 打包（输出安装包到 release/<version>/）
-- preview：本地预览前端构建产物（非 Electron）
+- **dev**：启动 Vite 开发服务器，并自动启动 Electron
+- **build**：类型检查 + 前端构建 + Electron 打包（输出安装包到 release/<version>/）
+- **preview**：本地预览前端构建产物（非 Electron）
 
 ```json
 {
@@ -182,7 +201,7 @@ console.log('导入结果:', ok)
 
 ## 许可证
 
-本项目建议采用 MIT License。
+本项目采用 MIT License。
 
 ```
 MIT License
@@ -201,26 +220,31 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 ```
 StoryEngine/
 ├─ electron/               # Electron 主进程与预加载
-│  ├─ main.ts
-│  └─ preload.ts
+│  ├─ main.ts              # 主进程入口
+│  └─ preload.ts           # 预加载脚本
 ├─ src/
-│  ├─ components/
-│  │  ├─ Dashboard.vue
-│  │  ├─ ProjectManager.vue
-│  │  ├─ NovelEditor.vue
-│  │  └─ ContextMenu.vue
-│  ├─ views/
-│  │  └─ StoryEditor.vue
-│  ├─ utils/
-│  │  └─ storage.js        # 本地存储与统计
-│  ├─ App.vue
-│  ├─ main.ts
-│  └─ main.js
-├─ public/
-├─ vite.config.ts
+│  ├─ components/          # 组件
+│  │  ├─ Dashboard.vue     # 仪表盘组件
+│  │  ├─ ProjectManager.vue # 项目管理组件
+│  │  ├─ NovelEditor.vue   # 编辑器组件
+│  │  ├─ ContextMenu.vue   # 右键菜单组件
+│  │  └─ common/           # 通用组件
+│  ├─ views/               # 视图
+│  │  ├─ StoryEditor.vue   # 故事编辑器视图
+│  │  ├─ CharacterManagement.vue # 角色管理视图
+│  │  └─ WorldBuilding.vue # 世界观构建视图
+│  ├─ utils/               # 工具函数
+│  │  ├─ storage.js        # 存储管理器
+│  │  ├─ storageAdapter.js # 存储适配器
+│  │  └─ fileStorage.js    # 文件存储实现
+│  ├─ App.vue              # 应用根组件
+│  ├─ main.ts              # 渲染进程入口
+│  └─ main.js              # 兼容入口
+├─ public/                 # 静态资源
+├─ vite.config.ts          # Vite 配置
 ├─ electron-builder.json5  # 打包配置
-├─ package.json
-└─ README.md
+├─ package.json            # 项目配置
+└─ README.md               # 项目说明
 ```
 
 如需进一步定制（如多窗口、多语言、同步云端等），可在现有架构基础上扩展。
