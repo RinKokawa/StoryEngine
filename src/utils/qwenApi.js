@@ -23,9 +23,9 @@ class QwenApiService {
    */
   loadConfig() {
     const settings = storageManager.getSettings()
-    this.baseUrl = settings.qwenApiBase || 'https://dashscope.aliyuncs.com/api/v1'
+    this.baseUrl = settings.qwenApiBase || 'https://dashscope.aliyuncs.com/compatible-mode/v1'
     this.apiKey = settings.qwenApiKey || ''
-    this.model = settings.qwenModel || 'qwen-turbo'
+    this.model = settings.qwenModel || 'qwen-plus'
     this.maxTokens = settings.qwenMaxTokens || 2000
     this.temperature = settings.qwenTemperature || 0.7
     this.enabled = settings.enableAiAssistant && !!this.apiKey
@@ -51,24 +51,19 @@ class QwenApiService {
 
     const requestBody = {
       model: options.model || this.model,
-      input: {
-        messages: messages
-      },
-      parameters: {
-        max_tokens: options.maxTokens || this.maxTokens,
-        temperature: options.temperature || this.temperature,
-        top_p: options.topP || 0.8,
-        repetition_penalty: options.repetitionPenalty || 1.1
-      }
+      messages: messages,
+      max_tokens: options.maxTokens || this.maxTokens,
+      temperature: options.temperature || this.temperature,
+      top_p: options.topP || 0.8,
+      stream: false
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/services/aigc/text-generation/generation`, {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-DashScope-SSE': 'disable'
+          'Authorization': `Bearer ${this.apiKey}`
         },
         body: JSON.stringify(requestBody)
       })
@@ -80,8 +75,8 @@ class QwenApiService {
 
       const data = await response.json()
       
-      if (data.output && data.output.text) {
-        return data.output.text.trim()
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+        return data.choices[0].message.content.trim()
       } else {
         throw new Error('API 响应格式错误')
       }
@@ -255,24 +250,135 @@ class QwenApiService {
 
   /**
    * 测试 API 连接
-   * @returns {Promise<boolean>} 连接是否成功
+   * @returns {Promise<{success: boolean, message: string, details?: any}>} 连接测试结果
    */
   async testConnection() {
+    if (!this.apiKey) {
+      return {
+        success: false,
+        message: 'API Key 未配置'
+      }
+    }
+
     try {
-      const result = await this.chat([
-        {
-          role: 'user',
-          content: '你好，请回复"连接成功"'
-        }
-      ], {
-        maxTokens: 10,
-        temperature: 0.1
+      // 使用最小的请求来测试连接和认证
+      const requestBody = {
+        model: this.model,
+        messages: [
+          {
+            role: 'user',
+            content: 'test'
+          }
+        ],
+        max_tokens: 1,
+        temperature: 0.1,
+        stream: false
+      }
+
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify(requestBody)
       })
-      
-      return result.includes('连接成功') || result.includes('你好') || result.length > 0
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // 检查响应格式是否正确（OpenAI兼容格式）
+        if (data.choices || data.error) {
+          return {
+            success: true,
+            message: 'API 连接成功',
+            details: {
+              status: response.status,
+              model: this.model,
+              baseUrl: this.baseUrl,
+              usage: data.usage || null
+            }
+          }
+        } else {
+          return {
+            success: false,
+            message: 'API 响应格式异常',
+            details: data
+          }
+        }
+      } else {
+        // 解析错误响应
+        let errorMessage = `HTTP ${response.status}`
+        let errorDetails = null
+        
+        try {
+          const errorData = await response.json()
+          errorDetails = errorData
+          
+          if (errorData.error && errorData.error.message) {
+            errorMessage = errorData.error.message
+          } else if (errorData.message) {
+            errorMessage = errorData.message
+          } else if (errorData.error && errorData.error.code) {
+            errorMessage = `错误代码: ${errorData.error.code}`
+          }
+        } catch (e) {
+          errorMessage = `HTTP ${response.status} ${response.statusText}`
+        }
+
+        // 根据状态码提供更具体的错误信息
+        switch (response.status) {
+          case 401:
+            errorMessage = 'API Key 无效或已过期'
+            break
+          case 403:
+            errorMessage = 'API Key 权限不足或账户余额不足'
+            break
+          case 404:
+            errorMessage = 'API 端点不存在，请检查基础地址配置'
+            break
+          case 429:
+            errorMessage = 'API 调用频率超限，请稍后重试'
+            break
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            errorMessage = 'API 服务暂时不可用，请稍后重试'
+            break
+        }
+
+        return {
+          success: false,
+          message: errorMessage,
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorDetails
+          }
+        }
+      }
     } catch (error) {
       console.error('API 连接测试失败:', error)
-      return false
+      
+      let errorMessage = '连接失败'
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = '网络连接失败，请检查网络设置和API地址'
+      } else if (error.name === 'AbortError') {
+        errorMessage = '请求超时，请检查网络连接'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+        details: {
+          error: error.name,
+          message: error.message
+        }
+      }
     }
   }
 }

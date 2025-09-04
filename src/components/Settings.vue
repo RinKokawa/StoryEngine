@@ -243,7 +243,7 @@
               <input 
                 type="text" 
                 v-model="settings.qwenApiBase" 
-                placeholder="https://dashscope.aliyuncs.com/api/v1"
+                placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
                 class="api-base-input"
                 @input="onSettingChange"
               >
@@ -333,6 +333,9 @@
               <span v-if="connectionStatus" :class="connectionStatusClass">
                 {{ connectionStatusText }}
               </span>
+            </div>
+            <div v-if="connectionMessage" class="connection-message" :class="connectionStatusClass">
+              {{ connectionMessage }}
             </div>
             <p class="setting-description">
               测试 API Key 是否有效以及网络连接是否正常。
@@ -436,7 +439,8 @@ export default {
       },
       showApiKey: false,
       testingConnection: false,
-      connectionStatus: null // 'success', 'error', null
+      connectionStatus: null, // 'success', 'error', null
+      connectionMessage: '' // 详细的连接测试消息
     }
   },
   computed: {
@@ -528,8 +532,8 @@ export default {
             checkUpdates: true,
             // API 配置默认值
             qwenApiKey: '',
-            qwenApiBase: 'https://dashscope.aliyuncs.com/api/v1',
-            qwenModel: 'qwen-turbo',
+            qwenApiBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            qwenModel: 'qwen-plus',
             qwenMaxTokens: 2000,
             qwenTemperature: 0.7,
             enableAiAssistant: false
@@ -556,6 +560,7 @@ export default {
 
       this.testingConnection = true
       this.connectionStatus = null
+      this.connectionMessage = ''
 
       try {
         // 先保存当前设置以便 API 服务使用最新配置
@@ -568,23 +573,29 @@ export default {
         qwenApiService.loadConfig()
         
         // 测试连接
-        const success = await qwenApiService.testConnection()
+        const result = await qwenApiService.testConnection()
         
-        if (success) {
+        if (result.success) {
           this.connectionStatus = 'success'
+          this.connectionMessage = result.message
+          console.log('API 连接测试成功:', result.details)
         } else {
           this.connectionStatus = 'error'
+          this.connectionMessage = result.message
+          console.error('API 连接测试失败:', result.details)
         }
       } catch (error) {
         console.error('API 连接测试错误:', error)
         this.connectionStatus = 'error'
+        this.connectionMessage = '连接测试过程中发生未知错误'
       } finally {
         this.testingConnection = false
         
-        // 3秒后清除状态
+        // 5秒后清除状态
         setTimeout(() => {
           this.connectionStatus = null
-        }, 3000)
+          this.connectionMessage = ''
+        }, 5000)
       }
     },
     
@@ -971,6 +982,26 @@ export default {
   margin-left: 10px;
 }
 
+.connection-message {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.connection-message.connection-success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.connection-message.connection-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
 .api-usage-info {
   background-color: #f8f9fa;
   border: 1px solid #e9ecef;
@@ -1101,5 +1132,17 @@ body.dark-theme .api-usage-info li {
 
 body.dark-theme .setting-description a {
   color: #60a5fa;
+}
+
+body.dark-theme .connection-message.connection-success {
+  background-color: #1e4d2b;
+  border-color: #2d5a3d;
+  color: #a7d4b4;
+}
+
+body.dark-theme .connection-message.connection-error {
+  background-color: #4d1e1e;
+  border-color: #5a2d2d;
+  color: #d4a7a7;
 }
 </style>
