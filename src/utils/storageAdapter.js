@@ -11,7 +11,9 @@ class StorageAdapter {
       settings: null,
       projectContents: {},
       writingStats: {},
-      projectCharacters: {}
+      projectCharacters: {},
+      projectChapters: {},
+      currentChapters: {}
     }
     this.initialized = false
   }
@@ -67,6 +69,8 @@ class StorageAdapter {
     delete this.cache.projectContents[projectId]
     delete this.cache.writingStats[projectId]
     delete this.cache.projectCharacters[projectId]
+    delete this.cache.projectChapters[projectId]
+    delete this.cache.currentChapters[projectId]
     
     // 异步删除文件
     this.fileStorage.deleteProject(projectId).catch(console.error)
@@ -303,6 +307,182 @@ class StorageAdapter {
     return true
   }
 
+  // ==================== 章节管理方法 ====================
+  
+  // 获取项目的所有章节
+  getProjectChapters(projectId) {
+    if (this.cache.projectChapters[projectId] !== undefined) {
+      return this.cache.projectChapters[projectId]
+    }
+    
+    // 异步加载章节数据
+    this.fileStorage.getProjectChapters(projectId).then(chapters => {
+      this.cache.projectChapters[projectId] = chapters
+    }).catch(console.error)
+    
+    return [] // 默认返回空数组
+  }
+
+  // 获取单个章节
+  getChapter(projectId, chapterId) {
+    const chapters = this.getProjectChapters(projectId)
+    return chapters.find(c => c.id === chapterId) || null
+  }
+
+  // 创建新章节
+  createChapter(projectId, chapterData) {
+    const chapters = this.getProjectChapters(projectId)
+    const newChapter = {
+      ...chapterData,
+      id: chapterData.id || `chapter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      projectId: projectId,
+      order: chapterData.order || chapters.length + 1,
+      content: chapterData.content || '　　',
+      wordCount: 0,
+      status: chapterData.status || 'draft',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    }
+    
+    // 计算字数
+    newChapter.wordCount = newChapter.content.replace(/\s/g, '').length
+    
+    chapters.push(newChapter)
+    this.cache.projectChapters[projectId] = chapters
+    
+    // 异步保存
+    this.fileStorage.saveProjectChapters(projectId, chapters).catch(console.error)
+    
+    return newChapter
+  }
+
+  // 更新章节
+  updateChapter(projectId, chapterData) {
+    const chapters = this.getProjectChapters(projectId)
+    const index = chapters.findIndex(c => c.id === chapterData.id)
+    
+    if (index >= 0) {
+      chapters[index] = {
+        ...chapters[index],
+        ...chapterData,
+        lastModified: new Date().toISOString()
+      }
+      
+      // 重新计算字数
+      if (chapterData.content !== undefined) {
+        chapters[index].wordCount = chapterData.content.replace(/\s/g, '').length
+      }
+      
+      this.cache.projectChapters[projectId] = chapters
+      
+      // 异步保存
+      this.fileStorage.saveProjectChapters(projectId, chapters).catch(console.error)
+      
+      return chapters[index]
+    }
+    
+    return null
+  }
+
+  // 删除章节
+  deleteChapter(projectId, chapterId) {
+    const chapters = this.getProjectChapters(projectId)
+    const filteredChapters = chapters.filter(c => c.id !== chapterId)
+    
+    // 重新排序剩余章节
+    filteredChapters.forEach((chapter, index) => {
+      chapter.order = index + 1
+    })
+    
+    this.cache.projectChapters[projectId] = filteredChapters
+    
+    // 异步保存
+    this.fileStorage.saveProjectChapters(projectId, filteredChapters).catch(console.error)
+    
+    return true
+  }
+
+  // 获取章节内容
+  getChapterContent(projectId, chapterId) {
+    const chapter = this.getChapter(projectId, chapterId)
+    return chapter ? chapter.content : '　　'
+  }
+
+  // 保存章节内容
+  saveChapterContent(projectId, chapterId, content) {
+    const chapters = this.getProjectChapters(projectId)
+    const index = chapters.findIndex(c => c.id === chapterId)
+    
+    if (index >= 0) {
+      chapters[index].content = content
+      chapters[index].wordCount = content.replace(/\s/g, '').length
+      chapters[index].lastModified = new Date().toISOString()
+      
+      this.cache.projectChapters[projectId] = chapters
+      
+      // 异步保存
+      this.fileStorage.saveProjectChapters(projectId, chapters).catch(console.error)
+      
+      // 更新项目总字数
+      this.updateProjectTotalWordCount(projectId)
+      
+      return true
+    }
+    
+    return false
+  }
+
+  // 重新排序章节
+  reorderChapters(projectId, chapterIds) {
+    const chapters = this.getProjectChapters(projectId)
+    const reorderedChapters = []
+    
+    // 按照新的顺序重新排列章节
+    chapterIds.forEach((chapterId, index) => {
+      const chapter = chapters.find(c => c.id === chapterId)
+      if (chapter) {
+        chapter.order = index + 1
+        reorderedChapters.push(chapter)
+      }
+    })
+    
+    this.cache.projectChapters[projectId] = reorderedChapters
+    
+    // 异步保存
+    this.fileStorage.saveProjectChapters(projectId, reorderedChapters).catch(console.error)
+    
+    return true
+  }
+
+  // 获取当前编辑的章节
+  getCurrentChapter(projectId) {
+    return this.cache.currentChapters[projectId] || null
+  }
+
+  // 设置当前编辑的章节
+  setCurrentChapter(projectId, chapterId) {
+    this.cache.currentChapters[projectId] = chapterId
+    
+    // 异步保存到文件
+    this.fileStorage.setCurrentChapter(projectId, chapterId).catch(console.error)
+    
+    return true
+  }
+
+  // 更新项目总字数
+  updateProjectTotalWordCount(projectId) {
+    const chapters = this.getProjectChapters(projectId)
+    const totalWordCount = chapters.reduce((sum, chapter) => sum + (chapter.wordCount || 0), 0)
+    
+    const project = this.getProject(projectId)
+    if (project) {
+      project.wordCount = totalWordCount
+      project.chapters = chapters.length
+      project.lastModified = new Date().toISOString()
+      this.saveProject(project)
+    }
+  }
+
   // 异步方法 - 新的API
   async getProjectsAsync() {
     return await this.fileStorage.getProjects()
@@ -355,7 +535,9 @@ class StorageAdapter {
         settings: this.getDefaultSettings(),
         projectContents: {},
         writingStats: {},
-        projectCharacters: {}
+        projectCharacters: {},
+        projectChapters: {},
+        currentChapters: {}
       }
     }
     return result

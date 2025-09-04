@@ -84,6 +84,58 @@ class StorageManager {
     return true
   }
 
+  // ==================== 章节管理方法 ====================
+  
+  // 获取项目的所有章节
+  getProjectChapters(projectId) {
+    return this.adapter.getProjectChapters(projectId)
+  }
+
+  // 获取单个章节
+  getChapter(projectId, chapterId) {
+    return this.adapter.getChapter(projectId, chapterId)
+  }
+
+  // 创建新章节
+  createChapter(projectId, chapterData) {
+    return this.adapter.createChapter(projectId, chapterData)
+  }
+
+  // 更新章节
+  updateChapter(projectId, chapterData) {
+    return this.adapter.updateChapter(projectId, chapterData)
+  }
+
+  // 删除章节
+  deleteChapter(projectId, chapterId) {
+    return this.adapter.deleteChapter(projectId, chapterId)
+  }
+
+  // 获取章节内容
+  getChapterContent(projectId, chapterId) {
+    return this.adapter.getChapterContent(projectId, chapterId)
+  }
+
+  // 保存章节内容
+  saveChapterContent(projectId, chapterId, content) {
+    return this.adapter.saveChapterContent(projectId, chapterId, content)
+  }
+
+  // 重新排序章节
+  reorderChapters(projectId, chapterIds) {
+    return this.adapter.reorderChapters(projectId, chapterIds)
+  }
+
+  // 获取当前编辑的章节
+  getCurrentChapter(projectId) {
+    return this.adapter.getCurrentChapter(projectId)
+  }
+
+  // 设置当前编辑的章节
+  setCurrentChapter(projectId, chapterId) {
+    return this.adapter.setCurrentChapter(projectId, chapterId)
+  }
+
   // 获取项目角色列表
   getProjectCharacters(projectId) {
     return this.adapter.getProjectCharacters(projectId)

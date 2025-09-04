@@ -89,6 +89,10 @@ export default {
     currentProject: {
       type: Object,
       default: null
+    },
+    currentChapter: {
+      type: Object,
+      default: null
     }
   },
   setup(props, { emit }) {
@@ -128,7 +132,15 @@ export default {
     watch(() => props.currentProject, (newProject) => {
       if (newProject) {
         selectedProjectId.value = newProject.id
-        loadProjectContent(newProject)
+      }
+    }, { immediate: true })
+
+    // 监听当前章节变化
+    watch(() => props.currentChapter, (newChapter) => {
+      if (newChapter) {
+        loadChapterContent(newChapter)
+      } else {
+        content.value = '　　'
       }
     }, { immediate: true })
 
@@ -198,10 +210,10 @@ export default {
       }
     }
 
-    // 加载项目内容
-    const loadProjectContent = (project) => {
-      if (project && project.id) {
-        content.value = storageManager.getProjectContent(project.id)
+    // 加载章节内容
+    const loadChapterContent = (chapter) => {
+      if (chapter && chapter.id && props.currentProject) {
+        content.value = storageManager.getChapterContent(props.currentProject.id, chapter.id)
       } else {
         content.value = '　　'
       }
@@ -213,11 +225,11 @@ export default {
       return () => {
         if (timer) clearTimeout(timer)
         timer = setTimeout(() => {
-          if (selectedProjectId.value && content.value.trim()) {
-            storageManager.saveProjectContent(selectedProjectId.value, content.value)
+          if (props.currentProject && props.currentChapter && content.value.trim()) {
+            storageManager.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
             // 更新写作统计
             const wordCount = content.value.replace(/\s/g, '').length
-            storageManager.updateTodayWriting(selectedProjectId.value, wordCount)
+            storageManager.updateTodayWriting(props.currentProject.id, wordCount)
           }
         }, 2000) // 2秒后自动保存
       }
@@ -393,25 +405,30 @@ export default {
 
     // 保存小说
     const saveNovel = async () => {
-      if (!selectedProjectId.value) {
+      if (!props.currentProject) {
         alert('请先选择一个项目')
+        return
+      }
+
+      if (!props.currentChapter) {
+        alert('请先选择一个章节')
         return
       }
 
       saving.value = true
       try {
-        // 保存内容到本地存储
-        const success = storageManager.saveProjectContent(selectedProjectId.value, content.value)
+        // 保存章节内容到本地存储
+        const success = storageManager.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
         
         if (success) {
           // 更新写作统计
           const wordCount = content.value.replace(/\s/g, '').length
-          storageManager.updateTodayWriting(selectedProjectId.value, wordCount)
+          storageManager.updateTodayWriting(props.currentProject.id, wordCount)
           
           // 更新保存时间
           lastSaveTime.value = new Date().toLocaleString('zh-CN')
           
-          console.log('内容已保存')
+          console.log('章节内容已保存')
         } else {
           throw new Error('保存失败')
         }
@@ -467,13 +484,6 @@ export default {
       // 加载可用项目
       loadAvailableProjects()
       
-      // 加载当前项目（如果有的话）
-      const currentProject = storageManager.getCurrentProject()
-      if (currentProject) {
-        selectedProjectId.value = currentProject.id
-        loadProjectContent(currentProject)
-      }
-      
       // 添加键盘事件监听
       document.addEventListener('keydown', handleKeydown)
       // 添加点击事件监听，用于隐藏右键菜单
@@ -508,7 +518,7 @@ export default {
       contextMenu,
       handleContentChange,
       handleProjectChange,
-      loadProjectContent,
+      loadChapterContent,
       loadAvailableProjects,
       autoSaveContent,
       handleScroll,

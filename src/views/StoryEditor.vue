@@ -1,29 +1,265 @@
 <template>
   <div class="story-editor">
-    <h1>故事编辑</h1>
-    <NovelEditor />
+    <div class="editor-header">
+      <div class="title-section">
+        <h1>故事编辑</h1>
+        <div v-if="currentProject" class="subtitle">
+          {{ currentProject.name }}
+          <span v-if="currentChapter" class="chapter-info">
+            - {{ currentChapter.title || `第${currentChapter.order}章` }}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="editor-layout">
+      <!-- 左侧章节选择器 -->
+      <div class="sidebar">
+        <ChapterSelector
+          v-if="currentProject"
+          :project-id="currentProject.id"
+          :current-chapter-id="currentChapterId"
+          @chapter-selected="handleChapterSelected"
+          @chapter-created="handleChapterCreated"
+          @chapter-updated="handleChapterUpdated"
+          @chapter-deleted="handleChapterDeleted"
+        />
+      </div>
+      
+      <!-- 右侧编辑器 -->
+      <div class="editor-content">
+        <NovelEditor 
+          :current-project="currentProject"
+          :current-chapter="currentChapter"
+          @project-changed="handleProjectChanged"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import { ref, computed, onMounted } from 'vue'
 import NovelEditor from '../components/NovelEditor.vue'
+import ChapterSelector from '../components/common/ChapterSelector.vue'
+import storageManager from '../utils/storage.js'
 
 export default {
   name: 'StoryEditor',
   components: {
-    NovelEditor
+    NovelEditor,
+    ChapterSelector
+  },
+  setup() {
+    const currentProject = ref(null)
+    const currentChapterId = ref(null)
+    const chapters = ref([])
+
+    // 当前章节
+    const currentChapter = computed(() => {
+      if (!currentChapterId.value || !chapters.value.length) return null
+      return chapters.value.find(c => c.id === currentChapterId.value)
+    })
+
+    // 加载当前项目
+    const loadCurrentProject = () => {
+      const project = storageManager.getCurrentProject()
+      if (project) {
+        currentProject.value = project
+        loadChapters()
+        loadCurrentChapter()
+      }
+    }
+
+    // 加载章节列表
+    const loadChapters = () => {
+      if (currentProject.value) {
+        chapters.value = storageManager.getProjectChapters(currentProject.value.id)
+        
+        // 如果没有章节，创建第一章
+        if (chapters.value.length === 0) {
+          const firstChapter = storageManager.createChapter(currentProject.value.id, {
+            title: '第一章',
+            order: 1,
+            content: '　　'
+          })
+          if (firstChapter) {
+            chapters.value = [firstChapter]
+            currentChapterId.value = firstChapter.id
+            storageManager.setCurrentChapter(currentProject.value.id, firstChapter.id)
+          }
+        }
+      }
+    }
+
+    // 加载当前编辑的章节
+    const loadCurrentChapter = () => {
+      if (currentProject.value) {
+        const chapterId = storageManager.getCurrentChapter(currentProject.value.id)
+        if (chapterId && chapters.value.find(c => c.id === chapterId)) {
+          currentChapterId.value = chapterId
+        } else if (chapters.value.length > 0) {
+          // 如果没有设置当前章节，默认选择第一章
+          currentChapterId.value = chapters.value[0].id
+          storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+        }
+      }
+    }
+
+    // 处理项目切换
+    const handleProjectChanged = (project) => {
+      currentProject.value = project
+      storageManager.setCurrentProject(project)
+      loadChapters()
+      loadCurrentChapter()
+    }
+
+    // 处理章节选择
+    const handleChapterSelected = (chapter) => {
+      currentChapterId.value = chapter.id
+      if (currentProject.value) {
+        storageManager.setCurrentChapter(currentProject.value.id, chapter.id)
+      }
+    }
+
+    // 处理章节创建
+    const handleChapterCreated = (chapter) => {
+      chapters.value.push(chapter)
+      currentChapterId.value = chapter.id
+      if (currentProject.value) {
+        storageManager.setCurrentChapter(currentProject.value.id, chapter.id)
+      }
+    }
+
+    // 处理章节更新
+    const handleChapterUpdated = (chapter) => {
+      const index = chapters.value.findIndex(c => c.id === chapter.id)
+      if (index >= 0) {
+        chapters.value[index] = chapter
+      }
+    }
+
+    // 处理章节删除
+    const handleChapterDeleted = (chapter) => {
+      chapters.value = chapters.value.filter(c => c.id !== chapter.id)
+      
+      // 如果删除的是当前章节，切换到第一章
+      if (currentChapterId.value === chapter.id) {
+        if (chapters.value.length > 0) {
+          currentChapterId.value = chapters.value[0].id
+          if (currentProject.value) {
+            storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+          }
+        } else {
+          currentChapterId.value = null
+        }
+      }
+    }
+
+    onMounted(() => {
+      loadCurrentProject()
+    })
+
+    return {
+      currentProject,
+      currentChapterId,
+      currentChapter,
+      handleProjectChanged,
+      handleChapterSelected,
+      handleChapterCreated,
+      handleChapterUpdated,
+      handleChapterDeleted
+    }
   }
 }
 </script>
 
 <style scoped>
 .story-editor {
-  padding: 20px;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
 }
 
-h1 {
-  margin-bottom: 20px;
+.editor-header {
+  background: white;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.title-section h1 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 600;
   color: #2c3e50;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.chapter-info {
+  color: #007bff;
+}
+
+.editor-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 300px;
+  background: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.editor-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .editor-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .editor-content {
+    flex: 1;
+  }
+}
+
+/* 滚动条样式 */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>

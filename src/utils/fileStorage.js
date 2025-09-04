@@ -147,6 +147,7 @@ class FileStorageManager {
     await this.deleteWritingStats(projectId)
     await this.deleteProjectCharacters(projectId)
     await this.deleteProjectWorldItems(projectId)
+    await this.deleteProjectChapters(projectId)
     
     return await this.saveProjects(filteredProjects)
   }
@@ -349,6 +350,162 @@ class FileStorageManager {
       return await this.writeJsonFile(this.FILE_NAMES.SETTINGS, settings)
     } catch (error) {
       console.error('保存设置失败:', error)
+      return false
+    }
+  }
+
+  // ==================== 章节管理方法 ====================
+  
+  // 获取项目章节
+  async getProjectChapters(projectId) {
+    try {
+      const fileName = `project-chapters-${projectId}.json`
+      const data = await this.readJsonFile(fileName)
+      return data || []
+    } catch (error) {
+      console.error('获取项目章节失败:', error)
+      return []
+    }
+  }
+
+  // 保存项目章节
+  async saveProjectChapters(projectId, chapters) {
+    try {
+      const fileName = `project-chapters-${projectId}.json`
+      return await this.writeJsonFile(fileName, chapters)
+    } catch (error) {
+      console.error('保存项目章节失败:', error)
+      return false
+    }
+  }
+
+  // 删除项目章节
+  async deleteProjectChapters(projectId) {
+    try {
+      const fileName = `project-chapters-${projectId}.json`
+      return await this.deleteFile(fileName)
+    } catch (error) {
+      console.error('删除项目章节失败:', error)
+      return false
+    }
+  }
+
+  // 获取当前编辑的章节
+  async getCurrentChapter(projectId) {
+    try {
+      const fileName = `current-chapter-${projectId}.json`
+      const data = await this.readJsonFile(fileName)
+      return data ? data.chapterId : null
+    } catch (error) {
+      console.error('获取当前章节失败:', error)
+      return null
+    }
+  }
+
+  // 设置当前编辑的章节
+  async setCurrentChapter(projectId, chapterId) {
+    try {
+      const fileName = `current-chapter-${projectId}.json`
+      return await this.writeJsonFile(fileName, { chapterId, updatedAt: new Date().toISOString() })
+    } catch (error) {
+      console.error('设置当前章节失败:', error)
+      return false
+    }
+  }
+
+  // 删除写作统计（占位方法）
+  async deleteWritingStats(projectId) {
+    try {
+      const fileName = `writing-stats-${projectId}.json`
+      return await this.deleteFile(fileName)
+    } catch (error) {
+      console.error('删除写作统计失败:', error)
+      return false
+    }
+  }
+
+  // 导出所有数据
+  async exportData() {
+    try {
+      const projects = await this.getProjects()
+      const settings = await this.getSettings()
+      const currentProject = await this.getCurrentProject()
+      
+      const exportData = {
+        projects,
+        settings,
+        currentProject,
+        projectData: {}
+      }
+      
+      // 导出每个项目的详细数据
+      for (const project of projects) {
+        const projectId = project.id
+        exportData.projectData[projectId] = {
+          content: await this.getProjectContent(projectId),
+          characters: await this.getProjectCharacters(projectId),
+          worldItems: await this.getProjectWorldItems(projectId),
+          chapters: await this.getProjectChapters(projectId),
+          currentChapter: await this.getCurrentChapter(projectId)
+        }
+      }
+      
+      return exportData
+    } catch (error) {
+      console.error('导出数据失败:', error)
+      return null
+    }
+  }
+
+  // 导入数据
+  async importData(jsonData) {
+    try {
+      const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData
+      
+      // 导入基础数据
+      if (data.projects) await this.saveProjects(data.projects)
+      if (data.settings) await this.saveSettings(data.settings)
+      if (data.currentProject) await this.setCurrentProject(data.currentProject)
+      
+      // 导入项目详细数据
+      if (data.projectData) {
+        for (const [projectId, projectData] of Object.entries(data.projectData)) {
+          if (projectData.content) await this.saveProjectContent(projectId, projectData.content)
+          if (projectData.characters) await this.saveProjectCharacters(projectId, projectData.characters)
+          if (projectData.worldItems) await this.saveProjectWorldItems(projectId, projectData.worldItems)
+          if (projectData.chapters) await this.saveProjectChapters(projectId, projectData.chapters)
+          if (projectData.currentChapter) await this.setCurrentChapter(projectId, projectData.currentChapter)
+        }
+      }
+      
+      return true
+    } catch (error) {
+      console.error('导入数据失败:', error)
+      return false
+    }
+  }
+
+  // 清空所有数据
+  async clearAll() {
+    try {
+      if (!this.isElectron) {
+        // 在浏览器环境中清空localStorage
+        const keys = Object.keys(localStorage).filter(key => key.startsWith('story_engine_'))
+        keys.forEach(key => localStorage.removeItem(key))
+        return true
+      }
+
+      // 在Electron环境中，获取所有文件并删除
+      const result = await window.electronAPI.listFiles()
+      if (result.success && result.files) {
+        for (const fileName of result.files) {
+          await this.deleteFile(fileName)
+        }
+      }
+      
+      return true
+    } catch (error) {
+      console.error('清空数据失败:', error)
       return false
     }
   }
