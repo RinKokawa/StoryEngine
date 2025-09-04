@@ -264,7 +264,14 @@ class FileStorageManager {
       windowSize: 'normal',
       openLastProject: true,
       minimizeToTray: false,
-      checkUpdates: true
+      checkUpdates: true,
+      // API 配置默认值
+      qwenApiKey: '',
+      qwenApiBase: 'https://dashscope.aliyuncs.com/api/v1',
+      qwenModel: 'qwen-turbo',
+      qwenMaxTokens: 2000,
+      qwenTemperature: 0.7,
+      enableAiAssistant: false
     }
   }
 

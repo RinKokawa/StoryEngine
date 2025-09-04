@@ -27,6 +27,12 @@
           <span>数据管理</span>
         </div>
         <div class="nav-item" 
+             :class="{ active: activeTab === 'api' }" 
+             @click="activeTab = 'api'">
+          <i class="icon">🔑</i>
+          <span>API 配置</span>
+        </div>
+        <div class="nav-item" 
              :class="{ active: activeTab === 'app' }" 
              @click="activeTab = 'app'">
           <i class="icon">⚙️</i>
@@ -200,6 +206,150 @@
           </div>
         </div>
 
+        <!-- API 配置 -->
+        <div v-if="activeTab === 'api'" class="settings-section">
+          <h3>API 配置</h3>
+          
+          <div class="setting-item">
+            <label>Qwen API Key</label>
+            <div class="setting-control">
+              <input 
+                type="password" 
+                v-model="settings.qwenApiKey" 
+                placeholder="请输入您的 Qwen API Key"
+                class="api-key-input"
+                @input="onSettingChange"
+              >
+              <button 
+                type="button" 
+                class="btn btn-secondary show-password-btn"
+                @click="togglePasswordVisibility"
+              >
+                {{ showApiKey ? '隐藏' : '显示' }}
+              </button>
+            </div>
+            <p class="setting-description">
+              用于调用通义千问 API 服务。您可以在 
+              <a href="https://dashscope.aliyun.com/" target="_blank" rel="noopener noreferrer">
+                阿里云百炼平台
+              </a> 
+              获取 API Key。
+            </p>
+          </div>
+
+          <div class="setting-item">
+            <label>API 基础地址</label>
+            <div class="setting-control">
+              <input 
+                type="text" 
+                v-model="settings.qwenApiBase" 
+                placeholder="https://dashscope.aliyuncs.com/api/v1"
+                class="api-base-input"
+                @input="onSettingChange"
+              >
+            </div>
+            <p class="setting-description">
+              Qwen API 的基础地址，通常使用默认值即可。
+            </p>
+          </div>
+
+          <div class="setting-item">
+            <label>默认模型</label>
+            <div class="setting-control">
+              <select v-model="settings.qwenModel" @change="onSettingChange" class="model-select">
+                <option value="qwen-turbo">Qwen-Turbo (快速)</option>
+                <option value="qwen-plus">Qwen-Plus (平衡)</option>
+                <option value="qwen-max">Qwen-Max (高质量)</option>
+                <option value="qwen-max-longcontext">Qwen-Max-LongContext (长文本)</option>
+              </select>
+            </div>
+            <p class="setting-description">
+              选择默认使用的 Qwen 模型。不同模型在速度、质量和成本上有所差异。
+            </p>
+          </div>
+
+          <div class="setting-item">
+            <label>最大 Token 数</label>
+            <div class="setting-control">
+              <input 
+                type="number" 
+                v-model.number="settings.qwenMaxTokens" 
+                min="100" 
+                max="8000" 
+                step="100"
+                @input="onSettingChange"
+                class="token-input"
+              >
+              <span class="value">{{ settings.qwenMaxTokens }} tokens</span>
+            </div>
+            <p class="setting-description">
+              单次请求的最大 token 数量，影响生成内容的长度和 API 费用。
+            </p>
+          </div>
+
+          <div class="setting-item">
+            <label>温度参数</label>
+            <div class="setting-control">
+              <input 
+                type="range" 
+                v-model.number="settings.qwenTemperature" 
+                min="0" 
+                max="2" 
+                step="0.1"
+                @input="onSettingChange"
+                class="temperature-slider"
+              >
+              <span class="value">{{ settings.qwenTemperature }}</span>
+            </div>
+            <p class="setting-description">
+              控制生成内容的随机性。较低值(0.1-0.5)更保守，较高值(0.8-1.5)更有创意。
+            </p>
+          </div>
+
+          <div class="setting-item">
+            <label>启用 AI 辅助功能</label>
+            <div class="setting-control">
+              <ToggleSwitch 
+                v-model="settings.enableAiAssistant"
+                @update:modelValue="onSettingChange"
+              />
+            </div>
+            <p class="setting-description">
+              开启后可在编辑器中使用 AI 辅助写作、续写、润色等功能。
+            </p>
+          </div>
+
+          <div class="setting-item" v-if="settings.qwenApiKey">
+            <label>连接测试</label>
+            <div class="setting-control">
+              <button 
+                class="btn btn-primary" 
+                @click="testApiConnection"
+                :disabled="testingConnection"
+              >
+                <i class="icon">{{ testingConnection ? '⏳' : '🔗' }}</i>
+                {{ testingConnection ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="connectionStatus" :class="connectionStatusClass">
+                {{ connectionStatusText }}
+              </span>
+            </div>
+            <p class="setting-description">
+              测试 API Key 是否有效以及网络连接是否正常。
+            </p>
+          </div>
+
+          <div class="api-usage-info" v-if="settings.qwenApiKey">
+            <h4>使用说明</h4>
+            <ul>
+              <li>配置完成后，您可以在故事编辑器中使用 AI 辅助功能</li>
+              <li>支持智能续写、内容润色、角色对话生成等功能</li>
+              <li>API 调用会产生费用，请合理使用</li>
+              <li>建议定期检查 API 使用量和余额</li>
+            </ul>
+          </div>
+        </div>
+
         <!-- 应用设置 -->
         <div v-if="activeTab === 'app'" class="settings-section">
           <h3>应用设置</h3>
@@ -283,7 +433,10 @@ export default {
         title: '',
         message: '',
         action: null
-      }
+      },
+      showApiKey: false,
+      testingConnection: false,
+      connectionStatus: null // 'success', 'error', null
     }
   },
   computed: {
@@ -291,6 +444,19 @@ export default {
       switch (this.saveStatus) {
         case 'saving': return '保存中...'
         case 'saved': return '已保存'
+        default: return ''
+      }
+    },
+    connectionStatusClass() {
+      return {
+        'connection-success': this.connectionStatus === 'success',
+        'connection-error': this.connectionStatus === 'error'
+      }
+    },
+    connectionStatusText() {
+      switch (this.connectionStatus) {
+        case 'success': return '✅ 连接成功'
+        case 'error': return '❌ 连接失败'
         default: return ''
       }
     }
@@ -359,11 +525,66 @@ export default {
             windowSize: 'normal',
             openLastProject: true,
             minimizeToTray: false,
-            checkUpdates: true
+            checkUpdates: true,
+            // API 配置默认值
+            qwenApiKey: '',
+            qwenApiBase: 'https://dashscope.aliyuncs.com/api/v1',
+            qwenModel: 'qwen-turbo',
+            qwenMaxTokens: 2000,
+            qwenTemperature: 0.7,
+            enableAiAssistant: false
           }
           this.showConfirmDialog = false
           this.saveSettings()
         }
+      }
+    },
+
+    togglePasswordVisibility() {
+      this.showApiKey = !this.showApiKey
+      const input = document.querySelector('.api-key-input')
+      if (input) {
+        input.type = this.showApiKey ? 'text' : 'password'
+      }
+    },
+
+    async testApiConnection() {
+      if (!this.settings.qwenApiKey) {
+        alert('请先输入 API Key')
+        return
+      }
+
+      this.testingConnection = true
+      this.connectionStatus = null
+
+      try {
+        // 先保存当前设置以便 API 服务使用最新配置
+        storageManager.saveSettings(this.settings)
+        
+        // 动态导入 API 服务
+        const { default: qwenApiService } = await import('../utils/qwenApi.js')
+        
+        // 重新加载配置
+        qwenApiService.loadConfig()
+        
+        // 测试连接
+        const success = await qwenApiService.testConnection()
+        
+        if (success) {
+          this.connectionStatus = 'success'
+        } else {
+          this.connectionStatus = 'error'
+        }
+      } catch (error) {
+        console.error('API 连接测试错误:', error)
+        this.connectionStatus = 'error'
+      } finally {
+        this.testingConnection = false
+        
+        // 3秒后清除状态
+        setTimeout(() => {
+          this.connectionStatus = null
+        }, 3000)
       }
     },
     
@@ -706,6 +927,85 @@ export default {
   justify-content: flex-end;
 }
 
+/* API 配置样式 */
+.api-key-input, .api-base-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+
+.show-password-btn {
+  min-width: 60px;
+  padding: 10px 12px;
+}
+
+.model-select {
+  min-width: 200px;
+}
+
+.token-input {
+  width: 100px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.temperature-slider {
+  flex: 1;
+  max-width: 200px;
+}
+
+.connection-success {
+  color: #28a745;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.connection-error {
+  color: #dc3545;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.api-usage-info {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 20px;
+  margin-top: 30px;
+}
+
+.api-usage-info h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.api-usage-info ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.api-usage-info li {
+  margin-bottom: 8px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.setting-description a {
+  color: #2196f3;
+  text-decoration: none;
+}
+
+.setting-description a:hover {
+  text-decoration: underline;
+}
+
 /* 深色主题 */
 body.dark-theme .settings-container {
   background-color: #1a1a1a;
@@ -764,5 +1064,42 @@ body.dark-theme .modal-dialog h3 {
 
 body.dark-theme .modal-dialog p {
   color: #b0b0b0;
+}
+
+/* 深色主题 API 配置样式 */
+body.dark-theme .api-key-input,
+body.dark-theme .api-base-input,
+body.dark-theme .token-input {
+  background-color: #404040;
+  border-color: #555;
+  color: #ffffff;
+}
+
+body.dark-theme .api-key-input::placeholder,
+body.dark-theme .api-base-input::placeholder {
+  color: #888;
+}
+
+body.dark-theme .model-select {
+  background-color: #404040;
+  border-color: #555;
+  color: #ffffff;
+}
+
+body.dark-theme .api-usage-info {
+  background-color: #404040;
+  border-color: #555;
+}
+
+body.dark-theme .api-usage-info h4 {
+  color: #ffffff;
+}
+
+body.dark-theme .api-usage-info li {
+  color: #b0b0b0;
+}
+
+body.dark-theme .setting-description a {
+  color: #60a5fa;
 }
 </style>
