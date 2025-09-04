@@ -4,6 +4,7 @@
   "appId": "com.rinkokawa.storyengine",
   "asar": true,
   "productName": "StoryEngine",
+  "icon": "public/icon.png",
   "directories": {
     "output": "release/${version}"
   },
