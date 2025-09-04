@@ -79,6 +79,17 @@
         <span>最后保存: {{ lastSaveTime }}</span>
       </div>
     </div>
+    
+    <!-- 角色选择器组件 -->
+    <CharacterSelector
+      ref="characterSelectorRef"
+      :visible="characterSelector.visible"
+      :position="{ x: characterSelector.x, y: characterSelector.y }"
+      :projectId="selectedProjectId"
+      @select="insertCharacter"
+      @create="createNewCharacter"
+      @close="hideCharacterSelector"
+    />
   </div>
 </template>
 
@@ -86,13 +97,15 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import ContextMenu from './ContextMenu.vue'
 import ProjectSelector from './common/ProjectSelector.vue'
+import CharacterSelector from './common/CharacterSelector.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'NovelEditor',
   components: {
     ContextMenu,
-    ProjectSelector
+    ProjectSelector,
+    CharacterSelector
   },
   props: {
     currentProject: {
@@ -119,6 +132,16 @@ export default {
       x: 0,
       y: 0
     })
+    
+    // 角色选择器状态
+    const characterSelector = ref({
+      visible: false,
+      x: 0,
+      y: 0
+    })
+    
+    // 角色选择器组件引用
+    const characterSelectorRef = ref(null)
 
     // 计算当前项目名称
     const currentProjectName = computed(() => {
@@ -164,10 +187,17 @@ export default {
     })
 
     // 处理内容变化
-    const handleContentChange = () => {
+    const handleContentChange = (event) => {
       updateCursorPosition()
       // 触发自动保存
       autoSaveContent()
+      
+      // 检查是否输入了@符号
+      const inputChar = event.data
+      if (inputChar === '@') {
+        console.log('检测到@符号输入 (input事件)')
+        showCharacterSelector()
+      }
     }
 
     // 处理键盘输入事件
@@ -190,6 +220,11 @@ export default {
           textarea.setSelectionRange(newPosition, newPosition)
         })
       }
+      // 注意：我们现在在input事件中处理@符号，这里可以保留作为备用
+      // else if (event.key === '@') {
+      //   console.log('检测到@符号输入 (keyPress事件)')
+      //   showCharacterSelector()
+      // }
     }
 
     // 初始化内容缩进
@@ -290,6 +325,110 @@ export default {
     // 隐藏右键菜单
     const hideContextMenu = () => {
       contextMenu.value.visible = false
+    }
+    
+    // 显示角色选择器
+    const showCharacterSelector = () => {
+      console.log('尝试显示角色选择器')
+      if (!editor.value) {
+        console.log('编辑器引用不存在')
+        return
+      }
+      if (!props.currentProject) {
+        console.log('当前项目不存在')
+        return
+      }
+      
+      const textarea = editor.value
+      const cursorPos = textarea.selectionStart
+      
+      // 获取光标位置的坐标
+      const cursorCoords = getCursorCoordinates(textarea, cursorPos)
+      console.log('光标坐标:', cursorCoords)
+      
+      // 设置角色选择器位置和可见性
+      // 使用固定位置进行测试，确保选择器可见
+      const editorRect = textarea.getBoundingClientRect()
+      const x = editorRect.left + 100 // 固定位置测试
+      const y = editorRect.top + 100 // 固定位置测试
+      
+      console.log('使用固定位置:', { x, y })
+      
+      // 先确保角色选择器不可见，然后在下一个事件循环中设置为可见
+      characterSelector.value.visible = false
+      
+      // 使用nextTick确保DOM更新后再显示角色选择器
+      nextTick(() => {
+        // 先尝试使用固定位置，确保选择器可见
+        characterSelector.value.x = x
+        characterSelector.value.y = y
+        characterSelector.value.visible = true
+        
+        // 确保角色选择器组件已加载角色列表
+        if (characterSelectorRef.value && typeof characterSelectorRef.value.loadCharacters === 'function') {
+          characterSelectorRef.value.loadCharacters()
+        }
+        
+        console.log('角色选择器已显示', characterSelector.value)
+      })
+    }
+    
+    // 隐藏角色选择器
+    const hideCharacterSelector = () => {
+      characterSelector.value.visible = false
+    }
+    
+    // 获取文本区域中光标的坐标
+    const getCursorCoordinates = (textarea, position) => {
+      // 创建一个临时元素来计算位置
+      const div = document.createElement('div')
+      const span = document.createElement('span')
+      
+      // 复制文本区域的样式
+      const computed = window.getComputedStyle(textarea)
+      const properties = [
+        'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
+        'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+        'borderStyle', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+        'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize', 'fontSizeAdjust',
+        'lineHeight', 'fontFamily', 'textAlign', 'textTransform', 'textIndent',
+        'textDecoration', 'letterSpacing', 'wordSpacing'
+      ]
+      
+      properties.forEach(prop => {
+        div.style[prop] = computed[prop]
+      })
+      
+      // 设置div的位置
+      div.style.position = 'absolute'
+      div.style.left = '0px'
+      div.style.top = '0px'
+      div.style.visibility = 'hidden'
+      div.style.whiteSpace = 'pre-wrap'
+      div.style.overflow = 'hidden'
+      
+      // 设置文本内容
+      div.textContent = textarea.value.substring(0, position)
+      
+      // 添加一个span来标记光标位置
+      span.textContent = '|'
+      div.appendChild(span)
+      
+      // 添加到文档中进行计算
+      document.body.appendChild(div)
+      
+      // 获取span的位置
+      const rect = span.getBoundingClientRect()
+      const textareaRect = textarea.getBoundingClientRect()
+      
+      // 清理
+      document.body.removeChild(div)
+      
+      // 返回相对于文本区域的坐标
+      return {
+        top: rect.top - textareaRect.top + textarea.scrollTop,
+        left: rect.left - textareaRect.left + textarea.scrollLeft
+      }
     }
 
     // 复制文本
@@ -495,11 +634,84 @@ export default {
       }
     }
 
+    // 插入选中的角色
+    const insertCharacter = (character) => {
+      if (!editor.value) return
+      
+      const textarea = editor.value
+      const cursorPos = textarea.selectionStart
+      
+      // 在光标位置插入角色名称
+      const textBeforeCursor = content.value.substring(0, cursorPos)
+      const textAfterCursor = content.value.substring(cursorPos)
+      
+      // 删除触发的@符号，并插入角色名称
+      // 检查是否需要删除@符号（如果刚刚输入了@）
+      const newText = textBeforeCursor.endsWith('@') 
+        ? textBeforeCursor.slice(0, -1) + character.name + textAfterCursor
+        : textBeforeCursor + character.name + textAfterCursor
+      
+      content.value = newText
+      
+      // 设置光标位置到插入文本的末尾
+      nextTick(() => {
+        const newPosition = cursorPos - (textBeforeCursor.endsWith('@') ? 1 : 0) + character.name.length
+        textarea.setSelectionRange(newPosition, newPosition)
+        textarea.focus()
+      })
+      
+      // 隐藏角色选择器
+      hideCharacterSelector()
+    }
+    
+    // 创建新角色
+    const createNewCharacter = () => {
+      // 隐藏角色选择器
+      hideCharacterSelector()
+      
+      // 弹出创建角色的对话框
+      const characterName = prompt('请输入角色名称:')
+      if (characterName && characterName.trim()) {
+        const characterAlias = prompt('请输入角色别名(可选):')
+        
+        // 创建新角色
+        try {
+          // 这里应该调用存储管理器来创建角色
+          // 假设storageManager有一个createCharacter方法
+          // const newCharacter = storageManager.createCharacter(props.currentProject.id, {
+          //   name: characterName.trim(),
+          //   alias: characterAlias ? characterAlias.trim() : ''
+          // })
+          
+          // 临时模拟创建角色
+          const newCharacter = {
+            id: Date.now().toString(),
+            name: characterName.trim(),
+            alias: characterAlias ? characterAlias.trim() : ''
+          }
+          
+          // 插入新创建的角色
+          insertCharacter(newCharacter)
+          
+          console.log('角色创建成功:', newCharacter)
+        } catch (error) {
+          console.error('创建角色失败:', error)
+          alert('创建角色失败，请重试')
+        }
+      }
+    }
+    
     // 处理文档点击事件
     const handleDocumentClick = (event) => {
       // 确保点击事件不是来自编辑器内部
       if (editor.value && !editor.value.contains(event.target)) {
         hideContextMenu()
+      }
+      
+      // 隐藏角色选择器（除非点击的是角色选择器本身）
+      const characterSelectorEl = document.querySelector('.character-selector')
+      if (characterSelectorEl && !characterSelectorEl.contains(event.target)) {
+        hideCharacterSelector()
       }
     }
     
@@ -539,6 +751,8 @@ export default {
       editor,
       lineNumbers,
       contextMenu,
+      characterSelector,
+      characterSelectorRef,
       handleContentChange,
       handleProjectChange,
       loadChapterContent,
@@ -547,6 +761,10 @@ export default {
       handleScroll,
       handleContextMenu,
       hideContextMenu,
+      showCharacterSelector,
+      hideCharacterSelector,
+      insertCharacter,
+      createNewCharacter,
       copyText,
       cutText,
       pasteText,

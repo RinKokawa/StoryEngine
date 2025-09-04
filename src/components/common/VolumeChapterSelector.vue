@@ -2,12 +2,24 @@
   <div class="volume-chapter-selector">
     <div class="selector-header">
       <h3>卷章管理</h3>
-      <button @click="createVolume" class="create-btn" title="创建新卷">
+      <button @click="createVolume" class="create-btn" title="创建新卷" :disabled="isLoading">
         <span>+卷</span>
       </button>
     </div>
 
-    <div class="volumes-list">
+    <!-- 加载状态指示器 -->
+    <div v-if="isLoading" class="loading-indicator">
+      <div class="spinner"></div>
+      <p>加载中...</p>
+    </div>
+
+    <!-- 错误状态提示 -->
+    <div v-else-if="loadError" class="error-state">
+      <p>{{ loadError }}</p>
+      <button @click="retryLoad" class="retry-btn">重试</button>
+    </div>
+
+    <div v-else class="volumes-list">
       <div v-for="volume in volumes" :key="volume.id" class="volume-item">
         <div class="volume-header" @click="toggleVolume(volume.id)">
           <span class="volume-toggle" :class="{ expanded: expandedVolumes.has(volume.id) }">
@@ -22,7 +34,7 @@
 
         <div v-if="expandedVolumes.has(volume.id)" class="chapters-list">
           <div class="chapter-actions">
-            <button @click="createChapter(volume.id)" class="create-chapter-btn">
+            <button @click="createChapter(volume.id)" class="create-chapter-btn" :disabled="isProcessing">
               + 新建章节
             </button>
           </div>
@@ -74,8 +86,10 @@
             </select>
           </div>
           <div class="form-actions">
-            <button type="button" @click="closeVolumeDialog">取消</button>
-            <button type="submit">保存</button>
+            <button type="button" @click="closeVolumeDialog" :disabled="isProcessing">取消</button>
+            <button type="submit" :disabled="isProcessing">
+              {{ isProcessing ? '保存中...' : '保存' }}
+            </button>
           </div>
         </form>
       </div>
@@ -103,8 +117,10 @@
             <textarea v-model="chapterForm.notes" placeholder="章节简介或备注"></textarea>
           </div>
           <div class="form-actions">
-            <button type="button" @click="closeChapterDialog">取消</button>
-            <button type="submit">保存</button>
+            <button type="button" @click="closeChapterDialog" :disabled="isProcessing">取消</button>
+            <button type="submit" :disabled="isProcessing">
+              {{ isProcessing ? '保存中...' : '保存' }}
+            </button>
           </div>
         </form>
       </div>
@@ -113,7 +129,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import storageManager from '../../utils/storage.js'
 import { VolumeModel, ChapterModel } from '../../utils/dataModels.js'
 
@@ -135,6 +151,17 @@ export default {
     const chapters = ref([])
     const expandedVolumes = ref(new Set())
     
+    // 加载和处理状态
+    const isLoading = ref(false)
+    const isProcessing = ref(false)
+    const loadError = ref(null)
+    const loadAttempts = ref(0)
+    const maxLoadAttempts = 3
+    
+    // 防止重复创建
+    const operationInProgress = ref(false)
+    const operationTimeout = ref(null)
+    
     // 对话框状态
     const showVolumeDialog = ref(false)
     const showChapterDialog = ref(false)
@@ -155,6 +182,13 @@ export default {
       notes: ''
     })
 
+    // 监听项目ID变化，重新加载数据
+    watch(() => props.projectId, (newProjectId) => {
+      if (newProjectId) {
+        loadData()
+      }
+    })
+
     // 获取指定卷的章节
     const getVolumeChapters = (volumeId) => {
       return chapters.value.filter(c => c.volumeId === volumeId).sort((a, b) => a.order - b.order)
@@ -162,28 +196,62 @@ export default {
 
     // 加载数据
     const loadData = async () => {
+      if (!props.projectId || isLoading.value) return
+      
+      isLoading.value = true
+      loadError.value = null
+      
       try {
+        console.log('开始加载卷章数据...')
+        
         // 加载卷数据
-        volumes.value = await storageManager.getProjectVolumes(props.projectId) || []
+        const volumesData = await storageManager.getProjectVolumes(props.projectId) || []
+        volumes.value = volumesData
         
         // 加载章节数据
-        chapters.value = await storageManager.getProjectChapters(props.projectId) || []
+        const chaptersData = await storageManager.getProjectChapters(props.projectId) || []
+        chapters.value = chaptersData
+        
+        console.log(`加载完成: ${volumesData.length}卷, ${chaptersData.length}章`)
         
         // 默认展开第一卷（如果有）
-        if (volumes.value.length > 0) {
-          expandedVolumes.value.add(volumes.value[0].id)
+        if (volumesData.length > 0) {
+          expandedVolumes.value.add(volumesData[0].id)
         }
         
         // 如果有选中的章节，确保其所在的卷是展开的
         if (props.selectedChapter) {
-          const chapter = chapters.value.find(c => c.id === props.selectedChapter.id)
+          const chapter = chaptersData.find(c => c.id === props.selectedChapter.id)
           if (chapter && chapter.volumeId) {
             expandedVolumes.value.add(chapter.volumeId)
           }
         }
+        
+        // 重置加载尝试次数
+        loadAttempts.value = 0
       } catch (error) {
         console.error('加载卷章数据失败:', error)
+        loadError.value = '加载数据失败，请重试'
+        
+        // 增加加载尝试次数
+        loadAttempts.value++
+        
+        // 如果尝试次数小于最大尝试次数，自动重试
+        if (loadAttempts.value < maxLoadAttempts) {
+          console.log(`自动重试加载 (${loadAttempts.value}/${maxLoadAttempts})...`)
+          setTimeout(() => {
+            loadData()
+          }, 1000) // 1秒后重试
+        }
+      } finally {
+        isLoading.value = false
       }
+    }
+
+    // 手动重试加载
+    const retryLoad = () => {
+      loadAttempts.value = 0
+      loadData()
     }
 
     // 创建默认卷
@@ -222,6 +290,8 @@ export default {
 
     // 创建卷
     const createVolume = () => {
+      if (isProcessing.value) return
+      
       editingVolume.value = null
       volumeForm.title = ''
       volumeForm.description = ''
@@ -231,6 +301,8 @@ export default {
 
     // 编辑卷
     const editVolume = (volume) => {
+      if (isProcessing.value) return
+      
       editingVolume.value = volume
       volumeForm.title = volume.title
       volumeForm.description = volume.description || ''
@@ -240,6 +312,10 @@ export default {
 
     // 保存卷
     const saveVolume = async () => {
+      if (isProcessing.value) return
+      
+      isProcessing.value = true
+      
       try {
         if (editingVolume.value) {
           // 更新卷
@@ -273,12 +349,18 @@ export default {
       } catch (error) {
         console.error('保存卷失败:', error)
         alert('保存卷失败，请重试')
+      } finally {
+        isProcessing.value = false
       }
     }
 
     // 删除卷
     const deleteVolume = async (volumeId) => {
+      if (isProcessing.value) return
+      
       if (confirm('确定要删除这个卷吗？卷下的所有章节也会被删除。')) {
+        isProcessing.value = true
+        
         try {
           await storageManager.deleteVolume(props.projectId, volumeId)
           volumes.value = volumes.value.filter(v => v.id !== volumeId)
@@ -287,22 +369,42 @@ export default {
         } catch (error) {
           console.error('删除卷失败:', error)
           alert('删除卷失败，请重试')
+        } finally {
+          isProcessing.value = false
         }
       }
     }
 
     // 创建章节
     const createChapter = (volumeId) => {
+      if (isProcessing.value || operationInProgress.value) return
+      
+      // 防止重复创建
+      operationInProgress.value = true
+      
+      // 设置超时，5秒后重置操作状态
+      if (operationTimeout.value) clearTimeout(operationTimeout.value)
+      operationTimeout.value = setTimeout(() => {
+        operationInProgress.value = false
+      }, 5000)
+      
       editingChapter.value = null
       currentVolumeId.value = volumeId
       chapterForm.title = ''
       chapterForm.status = 'draft'
       chapterForm.notes = ''
       showChapterDialog.value = true
+      
+      // 对话框显示后重置操作状态
+      setTimeout(() => {
+        operationInProgress.value = false
+      }, 500)
     }
 
     // 编辑章节
     const editChapter = (chapter) => {
+      if (isProcessing.value) return
+      
       editingChapter.value = chapter
       currentVolumeId.value = chapter.volumeId
       chapterForm.title = chapter.title
@@ -313,6 +415,10 @@ export default {
 
     // 保存章节
     const saveChapter = async () => {
+      if (isProcessing.value) return
+      
+      isProcessing.value = true
+      
       try {
         if (editingChapter.value) {
           // 更新章节
@@ -340,20 +446,32 @@ export default {
           }
           
           const newChapter = await storageManager.createChapter(props.projectId, currentVolumeId.value, chapterData)
-          chapters.value.push(newChapter)
-          emit('chapter-created', newChapter)
-          selectChapter(newChapter)
+          
+          // 检查是否已存在相同ID的章节（防止重复添加）
+          if (!chapters.value.some(c => c.id === newChapter.id)) {
+            chapters.value.push(newChapter)
+            emit('chapter-created', newChapter)
+            selectChapter(newChapter)
+          } else {
+            console.warn('章节已存在，避免重复添加:', newChapter.id)
+          }
         }
         closeChapterDialog()
       } catch (error) {
         console.error('保存章节失败:', error)
         alert('保存章节失败，请重试')
+      } finally {
+        isProcessing.value = false
       }
     }
 
     // 删除章节
     const deleteChapter = async (chapterId) => {
+      if (isProcessing.value) return
+      
       if (confirm('确定要删除这个章节吗？')) {
+        isProcessing.value = true
+        
         try {
           await storageManager.deleteChapter(props.projectId, chapterId)
           chapters.value = chapters.value.filter(c => c.id !== chapterId)
@@ -361,6 +479,8 @@ export default {
         } catch (error) {
           console.error('删除章节失败:', error)
           alert('删除章节失败，请重试')
+        } finally {
+          isProcessing.value = false
         }
       }
     }
@@ -377,6 +497,13 @@ export default {
       currentVolumeId.value = null
     }
 
+    // 组件卸载时清理定时器
+    const cleanup = () => {
+      if (operationTimeout.value) {
+        clearTimeout(operationTimeout.value)
+      }
+    }
+
     onMounted(() => {
       loadData()
     })
@@ -385,6 +512,9 @@ export default {
       volumes,
       chapters,
       expandedVolumes,
+      isLoading,
+      isProcessing,
+      loadError,
       showVolumeDialog,
       showChapterDialog,
       editingVolume,
@@ -403,7 +533,8 @@ export default {
       saveChapter,
       deleteChapter,
       closeVolumeDialog,
-      closeChapterDialog
+      closeChapterDialog,
+      retryLoad
     }
   }
 }
@@ -444,8 +575,13 @@ export default {
   transition: background-color 0.2s;
 }
 
-.create-btn:hover {
+.create-btn:hover:not(:disabled) {
   background: #0056b3;
+}
+
+.create-btn:disabled {
+  background: #a0c4e4;
+  cursor: not-allowed;
 }
 
 .volumes-list {
@@ -532,8 +668,13 @@ export default {
   transition: background-color 0.2s;
 }
 
-.create-chapter-btn:hover {
+.create-chapter-btn:hover:not(:disabled) {
   background: #1e7e34;
+}
+
+.create-chapter-btn:disabled {
+  background: #8fcb9b;
+  cursor: not-allowed;
 }
 
 .chapter-item {
@@ -604,6 +745,51 @@ export default {
   color: #666;
   font-size: 14px;
   padding: 20px;
+}
+
+/* 加载状态和错误状态 */
+.loading-indicator, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  flex: 1;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 123, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #007bff;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-state p {
+  color: #dc3545;
+  margin-bottom: 16px;
+}
+
+.retry-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.retry-btn:hover {
+  background: #0056b3;
 }
 
 /* 对话框样式 */
@@ -683,8 +869,13 @@ export default {
   color: white;
 }
 
-.form-actions button[type="button"]:hover {
+.form-actions button[type="button"]:hover:not(:disabled) {
   background: #545b62;
+}
+
+.form-actions button[type="button"]:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
 }
 
 .form-actions button[type="submit"] {
@@ -692,7 +883,12 @@ export default {
   color: white;
 }
 
-.form-actions button[type="submit"]:hover {
+.form-actions button[type="submit"]:hover:not(:disabled) {
   background: #0056b3;
+}
+
+.form-actions button[type="submit"]:disabled {
+  background: #a0c4e4;
+  cursor: not-allowed;
 }
 </style>

@@ -21,8 +21,17 @@
     <div class="editor-layout">
       <!-- 左侧章节选择器 -->
       <div v-if="sidebarVisible" class="sidebar">
+        <div v-if="isLoading" class="loading-state">
+          <div class="spinner"></div>
+          <p>加载中...</p>
+        </div>
+        <div v-else-if="loadError" class="error-state">
+          <p>{{ loadError }}</p>
+          <button @click="retryLoad" class="retry-btn">重试</button>
+        </div>
         <VolumeChapterSelector
-          v-if="currentProject"
+          v-else-if="currentProject"
+          :key="'vcs-' + currentProject.id"
           :project-id="currentProject.id"
           :selected-chapter="currentChapter"
           @chapter-selected="handleChapterSelected"
@@ -45,7 +54,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import NovelEditor from '../components/NovelEditor.vue'
 import VolumeChapterSelector from '../components/common/VolumeChapterSelector.vue'
 import storageManager from '../utils/storage.js'
@@ -61,6 +70,12 @@ export default {
     const currentChapterId = ref(null)
     const chapters = ref([])
     const sidebarVisible = ref(true)
+    
+    // 加载状态
+    const isLoading = ref(false)
+    const loadError = ref(null)
+    const loadAttempts = ref(0)
+    const maxLoadAttempts = 3
 
     // 当前章节
     const currentChapter = computed(() => {
@@ -69,86 +84,186 @@ export default {
     })
 
     // 加载当前项目
-    const loadCurrentProject = () => {
-      const project = storageManager.getCurrentProject()
-      if (project) {
-        currentProject.value = project
-        loadChapters()
-        loadCurrentChapter()
+    const loadCurrentProject = async () => {
+      isLoading.value = true
+      loadError.value = null
+      
+      try {
+        console.log('开始加载当前项目...')
+        const project = await storageManager.getCurrentProject()
+        
+        if (project) {
+          console.log('当前项目加载成功:', project.name)
+          currentProject.value = project
+          await loadChapters()
+          await loadCurrentChapter()
+        } else {
+          console.warn('未找到当前项目')
+        }
+        
+        // 重置加载尝试次数
+        loadAttempts.value = 0
+      } catch (error) {
+        console.error('加载当前项目失败:', error)
+        loadError.value = '加载项目失败，请重试'
+        
+        // 增加加载尝试次数
+        loadAttempts.value++
+        
+        // 如果尝试次数小于最大尝试次数，自动重试
+        if (loadAttempts.value < maxLoadAttempts) {
+          console.log(`自动重试加载 (${loadAttempts.value}/${maxLoadAttempts})...`)
+          setTimeout(() => {
+            loadCurrentProject()
+          }, 1000) // 1秒后重试
+        }
+      } finally {
+        isLoading.value = false
       }
     }
 
+    // 手动重试加载
+    const retryLoad = () => {
+      loadAttempts.value = 0
+      loadCurrentProject()
+    }
+
     // 加载章节列表
-    const loadChapters = () => {
-      if (currentProject.value) {
-        chapters.value = storageManager.getProjectChapters(currentProject.value.id) || []
+    const loadChapters = async () => {
+      if (!currentProject.value) return
+      
+      try {
+        console.log('开始加载章节列表...')
+        const projectChapters = await storageManager.getProjectChapters(currentProject.value.id) || []
+        chapters.value = projectChapters
+        console.log(`成功加载${projectChapters.length}个章节`)
+      } catch (error) {
+        console.error('加载章节列表失败:', error)
+        throw error // 向上传递错误
       }
     }
 
     // 加载当前编辑的章节
-    const loadCurrentChapter = () => {
-      if (currentProject.value && chapters.value.length > 0) {
-        const chapterId = storageManager.getCurrentChapter(currentProject.value.id)
-        if (chapterId && chapters.value.find(c => c.id === chapterId)) {
-          currentChapterId.value = chapterId
+    const loadCurrentChapter = async () => {
+      if (!currentProject.value) return
+      
+      try {
+        if (chapters.value.length > 0) {
+          console.log('开始加载当前章节...')
+          const chapterId = await storageManager.getCurrentChapter(currentProject.value.id)
+          
+          if (chapterId && chapters.value.find(c => c.id === chapterId)) {
+            currentChapterId.value = chapterId
+            console.log('当前章节加载成功:', chapterId)
+          } else {
+            // 如果没有设置当前章节，默认选择第一章
+            currentChapterId.value = chapters.value[0].id
+            await storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+            console.log('设置默认章节:', chapters.value[0].id)
+          }
         } else {
-          // 如果没有设置当前章节，默认选择第一章
-          currentChapterId.value = chapters.value[0].id
-          storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+          // 如果没有章节，清空当前章节ID
+          currentChapterId.value = null
+          console.log('无可用章节')
         }
-      } else {
-        // 如果没有章节，清空当前章节ID
-        currentChapterId.value = null
+      } catch (error) {
+        console.error('加载当前章节失败:', error)
+        throw error // 向上传递错误
       }
     }
 
     // 处理项目切换
-    const handleProjectChanged = (project) => {
-      currentProject.value = project
-      storageManager.setCurrentProject(project)
-      loadChapters()
-      loadCurrentChapter()
+    const handleProjectChanged = async (project) => {
+      if (!project) return
+      
+      isLoading.value = true
+      loadError.value = null
+      
+      try {
+        console.log('项目切换:', project.name)
+        currentProject.value = project
+        await storageManager.setCurrentProject(project)
+        await loadChapters()
+        await loadCurrentChapter()
+      } catch (error) {
+        console.error('项目切换失败:', error)
+        loadError.value = '项目切换失败，请重试'
+      } finally {
+        isLoading.value = false
+      }
     }
 
     // 处理章节选择
-    const handleChapterSelected = (chapter) => {
-      currentChapterId.value = chapter.id
-      if (currentProject.value) {
-        storageManager.setCurrentChapter(currentProject.value.id, chapter.id)
+    const handleChapterSelected = async (chapter) => {
+      if (!chapter || !currentProject.value) return
+      
+      try {
+        console.log('选择章节:', chapter.title || chapter.id)
+        currentChapterId.value = chapter.id
+        await storageManager.setCurrentChapter(currentProject.value.id, chapter.id)
+      } catch (error) {
+        console.error('选择章节失败:', error)
+        alert('选择章节失败，请重试')
       }
     }
 
     // 处理章节创建
-    const handleChapterCreated = (chapter) => {
-      chapters.value.push(chapter)
-      currentChapterId.value = chapter.id
-      if (currentProject.value) {
-        storageManager.setCurrentChapter(currentProject.value.id, chapter.id)
+    const handleChapterCreated = async (chapter) => {
+      if (!chapter || !currentProject.value) return
+      
+      try {
+        console.log('创建章节:', chapter.title || chapter.id)
+        
+        // 检查是否已存在相同ID的章节（防止重复添加）
+        if (!chapters.value.some(c => c.id === chapter.id)) {
+          chapters.value.push(chapter)
+          currentChapterId.value = chapter.id
+          await storageManager.setCurrentChapter(currentProject.value.id, chapter.id)
+        } else {
+          console.warn('章节已存在，避免重复添加:', chapter.id)
+        }
+      } catch (error) {
+        console.error('创建章节失败:', error)
+        alert('创建章节失败，请重试')
       }
     }
 
     // 处理章节更新
     const handleChapterUpdated = (chapter) => {
-      const index = chapters.value.findIndex(c => c.id === chapter.id)
-      if (index >= 0) {
-        chapters.value[index] = chapter
+      if (!chapter) return
+      
+      try {
+        console.log('更新章节:', chapter.title || chapter.id)
+        const index = chapters.value.findIndex(c => c.id === chapter.id)
+        if (index >= 0) {
+          chapters.value[index] = chapter
+        }
+      } catch (error) {
+        console.error('更新章节失败:', error)
+        alert('更新章节失败，请重试')
       }
     }
 
     // 处理章节删除
-    const handleChapterDeleted = (chapter) => {
-      chapters.value = chapters.value.filter(c => c.id !== chapter.id)
+    const handleChapterDeleted = async (chapterId) => {
+      if (!chapterId || !currentProject.value) return
       
-      // 如果删除的是当前章节，切换到第一章
-      if (currentChapterId.value === chapter.id) {
-        if (chapters.value.length > 0) {
-          currentChapterId.value = chapters.value[0].id
-          if (currentProject.value) {
-            storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+      try {
+        console.log('删除章节:', chapterId)
+        chapters.value = chapters.value.filter(c => c.id !== chapterId)
+        
+        // 如果删除的是当前章节，切换到第一章
+        if (currentChapterId.value === chapterId) {
+          if (chapters.value.length > 0) {
+            currentChapterId.value = chapters.value[0].id
+            await storageManager.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+          } else {
+            currentChapterId.value = null
           }
-        } else {
-          currentChapterId.value = null
         }
+      } catch (error) {
+        console.error('删除章节失败:', error)
+        alert('删除章节失败，请重试')
       }
     }
 
@@ -156,6 +271,13 @@ export default {
     const toggleSidebar = () => {
       sidebarVisible.value = !sidebarVisible.value
     }
+
+    // 监听项目变化，确保组件重新渲染
+    watch(() => currentProject.value, (newProject) => {
+      if (newProject) {
+        console.log('项目变化触发重新渲染:', newProject.name)
+      }
+    })
 
     onMounted(() => {
       loadCurrentProject()
@@ -166,12 +288,15 @@ export default {
       currentChapterId,
       currentChapter,
       sidebarVisible,
+      isLoading,
+      loadError,
       toggleSidebar,
       handleProjectChanged,
       handleChapterSelected,
       handleChapterCreated,
       handleChapterUpdated,
-      handleChapterDeleted
+      handleChapterDeleted,
+      retryLoad
     }
   }
 }
@@ -262,6 +387,51 @@ export default {
 
 .editor-content.full-width {
   width: 100%;
+}
+
+/* 加载状态和错误状态 */
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  height: 100%;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 123, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #007bff;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-state p {
+  color: #dc3545;
+  margin-bottom: 16px;
+}
+
+.retry-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.retry-btn:hover {
+  background: #0056b3;
 }
 
 /* 响应式设计 */
