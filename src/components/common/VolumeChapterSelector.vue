@@ -505,7 +505,10 @@ export default {
     }
 
     onMounted(() => {
-      loadData()
+      // 如果已经有项目ID，则加载数据
+      if (props.projectId) {
+        loadData()
+      }
     })
 
     return {

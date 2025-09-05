@@ -156,8 +156,19 @@ export default {
     })
 
     // 加载可用项目列表
-    const loadAvailableProjects = () => {
-      availableProjects.value = storageManager.getProjects()
+    const loadAvailableProjects = async () => {
+      try {
+        console.log('开始加载可用项目列表...')
+        // 使用异步方式获取项目列表
+        const projects = await storageManager.getProjects()
+        availableProjects.value = projects || []
+        console.log(`成功加载${projects ? projects.length : 0}个项目`)
+        return projects
+      } catch (error) {
+        console.error('加载项目列表失败:', error)
+        availableProjects.value = []
+        return []
+      }
     }
 
     // 监听传入的当前项目
@@ -168,10 +179,22 @@ export default {
     }, { immediate: true })
 
     // 监听当前章节变化
-    watch(() => props.currentChapter, (newChapter) => {
-      if (newChapter && props.currentProject) {
-        loadChapterContent(newChapter)
-      } else {
+    watch(() => props.currentChapter, async (newChapter, oldChapter) => {
+      try {
+        console.log('章节变化检测:', 
+          newChapter ? (newChapter.title || newChapter.id) : '无章节', 
+          '→', 
+          oldChapter ? (oldChapter.title || oldChapter.id) : '无章节')
+        
+        if (newChapter && props.currentProject) {
+          // 确保异步加载完成
+          await loadChapterContent(newChapter)
+        } else {
+          console.log('无章节或项目，设置默认内容')
+          content.value = '　　'
+        }
+      } catch (error) {
+        console.error('章节变化处理失败:', error)
         content.value = '　　'
       }
     }, { immediate: true })
@@ -240,27 +263,54 @@ export default {
     }
 
     // 处理项目切换
-    const handleProjectChange = (project) => {
-      if (project) {
-        emit('project-changed', project)
-      } else {
-        // 如果没有传递项目对象，则根据selectedProjectId查找
-        const foundProject = availableProjects.value.find(p => p.id === selectedProjectId.value)
-        if (foundProject) {
-          emit('project-changed', foundProject)
+    const handleProjectChange = async (project) => {
+      try {
+        console.log('处理项目切换...')
+        
+        if (project) {
+          console.log('使用传入的项目:', project.name)
+          emit('project-changed', project)
+        } else {
+          // 如果没有传递项目对象，则根据selectedProjectId查找
+          // 确保项目列表已加载
+          if (availableProjects.value.length === 0) {
+            console.log('项目列表为空，尝试加载项目列表')
+            await loadAvailableProjects()
+          }
+          
+          const foundProject = availableProjects.value.find(p => p.id === selectedProjectId.value)
+          if (foundProject) {
+            console.log('根据ID找到项目:', foundProject.name)
+            emit('project-changed', foundProject)
+          } else {
+            console.warn('未找到ID对应的项目:', selectedProjectId.value)
+          }
         }
+      } catch (error) {
+        console.error('项目切换处理失败:', error)
       }
     }
 
     // 加载章节内容
-    const loadChapterContent = (chapter) => {
+    const loadChapterContent = async (chapter) => {
       if (chapter && chapter.id && props.currentProject) {
         try {
-          const chapterContent = storageManager.getChapterContent(props.currentProject.id, chapter.id)
+          console.log(`开始加载章节内容: ${chapter.title || chapter.id}`)
+          
+          // 使用异步方式获取章节内容
+          const chapterContent = await storageManager.getChapterContent(props.currentProject.id, chapter.id)
+          
+          // 确保组件仍然挂载在DOM上
+          if (!editor.value) {
+            console.warn('编辑器元素不存在，可能组件已卸载')
+            return
+          }
+          
           content.value = chapterContent || '　　'
+          console.log('章节内容加载成功')
           
           // 初始化内容缩进
-          nextTick(() => {
+          await nextTick(() => {
             initializeContent()
             updateCursorPosition()
           })
@@ -269,6 +319,7 @@ export default {
           content.value = '　　'
         }
       } else {
+        console.log('无效的章节或项目，设置默认内容')
         content.value = '　　'
       }
     }
@@ -715,20 +766,34 @@ export default {
       }
     }
     
-    onMounted(() => {
-      // 加载可用项目
-      loadAvailableProjects()
-      
-      // 添加键盘事件监听
-      document.addEventListener('keydown', handleKeydown)
-      // 添加点击事件监听，用于隐藏右键菜单
-      document.addEventListener('click', handleDocumentClick)
-      
-      // 初始化内容缩进和光标位置
-      nextTick(() => {
-        initializeContent()
-        updateCursorPosition()
-      })
+    onMounted(async () => {
+      try {
+        console.log('NovelEditor组件挂载中...')
+        
+        // 异步加载可用项目
+        await loadAvailableProjects()
+        
+        // 如果有当前项目，确保选中
+        if (props.currentProject) {
+          console.log('设置当前项目:', props.currentProject.name)
+          selectedProjectId.value = props.currentProject.id
+        }
+        
+        // 添加键盘事件监听
+        document.addEventListener('keydown', handleKeydown)
+        // 添加点击事件监听，用于隐藏右键菜单
+        document.addEventListener('click', handleDocumentClick)
+        
+        // 初始化内容缩进和光标位置
+        await nextTick(() => {
+          initializeContent()
+          updateCursorPosition()
+        })
+        
+        console.log('NovelEditor组件挂载完成')
+      } catch (error) {
+        console.error('NovelEditor组件挂载失败:', error)
+      }
     })
     
     onUnmounted(() => {
