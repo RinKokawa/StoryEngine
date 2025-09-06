@@ -13,6 +13,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "pinia": "^3.0.3",
     "vue": "^3.4.21"
   },
   "devDependencies": {
