@@ -26,4 +26,52 @@ export default defineConfig({
         : {},
     }),
   ],
+
+  // 路径别名配置
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@components': path.resolve(__dirname, 'src/components'),
+      '@stores': path.resolve(__dirname, 'src/stores'),
+      '@services': path.resolve(__dirname, 'src/services'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@types': path.resolve(__dirname, 'src/types'),
+      '@composables': path.resolve(__dirname, 'src/composables')
+    }
+  },
+
+  // 构建优化配置
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue', 'pinia'],
+          'editor': ['axios'],
+          'utils': ['lodash-es']
+        }
+      }
+    },
+    
+    // 压缩配置
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production',
+        drop_debugger: true
+      }
+    }
+  },
+
+  // 开发服务器配置
+  server: {
+    port: 3000,
+    open: false // Electron会自动打开
+  },
+
+  // 测试配置
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.ts']
+  }
 })
