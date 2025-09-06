@@ -250,8 +250,8 @@ export default {
 }
 
 .github-icon {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   filter: brightness(0.6); /* 使图标颜色与文字颜色匹配 */
 }
 
