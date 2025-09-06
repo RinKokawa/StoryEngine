@@ -2,15 +2,15 @@
   <div class="volume-chapter-selector">
     <div class="selector-header">
       <h3>卷章管理</h3>
-      <button @click="createVolume" class="create-btn" title="创建新卷" :disabled="isLoading">
+      <button @click="createVolume" class="create-btn" title="创建新卷" :disabled="isLoading || isDataLoading">
         <span>+卷</span>
       </button>
     </div>
 
     <!-- 加载状态指示器 -->
-    <div v-if="isLoading" class="loading-indicator">
+    <div v-if="isLoading || isDataLoading" class="loading-indicator">
       <div class="spinner"></div>
-      <p>加载中...</p>
+      <p>{{ isLoading ? '加载中...' : '数据同步中...' }}</p>
     </div>
 
     <!-- 错误状态提示 -->
@@ -41,8 +41,8 @@
           
           <div v-for="chapter in getVolumeChapters(volume.id)" :key="chapter.id" 
                class="chapter-item" 
-               :class="{ active: selectedChapter?.id === chapter.id }"
-               @click="selectChapter(chapter)">
+               :class="{ active: selectedChapter?.id === chapter.id, 'disabled': isDataLoading }"
+               @click="!isDataLoading && selectChapter(chapter)">
             <div class="chapter-info">
               <span class="chapter-title">{{ chapter.title || '未命名章节' }}</span>
               <span class="chapter-meta">{{ chapter.wordCount || 0 }}字</span>
@@ -158,11 +158,14 @@ export default {
     const loadAttempts = ref(0)
     const maxLoadAttempts = 5
     
+    // 数据加载状态 - 用于防止在数据未完全加载时点击章节
+    const isDataLoading = ref(false)
+    
     // 轮询相关
     const pollingTimer = ref(null)
     const pollingCount = ref(0)
-    const maxPollingCount = 10 // 最多轮询10次
-    const pollingInterval = 500 // 每500ms轮询一次
+    const maxPollingCount = 10 // 恢复原来的轮询次数
+    const pollingInterval = 500 // 恢复原来的轮询间隔
     
     // 防止重复创建
     const operationInProgress = ref(false)
@@ -322,6 +325,7 @@ export default {
 
     // 选择章节
     const selectChapter = (chapter) => {
+      console.log('[DEBUG] 选择章节:', chapter.id, chapter.title)
       emit('chapter-selected', chapter)
     }
 
@@ -604,11 +608,19 @@ export default {
         if (props.projectId) {
           console.log('[DEBUG] onMounted中准备加载数据, 项目ID:', props.projectId)
           try {
-            // 使用非阻塞方式加载数据
-            Promise.resolve().then(() => loadData())
-              .catch(error => console.error('[ERROR] onMounted中加载数据失败:', error))
-              .finally(() => {
-                // 无论加载成功还是失败，都启动轮询机制
+            // 直接加载数据
+            loadData()
+              .then(() => {
+                console.log('[DEBUG] 初始数据加载成功')
+                // 如果数据加载成功但为空，启动轮询
+                if (volumes.value.length === 0) {
+                  console.log('[DEBUG] 数据为空，启动轮询')
+                  startPolling()
+                }
+              })
+              .catch(error => {
+                console.error('[ERROR] onMounted中加载数据失败:', error)
+                // 如果加载失败，启动轮询
                 startPolling()
               })
           } catch (error) {
@@ -630,6 +642,7 @@ export default {
       expandedVolumes,
       isLoading,
       isProcessing,
+      isDataLoading,
       loadError,
       showVolumeDialog,
       showChapterDialog,
@@ -804,13 +817,18 @@ export default {
   transition: background-color 0.2s;
 }
 
-.chapter-item:hover {
+.chapter-item:hover:not(.disabled) {
   background: #e9ecef;
 }
 
 .chapter-item.active {
   background: #007bff;
   color: white;
+}
+
+.chapter-item.disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .chapter-info {
