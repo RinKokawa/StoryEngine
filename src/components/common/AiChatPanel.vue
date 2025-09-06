@@ -1,7 +1,21 @@
 <template>
   <div class="ai-chat-panel">
     <div class="chat-header">
-      <h3>AI助手</h3>
+      <h3>AI助手 (Qwen)</h3>
+      <div class="header-actions">
+        <button @click="showApiKeyDialog" class="api-key-btn" :class="{ 'configured': hasApiKey }">
+          <span v-if="hasApiKey">✓</span>
+          <span v-else>⚙</span>
+        </button>
+        <button @click="clearChat" class="clear-btn" title="清空对话">
+          🗑
+        </button>
+      </div>
+    </div>
+    
+    <div v-if="!hasApiKey" class="api-key-notice">
+      <p>请先设置Qwen API密钥以使用AI助手功能</p>
+      <button @click="showApiKeyDialog" class="setup-btn">设置API密钥</button>
     </div>
     
     <div class="chat-messages" ref="messagesContainer">
@@ -17,6 +31,12 @@
           <span></span>
         </div>
       </div>
+      <div v-if="error" class="error-message">
+        <div class="error-content">
+          <strong>错误：</strong>{{ error }}
+        </div>
+        <button @click="retryLastMessage" class="retry-btn">重试</button>
+      </div>
     </div>
     
     <div class="chat-input">
@@ -24,107 +44,215 @@
         v-model="userInput" 
         placeholder="输入消息与AI对话..." 
         @keydown.enter.prevent="sendMessage"
+        :disabled="!hasApiKey || isTyping"
         rows="3"
       ></textarea>
-      <button @click="sendMessage" :disabled="!userInput.trim() || isTyping">
+      <button @click="sendMessage" :disabled="!userInput.trim() || isTyping || !hasApiKey">
         发送
       </button>
     </div>
+    
+    <!-- API密钥设置对话框 -->
+    <ApiKeyDialog 
+      :visible="apiKeyDialogVisible" 
+      @close="apiKeyDialogVisible = false"
+      @save="handleApiKeySaved"
+    />
   </div>
 </template>
 
 <script>
 import { ref, onMounted, nextTick, watch } from 'vue'
+import qwenApiService from '../../utils/qwenApi.js'
+import ApiKeyDialog from './ApiKeyDialog.vue'
 
 export default {
   name: 'AiChatPanel',
+  components: {
+    ApiKeyDialog
+  },
   props: {
     currentProject: Object,
     currentChapter: Object
   },
   setup(props) {
     const userInput = ref('')
-    const messages = ref([
-      { 
-        role: 'ai', 
-        content: '你好！我是你的AI写作助手。我可以帮你构思情节、完善角色或解答写作问题。请告诉我你需要什么帮助？', 
-        timestamp: new Date() 
-      }
-    ])
+    const messages = ref([])
     const isTyping = ref(false)
     const messagesContainer = ref(null)
+    const hasApiKey = ref(false)
+    const apiKeyDialogVisible = ref(false)
+    const error = ref('')
+    const lastUserMessage = ref('')
     
-    // 监听项目或章节变化
-    watch([() => props.currentProject, () => props.currentChapter], () => {
-      if (props.currentProject && messages.value.length <= 1) {
-        let welcomeMessage = `你好！我正在协助你创作《${props.currentProject.name}》`
+    // 初始化API密钥
+    const initializeApiKey = () => {
+      try {
+        const savedApiKey = localStorage.getItem('qwen_api_key')
+        if (savedApiKey) {
+          qwenApiService.setApiKey(savedApiKey)
+          hasApiKey.value = true
+        }
+      } catch (e) {
+        console.warn('无法加载已保存的API密钥:', e)
+      }
+    }
+    
+    // 初始化欢迎消息
+    const initializeWelcomeMessage = () => {
+      if (!hasApiKey.value) {
+        messages.value = [{
+          role: 'ai',
+          content: '你好！我是基于Qwen的AI写作助手。请先设置API密钥以开始使用。',
+          timestamp: new Date()
+        }]
+        return
+      }
+      
+      let welcomeMessage = '你好！我是你的AI写作助手，基于通义千问(Qwen)模型。我可以帮你构思情节、完善角色或解答写作问题。'
+      
+      if (props.currentProject) {
+        welcomeMessage = `你好！我正在协助你创作《${props.currentProject.name}》`
         if (props.currentChapter) {
           welcomeMessage += `的${props.currentChapter.title || `第${props.currentChapter.order}章`}`
         }
         welcomeMessage += '。有什么可以帮到你的吗？'
-        
-        messages.value = [{ 
-          role: 'ai', 
-          content: welcomeMessage, 
-          timestamp: new Date() 
-        }]
       }
-    }, { immediate: true })
+      
+      messages.value = [{ 
+        role: 'ai', 
+        content: welcomeMessage, 
+        timestamp: new Date() 
+      }]
+    }
+    
+    // 监听项目或章节变化
+    watch([() => props.currentProject, () => props.currentChapter], () => {
+      if (hasApiKey.value && messages.value.length <= 1) {
+        initializeWelcomeMessage()
+      }
+    })
     
     // 发送消息
     const sendMessage = async () => {
-      if (!userInput.value.trim() || isTyping.value) return
+      if (!userInput.value.trim() || isTyping.value || !hasApiKey.value) return
+      
+      const messageContent = userInput.value.trim()
+      lastUserMessage.value = messageContent
       
       // 添加用户消息
       const userMessage = {
         role: 'user',
-        content: userInput.value,
+        content: messageContent,
         timestamp: new Date()
       }
       messages.value.push(userMessage)
       userInput.value = ''
+      error.value = ''
       
       // 滚动到底部
       await nextTick()
       scrollToBottom()
       
-      // 模拟AI思考
+      // 调用Qwen API
       isTyping.value = true
       
-      // 模拟AI回复（实际项目中这里应该调用AI API）
-      setTimeout(() => {
-        simulateAiResponse(userMessage.content)
-      }, 1000)
+      try {
+        // 获取对话历史（排除系统消息和错误消息）
+        const conversationHistory = messages.value
+          .filter(msg => msg.role === 'user' || msg.role === 'ai')
+          .slice(0, -1) // 排除刚添加的用户消息
+        
+        const response = await qwenApiService.sendMessageWithContext(
+          messageContent,
+          props.currentProject,
+          props.currentChapter,
+          conversationHistory
+        )
+        
+        if (response.success) {
+          // 添加AI回复
+          messages.value.push({
+            role: 'ai',
+            content: response.content,
+            timestamp: new Date()
+          })
+        } else {
+          throw new Error('API返回异常')
+        }
+      } catch (err) {
+        console.error('发送消息失败:', err)
+        error.value = err.message || '发送消息失败，请重试'
+      } finally {
+        isTyping.value = false
+        
+        // 滚动到底部
+        await nextTick()
+        scrollToBottom()
+      }
     }
     
-    // 模拟AI回复
-    const simulateAiResponse = (userMessage) => {
-      // 这里是模拟回复，实际项目中应该替换为真实的AI API调用
-      let response = ''
+    // 重试最后一条消息
+    const retryLastMessage = async () => {
+      if (!lastUserMessage.value || isTyping.value) return
       
-      if (userMessage.includes('情节') || userMessage.includes('剧情')) {
-        response = '对于情节发展，你可以考虑增加一些冲突或转折，让故事更加吸引人。比如主角可能面临一个意想不到的挑战，或者发现一个重要的秘密。'
-      } else if (userMessage.includes('角色')) {
-        response = '塑造丰满的角色需要考虑他们的背景、动机、性格特点和成长弧线。你可以给角色设置一些独特的习惯或缺陷，让他们更加真实。'
-      } else if (userMessage.includes('写作') || userMessage.includes('技巧')) {
-        response = '写作时可以尝试"展示而不是讲述"的技巧，通过具体的场景、对话和行动来展现情节和角色，而不是直接告诉读者。这样能让读者更加投入故事。'
-      } else {
-        response = '我理解你的问题。在创作过程中，保持灵感和动力很重要。你可以尝试从不同角度思考故事，或者暂时放下，稍后再回来看可能会有新的想法。'
-      }
+      error.value = ''
+      isTyping.value = true
       
-      // 添加AI回复
-      messages.value.push({
-        role: 'ai',
-        content: response,
-        timestamp: new Date()
-      })
-      
-      isTyping.value = false
-      
-      // 滚动到底部
-      nextTick(() => {
+      try {
+        // 获取对话历史（排除错误消息）
+        const conversationHistory = messages.value
+          .filter(msg => msg.role === 'user' || msg.role === 'ai')
+        
+        const response = await qwenApiService.sendMessageWithContext(
+          lastUserMessage.value,
+          props.currentProject,
+          props.currentChapter,
+          conversationHistory
+        )
+        
+        if (response.success) {
+          // 添加AI回复
+          messages.value.push({
+            role: 'ai',
+            content: response.content,
+            timestamp: new Date()
+          })
+        } else {
+          throw new Error('API返回异常')
+        }
+      } catch (err) {
+        console.error('重试失败:', err)
+        error.value = err.message || '重试失败，请检查网络连接'
+      } finally {
+        isTyping.value = false
+        
+        // 滚动到底部
+        await nextTick()
         scrollToBottom()
-      })
+      }
+    }
+    
+    // 显示API密钥设置对话框
+    const showApiKeyDialog = () => {
+      apiKeyDialogVisible.value = true
+    }
+    
+    // 处理API密钥保存
+    const handleApiKeySaved = (apiKey) => {
+      qwenApiService.setApiKey(apiKey)
+      hasApiKey.value = true
+      error.value = ''
+      
+      // 重新初始化欢迎消息
+      initializeWelcomeMessage()
+    }
+    
+    // 清空对话
+    const clearChat = () => {
+      messages.value = []
+      error.value = ''
+      initializeWelcomeMessage()
     }
     
     // 滚动到底部
@@ -141,6 +269,8 @@ export default {
     }
     
     onMounted(() => {
+      initializeApiKey()
+      initializeWelcomeMessage()
       scrollToBottom()
     })
     
@@ -149,7 +279,14 @@ export default {
       messages,
       isTyping,
       messagesContainer,
+      hasApiKey,
+      apiKeyDialogVisible,
+      error,
       sendMessage,
+      retryLastMessage,
+      showApiKeyDialog,
+      handleApiKeySaved,
+      clearChat,
       formatTime
     }
   }
@@ -169,6 +306,9 @@ export default {
   padding: 16px;
   border-bottom: 1px solid #e0e0e0;
   background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chat-header h3 {
@@ -176,6 +316,66 @@ export default {
   font-size: 16px;
   font-weight: 600;
   color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.api-key-btn, .clear-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.api-key-btn:hover, .clear-btn:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.api-key-btn.configured {
+  background: #d4edda;
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.api-key-notice {
+  padding: 20px;
+  text-align: center;
+  background: #fff3cd;
+  border-bottom: 1px solid #ffeaa7;
+  color: #856404;
+}
+
+.api-key-notice p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+.setup-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.setup-btn:hover {
+  background: #0056b3;
 }
 
 .chat-messages {
@@ -316,3 +516,39 @@ export default {
   background: #a8a8a8;
 }
 </style>
+/*
+ 错误消息样式 */
+.error-message {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.error-content {
+  flex: 1;
+  color: #721c24;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.retry-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.retry-btn:hover {
+  background: #c82333;
+}
