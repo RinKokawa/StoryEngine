@@ -562,7 +562,7 @@ export default {
         storageManager.saveSettings(this.settings)
         
         // 动态导入 API 服务
-        const { default: qwenApiService } = await import('../utils/qwenApi.js')
+        const { default: qwenApiService } = await import('../utils/qwenApiServer.js')
         
         // 重新加载配置
         qwenApiService.loadConfig()
