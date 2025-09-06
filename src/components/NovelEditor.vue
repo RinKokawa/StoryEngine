@@ -187,7 +187,11 @@ export default {
           oldChapter ? (oldChapter.title || oldChapter.id) : '无章节')
         
         if (newChapter && props.currentProject) {
-          // 确保异步加载完成
+          // 先清空内容，避免显示旧内容
+          content.value = '　　'
+          
+          // 确保DOM已更新后再加载内容
+          await nextTick()
           await loadChapterContent(newChapter)
         } else {
           console.log('无章节或项目，设置默认内容')
@@ -291,14 +295,46 @@ export default {
       }
     }
 
-    // 加载章节内容
+    // 加载章节内容 - 完全绕过缓存机制，直接从文件系统加载
     const loadChapterContent = async (chapter) => {
       if (chapter && chapter.id && props.currentProject) {
         try {
-          console.log(`开始加载章节内容: ${chapter.title || chapter.id}`)
+          console.log(`开始加载章节内容: ${chapter.title || chapter.id}, 项目ID: ${props.currentProject.id}`)
           
-          // 使用异步方式获取章节内容
-          const chapterContent = await storageManager.getChapterContent(props.currentProject.id, chapter.id)
+          // 直接从文件系统加载所有章节
+          const fileName = `project-chapters-${props.currentProject.id}.json`
+          let chapters = []
+          
+          // 如果在Electron环境中
+          if (window.electronAPI && window.electronAPI.readFile) {
+            try {
+              console.log('使用Electron API读取章节文件')
+              const result = await window.electronAPI.readFile(fileName)
+              if (result.success && result.data) {
+                chapters = JSON.parse(result.data)
+                console.log(`成功读取到${chapters.length}个章节`)
+              }
+            } catch (err) {
+              console.error('Electron读取章节文件失败:', err)
+            }
+          } else {
+            // 在浏览器环境中使用localStorage
+            try {
+              console.log('使用localStorage读取章节数据')
+              const key = `story_engine_${fileName.replace('.json', '')}`
+              const data = localStorage.getItem(key)
+              if (data) {
+                chapters = JSON.parse(data)
+                console.log(`成功从localStorage读取到${chapters.length}个章节`)
+              }
+            } catch (err) {
+              console.error('localStorage读取章节数据失败:', err)
+            }
+          }
+          
+          // 查找当前章节
+          const currentChapter = chapters.find(c => c.id === chapter.id)
+          console.log('查找章节结果:', currentChapter ? '找到章节' : '未找到章节')
           
           // 确保组件仍然挂载在DOM上
           if (!editor.value) {
@@ -306,8 +342,14 @@ export default {
             return
           }
           
-          content.value = chapterContent || '　　'
-          console.log('章节内容加载成功')
+          // 设置内容
+          if (currentChapter && currentChapter.content) {
+            content.value = currentChapter.content
+            console.log('成功设置章节内容')
+          } else {
+            content.value = '　　'
+            console.log('未找到章节内容，使用默认值')
+          }
           
           // 初始化内容缩进
           await nextTick(() => {
@@ -777,6 +819,16 @@ export default {
         if (props.currentProject) {
           console.log('设置当前项目:', props.currentProject.name)
           selectedProjectId.value = props.currentProject.id
+          
+          // 如果有当前章节，确保加载内容
+          if (props.currentChapter) {
+            console.log('组件挂载时加载当前章节:', props.currentChapter.title || props.currentChapter.id)
+            // 先清空内容，避免显示旧内容
+            content.value = '　　'
+            // 确保DOM已更新
+            await nextTick()
+            await loadChapterContent(props.currentChapter)
+          }
         }
         
         // 添加键盘事件监听

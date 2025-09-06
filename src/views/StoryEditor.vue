@@ -21,6 +21,14 @@
     <div class="editor-layout">
       <!-- 左侧章节选择器 -->
       <div v-if="sidebarVisible" class="sidebar">
+        <!-- 项目信息区域 - 始终显示 -->
+        <div v-if="currentProject" class="sidebar-header">
+          <h3>卷章管理</h3>
+          <div class="project-info">
+            当前项目：{{ currentProject.name }}
+          </div>
+        </div>
+        
         <div v-if="isLoading" class="loading-state">
           <div class="spinner"></div>
           <p>加载中...</p>
@@ -371,10 +379,36 @@ export default {
   width: 300px;
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
-  padding: 16px;
+  padding: 0;
   overflow-y: auto;
   transition: all 0.3s ease;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  background: white;
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.sidebar-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.project-info {
+  font-size: 14px;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.sidebar > div:not(.sidebar-header) {
+  padding: 16px;
 }
 
 .editor-content {

@@ -129,7 +129,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import storageManager from '../../utils/storage.js'
 import { VolumeModel, ChapterModel } from '../../utils/dataModels.js'
 
@@ -156,7 +156,13 @@ export default {
     const isProcessing = ref(false)
     const loadError = ref(null)
     const loadAttempts = ref(0)
-    const maxLoadAttempts = 3
+    const maxLoadAttempts = 5
+    
+    // 轮询相关
+    const pollingTimer = ref(null)
+    const pollingCount = ref(0)
+    const maxPollingCount = 10 // 最多轮询10次
+    const pollingInterval = 500 // 每500ms轮询一次
     
     // 防止重复创建
     const operationInProgress = ref(false)
@@ -184,10 +190,18 @@ export default {
 
     // 监听项目ID变化，重新加载数据
     watch(() => props.projectId, (newProjectId) => {
+      console.log('[DEBUG] watch projectId 触发, 新ID:', newProjectId)
       if (newProjectId) {
-        loadData()
+        console.log('[DEBUG] 项目ID变化，准备加载数据:', newProjectId)
+        try {
+          loadData()
+        } catch (error) {
+          console.error('[ERROR] watch 回调中加载数据失败:', error)
+        }
+      } else {
+        console.log('[DEBUG] 项目ID为空，跳过加载')
       }
-    })
+    }, { immediate: true })
 
     // 获取指定卷的章节
     const getVolumeChapters = (volumeId) => {
@@ -196,54 +210,77 @@ export default {
 
     // 加载数据
     const loadData = async () => {
-      if (!props.projectId || isLoading.value) return
+      console.log('[DEBUG] loadData 函数开始执行')
       
+      if (!props.projectId) {
+        console.log('[DEBUG] 无项目ID，跳过加载')
+        return
+      }
+      
+      if (isLoading.value) {
+        console.log('[DEBUG] 已经在加载中，跳过重复加载')
+        return
+      }
+      
+      console.log('[DEBUG] 设置 isLoading = true')
       isLoading.value = true
       loadError.value = null
       
       try {
-        console.log('开始加载卷章数据...')
+        console.log('[DEBUG] 开始加载卷章数据...项目ID:', props.projectId)
         
         // 加载卷数据
-        const volumesData = await storageManager.getProjectVolumes(props.projectId) || []
-        volumes.value = volumesData
+        console.log('[DEBUG] 准备调用 storageManager.getProjectVolumes')
+        let volumesData
+        try {
+          volumesData = await storageManager.getProjectVolumes(props.projectId)
+          console.log('[DEBUG] getProjectVolumes 调用成功, 返回数据长度:', volumesData ? volumesData.length : 0)
+        } catch (error) {
+          console.error('[ERROR] getProjectVolumes 调用失败:', error)
+          volumesData = []
+        }
+        
+        volumes.value = volumesData || []
+        console.log('[DEBUG] 卷数据已设置, 长度:', volumes.value.length)
         
         // 加载章节数据
-        const chaptersData = await storageManager.getProjectChapters(props.projectId) || []
-        chapters.value = chaptersData
+        console.log('[DEBUG] 准备调用 storageManager.getProjectChapters')
+        let chaptersData
+        try {
+          chaptersData = await storageManager.getProjectChapters(props.projectId)
+          console.log('[DEBUG] getProjectChapters 调用成功, 返回数据长度:', chaptersData ? chaptersData.length : 0)
+        } catch (error) {
+          console.error('[ERROR] getProjectChapters 调用失败:', error)
+          chaptersData = []
+        }
         
-        console.log(`加载完成: ${volumesData.length}卷, ${chaptersData.length}章`)
+        chapters.value = chaptersData || []
+        console.log('[DEBUG] 章节数据已设置, 长度:', chapters.value.length)
         
         // 默认展开第一卷（如果有）
-        if (volumesData.length > 0) {
-          expandedVolumes.value.add(volumesData[0].id)
+        if (volumes.value.length > 0) {
+          console.log('[DEBUG] 展开第一卷:', volumes.value[0].id)
+          expandedVolumes.value.add(volumes.value[0].id)
         }
         
         // 如果有选中的章节，确保其所在的卷是展开的
         if (props.selectedChapter) {
-          const chapter = chaptersData.find(c => c.id === props.selectedChapter.id)
+          console.log('[DEBUG] 有选中的章节:', props.selectedChapter.id)
+          const chapter = chapters.value.find(c => c.id === props.selectedChapter.id)
           if (chapter && chapter.volumeId) {
+            console.log('[DEBUG] 展开章节所在的卷:', chapter.volumeId)
             expandedVolumes.value.add(chapter.volumeId)
           }
         }
         
         // 重置加载尝试次数
         loadAttempts.value = 0
+        console.log('[DEBUG] 数据加载完成')
       } catch (error) {
-        console.error('加载卷章数据失败:', error)
+        console.error('[ERROR] 加载卷章数据失败:', error)
         loadError.value = '加载数据失败，请重试'
-        
-        // 增加加载尝试次数
-        loadAttempts.value++
-        
-        // 如果尝试次数小于最大尝试次数，自动重试
-        if (loadAttempts.value < maxLoadAttempts) {
-          console.log(`自动重试加载 (${loadAttempts.value}/${maxLoadAttempts})...`)
-          setTimeout(() => {
-            loadData()
-          }, 1000) // 1秒后重试
-        }
       } finally {
+        console.log('[DEBUG] 设置 isLoading = false')
         isLoading.value = false
       }
     }
@@ -504,11 +541,87 @@ export default {
       }
     }
 
-    onMounted(() => {
-      // 如果已经有项目ID，则加载数据
-      if (props.projectId) {
-        loadData()
+    // 启动轮询机制，确保数据能够被正确加载
+    const startPolling = () => {
+      console.log('[DEBUG] 启动轮询机制')
+      
+      // 清除可能存在的旧定时器
+      if (pollingTimer.value) {
+        clearInterval(pollingTimer.value)
       }
+      
+      // 重置轮询计数
+      pollingCount.value = 0
+      
+      // 设置轮询定时器
+      pollingTimer.value = setInterval(() => {
+        pollingCount.value++
+        console.log(`[DEBUG] 轮询第 ${pollingCount.value} 次`)
+        
+        // 如果已经有数据了，或者达到最大轮询次数，则停止轮询
+        if (volumes.value.length > 0 || pollingCount.value >= maxPollingCount) {
+          console.log('[DEBUG] 停止轮询:', 
+            volumes.value.length > 0 ? '已有数据' : '达到最大轮询次数')
+          clearInterval(pollingTimer.value)
+          pollingTimer.value = null
+          return
+        }
+        
+        // 如果有项目ID但没有数据，尝试加载数据
+        if (props.projectId && volumes.value.length === 0) {
+          console.log('[DEBUG] 轮询中尝试加载数据, 项目ID:', props.projectId)
+          try {
+            loadData().catch(error => 
+              console.error('[ERROR] 轮询中加载数据失败:', error))
+          } catch (error) {
+            console.error('[ERROR] 轮询中调用loadData异常:', error)
+          }
+        }
+      }, pollingInterval)
+    }
+    
+    // 组件卸载时清理定时器
+    onUnmounted(() => {
+      console.log('[DEBUG] 组件卸载，清理定时器')
+      if (pollingTimer.value) {
+        clearInterval(pollingTimer.value)
+        pollingTimer.value = null
+      }
+      
+      if (operationTimeout.value) {
+        clearTimeout(operationTimeout.value)
+        operationTimeout.value = null
+      }
+    })
+
+    onMounted(() => {
+      console.log('[DEBUG] VolumeChapterSelector组件挂载开始')
+      console.log('[DEBUG] 组件挂载时的项目ID:', props.projectId)
+      
+      // 确保组件挂载时加载数据，但使用setTimeout避免阻塞渲染
+      setTimeout(() => {
+        console.log('[DEBUG] onMounted setTimeout 触发')
+        if (props.projectId) {
+          console.log('[DEBUG] onMounted中准备加载数据, 项目ID:', props.projectId)
+          try {
+            // 使用非阻塞方式加载数据
+            Promise.resolve().then(() => loadData())
+              .catch(error => console.error('[ERROR] onMounted中加载数据失败:', error))
+              .finally(() => {
+                // 无论加载成功还是失败，都启动轮询机制
+                startPolling()
+              })
+          } catch (error) {
+            console.error('[ERROR] onMounted中调用loadData异常:', error)
+            // 即使出现异常，也启动轮询机制
+            startPolling()
+          }
+        } else {
+          console.log('[DEBUG] onMounted中项目ID为空，跳过加载')
+        }
+      }, 100)
+      
+      console.log('[DEBUG] VolumeChapterSelector组件挂载完成')
     })
 
     return {
