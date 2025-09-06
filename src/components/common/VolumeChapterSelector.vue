@@ -145,7 +145,7 @@ export default {
       default: null
     }
   },
-  emits: ['chapter-selected', 'chapter-created', 'chapter-updated', 'chapter-deleted'],
+  emits: ['chapter-selected', 'chapter-created', 'chapter-updated', 'chapter-deleted', 'data-loaded'],
   setup(props, { emit }) {
     const volumes = ref([])
     const chapters = ref([])
@@ -279,6 +279,13 @@ export default {
         // 重置加载尝试次数
         loadAttempts.value = 0
         console.log('[DEBUG] 数据加载完成')
+        
+        // 发出数据加载完成事件
+        emit('data-loaded', {
+          volumes: volumes.value,
+          chapters: chapters.value,
+          hasData: volumes.value.length > 0 || chapters.value.length > 0
+        })
       } catch (error) {
         console.error('[ERROR] 加载卷章数据失败:', error)
         loadError.value = '加载数据失败，请重试'
@@ -325,8 +332,25 @@ export default {
 
     // 选择章节
     const selectChapter = (chapter) => {
+      if (isLoading.value || isDataLoading.value) {
+        console.log('[DEBUG] 数据加载中，暂时无法选择章节')
+        return
+      }
+      
       console.log('[DEBUG] 选择章节:', chapter.id, chapter.title)
-      emit('chapter-selected', chapter)
+      
+      // 设置数据加载状态，防止重复点击
+      isDataLoading.value = true
+      
+      // 延迟发出事件，确保UI状态更新
+      nextTick(() => {
+        emit('chapter-selected', chapter)
+        
+        // 短暂延迟后重置数据加载状态
+        setTimeout(() => {
+          isDataLoading.value = false
+        }, 500)
+      })
     }
 
     // 创建卷

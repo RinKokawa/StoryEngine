@@ -192,7 +192,11 @@ export default {
           
           // 确保DOM已更新后再加载内容
           await nextTick()
-          await loadChapterContent(newChapter)
+          
+          // 添加延迟，确保VolumeChapterSelector的数据已经完全加载
+          setTimeout(async () => {
+            await loadChapterContent(newChapter)
+          }, 100)
         } else {
           console.log('无章节或项目，设置默认内容')
           content.value = '　　'
@@ -296,10 +300,12 @@ export default {
     }
 
     // 加载章节内容 - 完全绕过缓存机制，直接从文件系统加载
-    const loadChapterContent = async (chapter) => {
+    const loadChapterContent = async (chapter, retryCount = 0) => {
+      const maxRetries = 3
+      
       if (chapter && chapter.id && props.currentProject) {
         try {
-          console.log(`开始加载章节内容: ${chapter.title || chapter.id}, 项目ID: ${props.currentProject.id}`)
+          console.log(`开始加载章节内容: ${chapter.title || chapter.id}, 项目ID: ${props.currentProject.id}, 重试次数: ${retryCount}`)
           
           // 直接从文件系统加载所有章节
           const fileName = `project-chapters-${props.currentProject.id}.json`
@@ -336,6 +342,15 @@ export default {
           const currentChapter = chapters.find(c => c.id === chapter.id)
           console.log('查找章节结果:', currentChapter ? '找到章节' : '未找到章节')
           
+          // 如果没有找到章节且重试次数未达到上限，进行重试
+          if (!currentChapter && retryCount < maxRetries) {
+            console.log(`章节未找到，${500 * (retryCount + 1)}ms后进行第${retryCount + 1}次重试`)
+            setTimeout(() => {
+              loadChapterContent(chapter, retryCount + 1)
+            }, 500 * (retryCount + 1))
+            return
+          }
+          
           // 确保组件仍然挂载在DOM上
           if (!editor.value) {
             console.warn('编辑器元素不存在，可能组件已卸载')
@@ -358,7 +373,16 @@ export default {
           })
         } catch (error) {
           console.error('加载章节内容失败:', error)
-          content.value = '　　'
+          
+          // 如果重试次数未达到上限，进行重试
+          if (retryCount < maxRetries) {
+            console.log(`加载失败，${1000 * (retryCount + 1)}ms后进行第${retryCount + 1}次重试`)
+            setTimeout(() => {
+              loadChapterContent(chapter, retryCount + 1)
+            }, 1000 * (retryCount + 1))
+          } else {
+            content.value = '　　'
+          }
         }
       } else {
         console.log('无效的章节或项目，设置默认内容')

@@ -53,6 +53,7 @@
           @chapter-created="handleChapterCreated"
           @chapter-updated="handleChapterUpdated"
           @chapter-deleted="handleChapterDeleted"
+          @data-loaded="handleDataLoaded"
         />
       </div>
       
@@ -293,6 +294,32 @@ export default {
       }
     }
 
+    // 处理数据加载完成
+    const handleDataLoaded = async (data) => {
+      console.log('VolumeChapterSelector数据加载完成:', data)
+      
+      if (!currentProject.value) return
+      
+      try {
+        // 更新本地章节数据
+        if (data.chapters && data.chapters.length > 0) {
+          chapters.value = data.chapters
+          
+          // 如果当前没有选中章节，自动选择第一个章节
+          if (!currentChapterId.value) {
+            const firstChapter = data.chapters[0]
+            if (firstChapter) {
+              console.log('自动选择第一个章节:', firstChapter.title || firstChapter.id)
+              currentChapterId.value = firstChapter.id
+              await storageManager.setCurrentChapter(currentProject.value.id, firstChapter.id)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('处理数据加载完成事件失败:', error)
+      }
+    }
+
     // 切换侧边栏显示状态
     const toggleSidebar = () => {
       sidebarVisible.value = !sidebarVisible.value
@@ -329,6 +356,7 @@ export default {
       handleChapterCreated,
       handleChapterUpdated,
       handleChapterDeleted,
+      handleDataLoaded,
       retryLoad
     }
   }
