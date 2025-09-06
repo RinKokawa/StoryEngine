@@ -54,7 +54,7 @@
          @click.prevent="openGitHub"
          class="github-link"
          :title="isCollapsed ? 'GitHub' : '在 GitHub 上查看源码'">
-        <i class="icon">🐙</i>
+        <img src="/github.svg" alt="GitHub" class="icon github-icon" />
         <span v-show="!isCollapsed">GitHub</span>
       </a>
     </div>
@@ -215,15 +215,19 @@ export default {
 
 /* GitHub 角标样式 */
 .sidebar-footer {
-  padding: 15px 0;
+  padding: 0;
   border-top: 1px solid #34495e;
   margin-top: auto;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .github-link {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
+  padding: 8px 20px;
   color: #95a5a6;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -232,7 +236,7 @@ export default {
 
 .collapsed .github-link {
   justify-content: center;
-  padding: 10px;
+  padding: 8px;
 }
 
 .github-link:hover {
@@ -245,7 +249,17 @@ export default {
   font-size: 14px;
 }
 
+.github-icon {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0.6); /* 使图标颜色与文字颜色匹配 */
+}
+
+.github-link:hover .github-icon {
+  filter: brightness(1); /* 悬停时变亮 */
+}
+
 .collapsed .github-link .icon {
   margin-right: 0;
 }
-</style>
+</style>>
