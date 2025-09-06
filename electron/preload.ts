@@ -32,5 +32,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (fileName: string) => ipcRenderer.invoke('read-file', fileName),
   writeFile: (fileName: string, data: string) => ipcRenderer.invoke('write-file', fileName, data),
   deleteFile: (fileName: string) => ipcRenderer.invoke('delete-file', fileName),
-  listFiles: () => ipcRenderer.invoke('list-files')
+  listFiles: () => ipcRenderer.invoke('list-files'),
+  
+  // 通义千问API请求
+  qwenApiRequest: (requestData: { url: string, apiKey: string, data: any }) => 
+    ipcRenderer.invoke('qwen-api-request', requestData)
+})
+
+// 标记为Electron环境
+contextBridge.exposeInMainWorld('electron', {
+  isElectron: true,
+  ipcRenderer: {
+    invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
+  }
 })

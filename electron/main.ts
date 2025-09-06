@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import https from 'node:https'
+import { IncomingMessage } from 'node:http'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -162,4 +164,96 @@ ipcMain.handle('list-files', async () => {
     console.error('Failed to list files:', error)
     return { success: false, error: (error as Error).message }
   }
+})
+
+// 处理通义千问API请求
+ipcMain.handle('qwen-api-request', async (_event, requestData: { url: string, apiKey: string, data: any }) => {
+  console.log('收到通义千问API请求')
+  
+  return new Promise((resolve, reject) => {
+    try {
+      const { url, apiKey, data } = requestData
+      
+      // 将请求数据转换为JSON字符串
+      const postData = JSON.stringify(data)
+      
+      // 解析URL
+      const urlObj = new URL(url)
+      
+      // 设置请求选项
+      const options = {
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Length': Buffer.byteLength(postData),
+          'X-DashScope-SSE': 'disable'
+        }
+      }
+      
+      console.log('发送请求到:', urlObj.hostname + urlObj.pathname)
+      
+      // 创建请求
+      const req = https.request(options, (res: IncomingMessage) => {
+        let responseData = ''
+        
+        // 接收数据
+        res.on('data', (chunk) => {
+          responseData += chunk
+        })
+        
+        // 请求完成
+        res.on('end', () => {
+          console.log('API请求完成，状态码:', res.statusCode)
+          
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const parsedData = JSON.parse(responseData)
+              resolve(parsedData)
+            } catch (error) {
+              console.error('解析API响应失败:', error)
+              reject({ error: '解析API响应失败' })
+            }
+          } else {
+            console.error('API请求失败，状态码:', res.statusCode)
+            try {
+              const errorData = JSON.parse(responseData)
+              reject({ 
+                error: `API请求失败 (${res.statusCode}): ${errorData.message || '未知错误'}`,
+                statusCode: res.statusCode,
+                data: errorData
+              })
+            } catch (e) {
+              reject({ 
+                error: `API请求失败 (${res.statusCode}): ${responseData || '未知错误'}`,
+                statusCode: res.statusCode
+              })
+            }
+          }
+        })
+      })
+      
+      // 错误处理
+      req.on('error', (error) => {
+        console.error('API请求网络错误:', error)
+        reject({ error: `网络请求错误: ${error.message}` })
+      })
+      
+      // 设置超时
+      req.setTimeout(60000, () => {
+        req.destroy()
+        reject({ error: '请求超时，请检查网络连接' })
+      })
+      
+      // 发送请求数据
+      req.write(postData)
+      req.end()
+      
+    } catch (error) {
+      console.error('处理API请求时发生错误:', error)
+      reject({ error: `请求处理错误: ${(error as Error).message}` })
+    }
+  })
 })

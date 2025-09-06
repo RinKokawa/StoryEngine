@@ -1,5 +1,10 @@
 import axios from 'axios'
 
+// 检测是否在Electron环境中运行
+const isElectron = () => {
+  return window && window.electron && window.electron.isElectron
+}
+
 class QwenApiService {
   constructor() {
     this.apiKey = null
@@ -7,6 +12,26 @@ class QwenApiService {
     this.model = 'qwen-turbo'
     this.maxTokens = 2000
     this.temperature = 0.7
+    
+    // 创建axios实例，配置默认值
+    this.client = axios.create({
+      timeout: 60000, // 增加超时时间到60秒
+      headers: {
+        'Content-Type': 'application/json',
+        'X-DashScope-SSE': 'disable'
+      }
+    })
+    
+    // 配置axios拦截器，添加CORS相关头部
+    this.client.interceptors.request.use(config => {
+      config.headers = {
+        ...config.headers,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization, X-Request-With'
+      }
+      return config
+    })
   }
 
   // 设置API密钥
@@ -26,6 +51,8 @@ class QwenApiService {
     }
 
     try {
+      console.log('准备发送请求到通义千问API...')
+      
       const requestData = {
         model: options.model || this.model,
         input: {
@@ -39,20 +66,59 @@ class QwenApiService {
         }
       }
 
-      const response = await axios.post(this.baseURL, requestData, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'X-DashScope-SSE': 'disable'
-        },
-        timeout: 30000 // 30秒超时
-      })
+      let response;
+      
+      // 检查是否在Electron环境中
+      if (isElectron()) {
+        console.log('使用Electron IPC发送请求...')
+        // 使用Electron的IPC通道发送请求
+        response = await window.electronAPI.qwenApiRequest({
+          url: this.baseURL,
+          apiKey: this.apiKey,
+          data: requestData
+        })
+      } else {
+        console.log('使用Axios发送请求...')
+        // 使用配置好的client实例发送请求
+        const axiosResponse = await this.client.post(this.baseURL, requestData, {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          // 添加代理配置，尝试解决CORS问题
+          proxy: false
+        })
+        response = axiosResponse.data
+      }
+      
+      console.log('通义千问API请求成功')
 
-      if (response.data && response.data.output && response.data.output.text) {
+      // 根据响应格式处理结果
+      if (isElectron()) {
+        // 处理Electron IPC返回的结果
+        if (response.output && response.output.text) {
+          return {
+            success: true,
+            content: response.output.text,
+            usage: response.usage
+          }
+        } else if (response.error) {
+          throw new Error(response.error)
+        } else {
+          throw new Error('API返回格式异常')
+        }
+      } else if (response.data && response.data.output && response.data.output.text) {
+        // 处理Axios返回的结果
         return {
           success: true,
           content: response.data.output.text,
           usage: response.data.usage
+        }
+      } else if (response.output && response.output.text) {
+        // 直接返回的结果
+        return {
+          success: true,
+          content: response.output.text,
+          usage: response.usage
         }
       } else {
         throw new Error('API返回格式异常')
@@ -60,7 +126,9 @@ class QwenApiService {
     } catch (error) {
       console.error('Qwen API调用失败:', error)
       
+      // 详细的错误处理
       if (error.response) {
+        // 服务器返回了错误状态码
         const status = error.response.status
         const message = error.response.data?.message || error.response.statusText
         
@@ -70,13 +138,25 @@ class QwenApiService {
           throw new Error('请求过于频繁，请稍后再试')
         } else if (status === 400) {
           throw new Error(`请求参数错误: ${message}`)
+        } else if (status === 403) {
+          throw new Error(`访问被拒绝: ${message}`)
+        } else if (status >= 500) {
+          throw new Error(`服务器错误 (${status}): 请稍后重试`)
         } else {
           throw new Error(`API调用失败 (${status}): ${message}`)
         }
-      } else if (error.code === 'ECONNABORTED') {
-        throw new Error('请求超时，请检查网络连接')
+      } else if (error.request) {
+        // 请求已发送但没有收到响应
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('请求超时，请检查网络连接和API服务状态')
+        } else if (error.code === 'ERR_NETWORK') {
+          throw new Error('网络连接失败，请检查您的网络连接')
+        } else {
+          throw new Error(`网络请求失败: ${error.message || '未知错误'}`)
+        }
       } else {
-        throw new Error(`网络错误: ${error.message}`)
+        // 请求设置时发生错误
+        throw new Error(`请求配置错误: ${error.message || '未知错误'}`)
       }
     }
   }
@@ -121,15 +201,50 @@ class QwenApiService {
 
   // 发送带上下文的消息
   async sendMessageWithContext(userMessage, project, chapter, conversationHistory = []) {
-    const systemPrompt = this.createWritingSystemPrompt(project, chapter)
-    
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...conversationHistory.slice(-10), // 保留最近10条对话历史
-      { role: 'user', content: userMessage }
-    ]
+    try {
+      const systemPrompt = this.createWritingSystemPrompt(project, chapter)
+      
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory.slice(-10), // 保留最近10条对话历史
+        { role: 'user', content: userMessage }
+      ]
 
-    return await this.sendMessage(messages)
+      console.log('发送带上下文的消息到通义千问API...')
+      return await this.sendMessage(messages)
+    } catch (error) {
+      console.error('发送带上下文的消息失败:', error)
+      throw error
+    }
+  }
+  
+  // 测试API连接
+  async testConnection() {
+    if (!this.apiKey) {
+      return {
+        success: false,
+        message: '请先设置API密钥'
+      }
+    }
+    
+    try {
+      // 发送一个简单的测试请求
+      const testMessage = [
+        { role: 'system', content: '你是一个写作助手' },
+        { role: 'user', content: '你好' }
+      ]
+      
+      const response = await this.sendMessage(testMessage, { maxTokens: 10 })
+      return {
+        success: true,
+        message: '连接成功'
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `连接测试失败: ${error.message}`
+      }
+    }
   }
 }
 
