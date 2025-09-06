@@ -8,6 +8,13 @@
             <span v-else>▶</span>
           </button>
           <h1>故事编辑</h1>
+          <div class="header-actions">
+            <button @click="toggleAiPanel" class="ai-toggle" :class="{ 'active': aiPanelVisible }">
+              <span>AI助手</span>
+              <span v-if="aiPanelVisible">▶</span>
+              <span v-else>◀</span>
+            </button>
+          </div>
         </div>
         <div v-if="currentProject" class="subtitle">
           {{ currentProject.name }}
@@ -49,12 +56,20 @@
         />
       </div>
       
-      <!-- 右侧编辑器 -->
-      <div class="editor-content" :class="{ 'full-width': !sidebarVisible }">
+      <!-- 中间编辑器 -->
+      <div class="editor-content" :class="{ 'full-width': !sidebarVisible && !aiPanelVisible }">
         <NovelEditor 
           :current-project="currentProject"
           :current-chapter="currentChapter"
           @project-changed="handleProjectChanged"
+        />
+      </div>
+      
+      <!-- 右侧AI对话面板 -->
+      <div v-if="aiPanelVisible" class="ai-panel">
+        <AiChatPanel
+          :current-project="currentProject"
+          :current-chapter="currentChapter"
         />
       </div>
     </div>
@@ -65,19 +80,22 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import NovelEditor from '../components/NovelEditor.vue'
 import VolumeChapterSelector from '../components/common/VolumeChapterSelector.vue'
+import AiChatPanel from '../components/common/AiChatPanel.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'StoryEditor',
   components: {
     NovelEditor,
-    VolumeChapterSelector
+    VolumeChapterSelector,
+    AiChatPanel
   },
   setup() {
     const currentProject = ref(null)
     const currentChapterId = ref(null)
     const chapters = ref([])
     const sidebarVisible = ref(true)
+    const aiPanelVisible = ref(false)
     
     // 加载状态
     const isLoading = ref(false)
@@ -279,6 +297,11 @@ export default {
     const toggleSidebar = () => {
       sidebarVisible.value = !sidebarVisible.value
     }
+    
+    // 切换AI面板显示状态
+    const toggleAiPanel = () => {
+      aiPanelVisible.value = !aiPanelVisible.value
+    }
 
     // 监听项目变化，确保组件重新渲染
     watch(() => currentProject.value, (newProject) => {
@@ -296,9 +319,11 @@ export default {
       currentChapterId,
       currentChapter,
       sidebarVisible,
+      aiPanelVisible,
       isLoading,
       loadError,
       toggleSidebar,
+      toggleAiPanel,
       handleProjectChanged,
       handleChapterSelected,
       handleChapterCreated,
@@ -329,6 +354,37 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
+  justify-content: space-between;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.ai-toggle:hover, .ai-toggle.active {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.ai-toggle.active {
+  background: #e6f7ff;
 }
 
 .sidebar-toggle {
@@ -417,6 +473,14 @@ export default {
   flex-direction: column;
   overflow: hidden;
   transition: all 0.3s ease;
+  min-width: 0; /* 防止内容溢出 */
+}
+
+.ai-panel {
+  width: 320px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .editor-content.full-width {
