@@ -26,12 +26,12 @@
           <i class="icon">💾</i>
           <span>数据管理</span>
         </div>
-        <div class="nav-item" 
+        <!-- <div class="nav-item" 
              :class="{ active: activeTab === 'api' }" 
              @click="activeTab = 'api'">
           <i class="icon">🔑</i>
           <span>API 配置</span>
-        </div>
+        </div> -->
         <div class="nav-item" 
              :class="{ active: activeTab === 'app' }" 
              @click="activeTab = 'app'">
@@ -207,7 +207,7 @@
         </div>
 
         <!-- API 配置 -->
-        <div v-if="activeTab === 'api'" class="settings-section">
+        <!-- <div v-if="activeTab === 'api'" class="settings-section">
           <h3>API 配置</h3>
           
           <div class="setting-item">
@@ -348,7 +348,7 @@
               <li>建议定期检查 API 使用量和余额</li>
             </ul>
           </div>
-        </div>
+        </div> -->
 
         <!-- 应用设置 -->
         <div v-if="activeTab === 'app'" class="settings-section">

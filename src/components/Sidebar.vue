@@ -28,6 +28,12 @@
           </a>
         </li>
         <li class="nav-item">
+          <a href="#" class="nav-link" @click="navigate('outline')">
+            <i class="icon">📋</i>
+            <span v-show="!isCollapsed">大纲管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a href="#" class="nav-link" @click="navigate('characters')">
             <i class="icon">👥</i>
             <span v-show="!isCollapsed">角色管理</span>

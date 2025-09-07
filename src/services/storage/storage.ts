@@ -12,7 +12,10 @@ import type {
   CreateProjectData,
   UpdateProjectData,
   CreateChapterData,
-  UpdateChapterData
+  UpdateChapterData,
+  Outline,
+  CreateOutlineData,
+  UpdateOutlineData
 } from '@/types'
 import { AppError } from '@/types'
 import { createStorageAdapter } from './adapters'
@@ -165,6 +168,7 @@ export class UnifiedStorageService {
       await this.adapter.delete(`project_${id}_volumes.json`)
       await this.adapter.delete(`project_${id}_characters.json`)
       await this.adapter.delete(`project_${id}_world.json`)
+      await this.adapter.delete(`project_${id}_outlines.json`)
       await this.adapter.delete(`project_${id}_stats.json`)
       await this.adapter.delete(`project_${id}_current.json`)
     } catch (error) {
@@ -514,6 +518,93 @@ export class UnifiedStorageService {
     this.clearCache(`world_${projectId}`)
   }
 
+  // 大纲管理
+  async getProjectOutlines(projectId: string): Promise<Outline[]> {
+    const cacheKey = this.getCacheKey('outlines', projectId)
+    let outlines = this.getCache<Outline[]>(cacheKey)
+    
+    if (!outlines) {
+      outlines = await this.readJsonFile(`project_${projectId}_outlines.json`, [])
+      this.setCache(cacheKey, outlines)
+    }
+    
+    return outlines.sort((a, b) => a.order - b.order)
+  }
+
+  async getOutline(projectId: string, outlineId: string): Promise<Outline | null> {
+    const outlines = await this.getProjectOutlines(projectId)
+    return outlines.find(o => o.id === outlineId) || null
+  }
+
+  async createOutline(projectId: string, data: CreateOutlineData): Promise<Outline> {
+    const outlines = await this.getProjectOutlines(projectId)
+    
+    const outline: Outline = {
+      id: `outline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      projectId,
+      type: data.type,
+      title: data.title,
+      content: data.content || '',
+      order: outlines.filter(o => o.type === data.type && o.parentId === data.parentId).length + 1,
+      parentId: data.parentId,
+      status: 'draft',
+      notes: data.notes || '',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    }
+    
+    outlines.push(outline)
+    await this.writeJsonFile(`project_${projectId}_outlines.json`, outlines)
+    this.clearCache(`outlines_${projectId}`)
+    
+    return outline
+  }
+
+  async updateOutline(projectId: string, data: UpdateOutlineData): Promise<Outline> {
+    const outlines = await this.getProjectOutlines(projectId)
+    const index = outlines.findIndex(o => o.id === data.id)
+    
+    if (index === -1) {
+      throw new AppError('大纲不存在')
+    }
+    
+    outlines[index] = { ...outlines[index], ...data, lastModified: new Date().toISOString() }
+    await this.writeJsonFile(`project_${projectId}_outlines.json`, outlines)
+    this.clearCache(`outlines_${projectId}`)
+    
+    return outlines[index]
+  }
+
+  async deleteOutline(projectId: string, outlineId: string): Promise<void> {
+    const outlines = await this.getProjectOutlines(projectId)
+    
+    // 递归删除子大纲
+    const deleteOutlineAndChildren = (id: string) => {
+      const children = outlines.filter(o => o.parentId === id)
+      children.forEach(child => deleteOutlineAndChildren(child.id))
+      return outlines.filter(o => o.id !== id && o.parentId !== id)
+    }
+    
+    const filteredOutlines = deleteOutlineAndChildren(outlineId)
+    await this.writeJsonFile(`project_${projectId}_outlines.json`, filteredOutlines)
+    this.clearCache(`outlines_${projectId}`)
+  }
+
+  async reorderOutlines(projectId: string, outlineIds: string[]): Promise<void> {
+    const outlines = await this.getProjectOutlines(projectId)
+    
+    outlineIds.forEach((id, index) => {
+      const outline = outlines.find(o => o.id === id)
+      if (outline) {
+        outline.order = index + 1
+        outline.lastModified = new Date().toISOString()
+      }
+    })
+    
+    await this.writeJsonFile(`project_${projectId}_outlines.json`, outlines)
+    this.clearCache(`outlines_${projectId}`)
+  }
+
   // 写作统计
   async getWritingStats(projectId: string): Promise<WritingStats> {
     const defaultStats: WritingStats = {
@@ -590,6 +681,7 @@ export class UnifiedStorageService {
         volumes: await this.getProjectVolumes(projectId),
         characters: await this.getProjectCharacters(projectId),
         worldItems: await this.getProjectWorldItems(projectId),
+        outlines: await this.getProjectOutlines(projectId),
         stats: await this.getWritingStats(projectId),
         currentChapter: await this.getCurrentChapter(projectId)
       }
@@ -632,6 +724,9 @@ export class UnifiedStorageService {
           }
           if (typedProjectData.worldItems) {
             await this.writeJsonFile(`project_${projectId}_world.json`, typedProjectData.worldItems)
+          }
+          if (typedProjectData.outlines) {
+            await this.writeJsonFile(`project_${projectId}_outlines.json`, typedProjectData.outlines)
           }
           if (typedProjectData.stats) {
             await this.writeJsonFile(`project_${projectId}_stats.json`, typedProjectData.stats)

@@ -9,6 +9,7 @@
       <Dashboard v-if="currentPage === 'dashboard'" :current-project="currentProject" @navigate="handleNavigation" @project-changed="handleProjectSelected" />
       <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
       <StoryEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
+      <OutlineManagement v-else-if="currentPage === 'outline'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <CharacterManagement v-else-if="currentPage === 'characters'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <WorldBuilding v-else-if="currentPage === 'worldview'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <Settings v-else-if="currentPage === 'settings'" @settings-changed="handleSettingsChanged" />
@@ -27,6 +28,7 @@ import Sidebar from './components/Sidebar.vue'
 import StoryEditor from './views/StoryEditor.vue'
 import CharacterManagement from './views/CharacterManagement.vue'
 import WorldBuilding from './views/WorldBuilding.vue'
+import OutlineManagement from './views/OutlineManagement.vue'
 import Settings from './components/Settings.vue'
 import { useProjectStore } from '@/stores/project'
 
@@ -39,6 +41,7 @@ export default {
     Sidebar,
     CharacterManagement,
     WorldBuilding,
+    OutlineManagement,
     Settings
   },
   data() {
@@ -94,6 +97,7 @@ export default {
         dashboard: '仪表盘',
         projects: '项目管理',
         editor: '故事编辑',
+        outline: '大纲管理',
         characters: '角色管理',
         worldview: '世界设定',
         settings: '设置'

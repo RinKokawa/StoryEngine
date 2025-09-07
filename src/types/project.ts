@@ -105,3 +105,39 @@ export interface WritingStats {
   weekWords: number
   lastWriteDate: string | null
 }
+
+// 大纲相关类型定义
+export type OutlineType = 'main' | 'detailed'
+export type OutlineStatus = 'draft' | 'completed' | 'reviewing'
+
+export interface Outline {
+  id: string
+  projectId: string
+  type: OutlineType
+  title: string
+  content: string
+  order: number
+  parentId?: string // 用于层级结构
+  status: OutlineStatus
+  notes?: string
+  createdAt: string
+  lastModified: string
+}
+
+export interface CreateOutlineData {
+  type: OutlineType
+  title: string
+  content?: string
+  parentId?: string
+  notes?: string
+}
+
+export interface UpdateOutlineData extends Partial<Outline> {
+  id: string
+}
+
+// 大纲节点，用于树形结构显示
+export interface OutlineNode extends Outline {
+  children?: OutlineNode[]
+  level: number
+}

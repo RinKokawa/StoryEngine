@@ -15,6 +15,16 @@ const routes = [
     path: '/character-management',
     name: 'CharacterManagement',
     component: () => import('../views/CharacterManagement.vue')
+  },
+  {
+    path: '/outline-management',
+    name: 'OutlineManagement',
+    component: () => import('../views/OutlineManagement.vue')
+  },
+  {
+    path: '/world-building',
+    name: 'WorldBuilding',
+    component: () => import('../views/WorldBuilding.vue')
   }
 ]
 

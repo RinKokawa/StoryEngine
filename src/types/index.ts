@@ -15,7 +15,13 @@ export type {
   UpdateChapterData,
   Character,
   WorldItem,
-  WritingStats
+  WritingStats,
+  Outline,
+  OutlineType,
+  OutlineStatus,
+  CreateOutlineData,
+  UpdateOutlineData,
+  OutlineNode
 } from './project'
 
 // 应用相关类型
