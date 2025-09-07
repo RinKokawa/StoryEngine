@@ -13,7 +13,15 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-markdown": "^6.3.4",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/search": "^6.5.11",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.2",
+    "@lezer/markdown": "^1.4.3",
     "axios": "^1.11.0",
+    "codemirror": "^6.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",

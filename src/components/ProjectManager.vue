@@ -120,12 +120,14 @@
           
           <div class="form-group">
             <label>简介</label>
-            <textarea 
-              v-model="projectForm.description" 
-              placeholder="简单描述一下你的作品..."
-              class="form-textarea"
-              rows="3"
-            ></textarea>
+            <div class="textarea-wrapper">
+              <TextEditor
+                v-model="projectForm.description"
+                placeholder="简单描述一下你的作品..."
+                :wordWrap="true"
+                :autofocus="false"
+              />
+            </div>
           </div>
         </div>
         
@@ -141,10 +143,14 @@
 </template>
 
 <script>
+import TextEditor from './common/TextEditor.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'ProjectManager',
+  components: {
+    TextEditor
+  },
   data() {
     return {
       showCreateDialog: false,
@@ -541,9 +547,8 @@ export default {
   border-color: #007bff;
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
+.textarea-wrapper {
+  height: 80px;
 }
 
 .dialog-footer {

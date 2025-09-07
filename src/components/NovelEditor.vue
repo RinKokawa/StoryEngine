@@ -21,17 +21,16 @@
 
     <!-- 编辑区域 -->
     <div v-if="currentChapter" class="editor-container">
-      <textarea
-        ref="editor"
-        v-model="content"
-        class="editor"
-        placeholder="开始你的创作之旅..."
-        @input="handleContentChange"
-        @keydown="handleKeyPress"
-        @scroll="handleScroll"
-        @contextmenu="handleContextMenu"
-        @click="hideContextMenu"
-      ></textarea>
+      <div class="editor-wrapper">
+        <TextEditor
+          ref="editor"
+          v-model="content"
+          placeholder="开始你的创作之旅..."
+          :wordWrap="true"
+          :autofocus="true"
+          @update:modelValue="handleContentChange"
+        />
+      </div>
       
       <!-- 行号显示 -->
       <div class="line-numbers" ref="lineNumbers">
@@ -98,6 +97,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import ContextMenu from './ContextMenu.vue'
 import ProjectSelector from './common/ProjectSelector.vue'
 import CharacterSelector from './common/CharacterSelector.vue'
+import TextEditor from './common/TextEditor.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
@@ -105,7 +105,8 @@ export default {
   components: {
     ContextMenu,
     ProjectSelector,
-    CharacterSelector
+    CharacterSelector,
+    TextEditor
   },
   props: {
     currentProject: {
@@ -1021,16 +1022,23 @@ export default {
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
-.editor {
+.editor-wrapper {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-wrapper :deep(.text-editor-container) {
+  height: 100%;
   border: none;
-  outline: none;
+  border-radius: 0;
+}
+
+.editor-wrapper :deep(.cm-content) {
   padding: 20px;
   font-size: 16px;
   line-height: 24px;
   font-family: 'Microsoft YaHei', sans-serif;
-  resize: none;
-  background: transparent;
 }
 
 .editor::placeholder {

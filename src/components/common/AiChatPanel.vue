@@ -40,13 +40,15 @@
     </div>
     
     <div class="chat-input">
-      <textarea 
-        v-model="userInput" 
-        placeholder="输入消息与AI对话..." 
-        @keydown.enter.prevent="sendMessage"
-        :disabled="!hasApiKey || isTyping"
-        rows="3"
-      ></textarea>
+      <div class="chat-textarea-wrapper">
+        <TextEditor
+          v-model="userInput"
+          placeholder="输入消息与AI对话..."
+          :wordWrap="true"
+          :autofocus="false"
+          :readOnly="!hasApiKey || isTyping"
+        />
+      </div>
       <button @click="sendMessage" :disabled="!userInput.trim() || isTyping || !hasApiKey">
         发送
       </button>
@@ -63,6 +65,7 @@
 
 <script>
 import { ref, onMounted, nextTick, watch } from 'vue'
+import TextEditor from './TextEditor.vue'
 import qwenApiService from '../../utils/qwenApi.js'
 import ApiKeyDialog from './ApiKeyDialog.vue'
 

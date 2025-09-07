@@ -224,32 +224,38 @@
             
             <div class="form-group">
               <label>简要描述</label>
-              <textarea 
-                v-model="worldForm.description" 
-                placeholder="简要描述这个世界设定..."
-                class="form-textarea"
-                rows="3"
-              ></textarea>
+              <div class="textarea-wrapper">
+                <TextEditor
+                  v-model="worldForm.description"
+                  placeholder="简要描述这个世界设定..."
+                  :wordWrap="true"
+                  :autofocus="false"
+                />
+              </div>
             </div>
             
             <div class="form-group">
               <label>详细内容</label>
-              <textarea 
-                v-model="worldForm.content" 
-                placeholder="详细描述世界设定的内容..."
-                class="form-textarea"
-                rows="8"
-              ></textarea>
+              <div class="content-textarea-wrapper">
+                <TextEditor
+                  v-model="worldForm.content"
+                  placeholder="详细描述世界设定的内容..."
+                  :wordWrap="true"
+                  :autofocus="true"
+                />
+              </div>
             </div>
             
             <div class="form-group">
               <label>相关信息</label>
-              <textarea 
-                v-model="worldForm.notes" 
-                placeholder="其他相关信息或备注..."
-                class="form-textarea"
-                rows="4"
-              ></textarea>
+              <div class="notes-textarea-wrapper">
+                <TextEditor
+                  v-model="worldForm.notes"
+                  placeholder="其他相关信息或备注..."
+                  :wordWrap="true"
+                  :autofocus="false"
+                />
+              </div>
             </div>
           </form>
         </div>
@@ -326,12 +332,14 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
+import TextEditor from '../components/common/TextEditor.vue'
 import ProjectSelector from '../components/common/ProjectSelector.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'WorldBuilding',
   components: {
+    TextEditor,
     ProjectSelector
   },
   props: {
