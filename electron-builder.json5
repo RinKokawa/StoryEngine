@@ -1,5 +1,6 @@
 // @see - https://www.electron.build/configuration/configuration
 {
+  // 禁用签名以避免 winCodeSign 下载与 symlink 权限问题
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.rinkokawa.storyengine",
   "asar": true,
@@ -21,19 +22,15 @@
   "win": {
     "target": [
       {
-        "target": "nsis",
-        "arch": [
-          "x64"
-        ]
-      },
-      {
         "target": "portable",
         "arch": [
           "x64"
         ]
       }
     ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+    "artifactName": "${productName}-Windows-${version}-Portable.${ext}",
+    "sign": false,
+    "signAndEditExecutable": false
   },
   "portable": {
     "artifactName": "${productName}-Windows-${version}-Portable.${ext}"

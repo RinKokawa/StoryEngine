@@ -1,7 +1,6 @@
 // 统一存储服务实现
 
 import type {
-  StorageService,
   StorageAdapter,
   Project,
   Chapter,
@@ -18,7 +17,7 @@ import type {
 import { AppError } from '@/types'
 import { createStorageAdapter } from './adapters'
 
-export class UnifiedStorageService implements StorageService {
+export class UnifiedStorageService {
   private adapter: StorageAdapter
   private cache = new Map<string, any>()
   private cacheTimeout = 5 * 60 * 1000 // 5分钟缓存
@@ -67,7 +66,7 @@ export class UnifiedStorageService implements StorageService {
   // 通用文件操作
   private async readJsonFile<T>(filename: string, defaultValue: T): Promise<T> {
     try {
-      const data = await this.adapter.readFile(filename)
+      const data = await this.adapter.read(filename)
       if (data === null) {
         return defaultValue
       }
@@ -80,7 +79,7 @@ export class UnifiedStorageService implements StorageService {
 
   private async writeJsonFile(filename: string, data: any): Promise<void> {
     try {
-      await this.adapter.writeFile(filename, JSON.stringify(data, null, 2))
+      await this.adapter.write(filename, JSON.stringify(data, null, 2))
     } catch (error) {
       console.error(`Failed to write ${filename}:`, error)
       throw new AppError(`保存文件失败: ${filename}`, error)
@@ -162,12 +161,12 @@ export class UnifiedStorageService implements StorageService {
     
     // 删除相关文件
     try {
-      await this.adapter.deleteFile(`project_${id}_chapters.json`)
-      await this.adapter.deleteFile(`project_${id}_volumes.json`)
-      await this.adapter.deleteFile(`project_${id}_characters.json`)
-      await this.adapter.deleteFile(`project_${id}_world.json`)
-      await this.adapter.deleteFile(`project_${id}_stats.json`)
-      await this.adapter.deleteFile(`project_${id}_current.json`)
+      await this.adapter.delete(`project_${id}_chapters.json`)
+      await this.adapter.delete(`project_${id}_volumes.json`)
+      await this.adapter.delete(`project_${id}_characters.json`)
+      await this.adapter.delete(`project_${id}_world.json`)
+      await this.adapter.delete(`project_${id}_stats.json`)
+      await this.adapter.delete(`project_${id}_current.json`)
     } catch (error) {
       console.warn('Failed to delete some project files:', error)
     }
@@ -653,10 +652,10 @@ export class UnifiedStorageService implements StorageService {
 
   async clearAll(): Promise<void> {
     try {
-      const files = await this.adapter.listFiles()
+      const files = await this.adapter.list('')
       
       for (const file of files) {
-        await this.adapter.deleteFile(file)
+        await this.adapter.delete(file)
       }
       
       this.clearCache()

@@ -70,9 +70,9 @@ export class FileStorageAdapter implements StorageAdapter {
     }
   }
 
-  async mkdir(path: string): Promise<void> {
+  async mkdir(_path: string): Promise<void> {
     try {
-      const result = await this.electronAPI.createDirectory(path)
+      const result = await this.electronAPI.createDirectory(_path)
       if (!result.success) {
         throw new Error(result.error || 'Failed to create directory')
       }
@@ -169,7 +169,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
   }
 
-  async mkdir(path: string): Promise<void> {
+  async mkdir(_path: string): Promise<void> {
     // localStorage 不需要创建目录，这是一个空操作
     return Promise.resolve()
   }
