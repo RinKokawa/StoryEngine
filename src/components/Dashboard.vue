@@ -166,7 +166,8 @@
 </template>
 
 <script>
-import storageManager from '../utils/storage.js'
+/* migrated to storageService */ 
+import { useProjectStore } from '@/stores/project'
 
 export default {
   name: 'Dashboard',
@@ -180,6 +181,7 @@ export default {
     return {
       activeTab: 'characters',
       projects: [],
+      projectStore: null,
       totalWords: 0,
       targetWords: 50000,
       todayWords: 0,
@@ -194,7 +196,10 @@ export default {
     }
   },
   mounted() {
-    this.loadData()
+    this.projectStore = useProjectStore()
+    this.projectStore.initialize().then(() => {
+      this.loadData()
+    })
     // 添加事件监听，当存储变化时重新加载数据
     window.addEventListener('storage-changed', this.handleStorageChange)
   },
@@ -278,17 +283,17 @@ export default {
       setTimeout(() => {
         try {
           // 获取所有项目
-          this.projects = storageManager.getProjects() || []
+          this.projects = this.projectStore.projects || []
           
           // 获取当前项目
-          const current = storageManager.getCurrentProject()
+          const current = this.projectStore.currentProject
           
           // 如果有当前项目，加载其统计数据
           if (current && current.id) {
             this.loadProjectStats(current.id)
           } else if (this.projects.length > 0) {
             // 如果没有当前项目但有项目列表，设置第一个项目为当前项目
-            storageManager.setCurrentProject(this.projects[0])
+            this.projectStore.setCurrentProject(this.projects[0])
             this.$emit('project-changed', this.projects[0])
             this.loadProjectStats(this.projects[0].id)
           }
@@ -304,25 +309,25 @@ export default {
       // 当存储变化时重新加载数据
       this.loadData()
     },
-    loadProjectStats(projectId) {
+    async loadProjectStats(projectId) {
       if (!projectId) return
       
-      const project = storageManager.getProject(projectId)
+      const project = this.projectStore.getProjectById(String(projectId))
       if (project) {
         this.totalWords = project.wordCount || 0
         this.targetWords = project.targetWords || 50000
       }
       
-      this.writingStats = storageManager.getWritingStats(projectId) || {}
+      this.writingStats = await (await import('@/services/storage')).storageService.getWritingStats(projectId) || {}
       this.todayWords = this.writingStats.todayWords || 0
       this.weekWords = this.writingStats.weekWords || 0
     },
     switchProject(event) {
-      const projectId = parseInt(event.target.value)
+      const projectId = String(event.target.value)
       if (projectId) {
         const project = this.projects.find(p => p.id === projectId)
         if (project) {
-          storageManager.setCurrentProject(project)
+          this.projectStore.setCurrentProject(project)
           this.$emit('project-changed', project)
           this.loadProjectStats(projectId)
         }

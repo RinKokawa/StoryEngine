@@ -3,7 +3,9 @@
  * 用于调用通义千问 API 进行 AI 辅助写作
  */
 
-import storageManager from './storage.js'
+import { storageService } from '@/services/storage'
+
+/* migrated to storageService */ 
 
 class QwenApiService {
   constructor() {
@@ -15,14 +17,14 @@ class QwenApiService {
     this.enabled = false
     
     // 初始化配置
-    this.loadConfig()
+    this.loadConfig().catch(console.error)
   }
 
   /**
    * 加载 API 配置
    */
-  loadConfig() {
-    const settings = storageManager.getSettings()
+  async loadConfig() {
+    const settings = await storageService.getSettings()
     this.baseUrl = settings.qwenApiBase || 'https://dashscope.aliyuncs.com/api/v1'
     this.apiKey = settings.qwenApiKey || ''
     this.model = settings.qwenModel || 'qwen-turbo'

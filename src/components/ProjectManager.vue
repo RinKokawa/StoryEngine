@@ -18,7 +18,7 @@
         <div class="project-header">
           <div class="project-info">
             <h3>{{ project.name }}</h3>
-            <p class="project-genre">{{ project.genre }}</p>
+            <p class="project-genre">{{ project.type || project.genre }}</p>
           </div>
           <div class="project-actions">
             <button class="action-btn" @click.stop="editProject(project)" title="编辑">
@@ -142,7 +142,7 @@
 
 <script>
 
-import storageManager from '../utils/storage.js'
+import { useProjectStore } from '@/stores/project'
 
 export default {
   name: 'ProjectManager',
@@ -157,22 +157,24 @@ export default {
         targetWords: 50000,
         description: ''
       },
-      projects: []
+      projects: [],
+      projectStore: null
     }
   },
   mounted() {
-    this.loadProjects()
+    this.projectStore = useProjectStore()
+    this.projectStore.initialize().then(() => {
+      this.projects = this.projectStore.projects
+    })
   },
   methods: {
-    loadProjects() {
-      this.projects = storageManager.getProjects()
+    async loadProjects() {
+      await this.projectStore.loadProjects()
+      this.projects = this.projectStore.projects
     },
-    selectProject(project) {
-      // 保存当前项目到存储
-      storageManager.setCurrentProject(project)
-      // 切换到选中的项目
+    async selectProject(project) {
+      await this.projectStore.setCurrentProject(project)
       this.$emit('project-selected', project)
-      // 可以跳转到仪表盘
       this.$emit('navigate', 'dashboard')
     },
     editProject(project) {
@@ -184,45 +186,43 @@ export default {
         description: project.description || ''
       }
     },
-    deleteProject(project) {
+    async deleteProject(project) {
       if (confirm(`确定要删除项目"${project.name}"吗？此操作不可恢复。`)) {
-        if (storageManager.deleteProject(project.id)) {
-          this.loadProjects()
+        try {
+          await this.projectStore.deleteProject(String(project.id))
+          await this.projectStore.loadProjects()
+          this.projects = this.projectStore.projects
+        } catch (e) {
+          console.error('删除项目失败', e)
         }
       }
     },
-    saveProject() {
+    async saveProject() {
       if (!this.projectForm.name.trim()) return
 
-      if (this.editingProject) {
-        // 编辑现有项目
-        const updatedProject = {
-          ...this.editingProject,
-          name: this.projectForm.name,
-          genre: this.projectForm.genre,
-          targetWords: this.projectForm.targetWords,
-          description: this.projectForm.description
+      try {
+        if (this.editingProject) {
+          await this.projectStore.updateProject({
+            id: String(this.editingProject.id),
+            name: this.projectForm.name,
+            type: this.projectForm.genre || '其他',
+            targetWords: Number(this.projectForm.targetWords),
+            description: this.projectForm.description || ''
+          })
+        } else {
+          await this.projectStore.createProject({
+            name: this.projectForm.name,
+            type: this.projectForm.genre || '其他',
+            targetWords: Number(this.projectForm.targetWords),
+            description: this.projectForm.description || ''
+          })
         }
-        storageManager.saveProject(updatedProject)
-      } else {
-        // 创建新项目
-        const newProject = {
-          id: Date.now(),
-          name: this.projectForm.name,
-          genre: this.projectForm.genre,
-          wordCount: 0,
-          targetWords: this.projectForm.targetWords,
-          chapters: 0,
-          characters: 0,
-          status: 'draft',
-          description: this.projectForm.description,
-          createdAt: new Date().toISOString()
-        }
-        storageManager.saveProject(newProject)
+        await this.projectStore.loadProjects()
+        this.projects = this.projectStore.projects
+        this.closeDialog()
+      } catch (e) {
+        console.error('保存项目失败', e)
       }
-
-      this.loadProjects()
-      this.closeDialog()
     },
     closeDialog() {
       this.showCreateDialog = false

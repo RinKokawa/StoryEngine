@@ -414,7 +414,7 @@
 </template>
 
 <script>
-import storageManager from '../utils/storage.js'
+import { storageService } from '@/services/storage'
 import ToggleSwitch from './ToggleSwitch.vue'
 
 export default {
@@ -465,8 +465,8 @@ export default {
     this.loadSettings()
   },
   methods: {
-    loadSettings() {
-      this.settings = { ...storageManager.getSettings() }
+    async loadSettings() {
+      this.settings = { ...(await storageService.getSettings()) }
       this.originalSettings = { ...this.settings }
     },
     
@@ -488,20 +488,16 @@ export default {
       this.$emit('settings-changed', this.settings)
     },
     
-    saveSettings() {
+    async saveSettings() {
       this.saveStatus = 'saving'
-      
-      setTimeout(() => {
-        const success = storageManager.saveSettings(this.settings)
-        if (success) {
+      setTimeout(async () => {
+        try {
+          await storageService.saveSettings(this.settings)
           this.saveStatus = 'saved'
           this.originalSettings = { ...this.settings }
           this.applySettings()
-          
-          setTimeout(() => {
-            this.saveStatus = 'idle'
-          }, 2000)
-        } else {
+          setTimeout(() => { this.saveStatus = 'idle' }, 2000)
+        } catch (e) {
           this.saveStatus = 'idle'
           alert('保存设置失败，请重试')
         }
@@ -553,43 +549,25 @@ export default {
         alert('请先输入 API Key')
         return
       }
-
       this.testingConnection = true
       this.connectionStatus = null
-
       try {
-        // 先保存当前设置以便 API 服务使用最新配置
-        storageManager.saveSettings(this.settings)
-        
-        // 动态导入 API 服务
+        await storageService.saveSettings(this.settings)
         const { default: qwenApiService } = await import('../utils/qwenApiServer.js')
-        
-        // 重新加载配置
         qwenApiService.loadConfig()
-        
-        // 测试连接
         const success = await qwenApiService.testConnection()
-        
-        if (success) {
-          this.connectionStatus = 'success'
-        } else {
-          this.connectionStatus = 'error'
-        }
+        this.connectionStatus = success ? 'success' : 'error'
       } catch (error) {
         console.error('API 连接测试错误:', error)
         this.connectionStatus = 'error'
       } finally {
         this.testingConnection = false
-        
-        // 3秒后清除状态
-        setTimeout(() => {
-          this.connectionStatus = null
-        }, 3000)
+        setTimeout(() => { this.connectionStatus = null }, 3000)
       }
     },
     
-    exportData() {
-      const data = storageManager.exportData()
+    async exportData() {
+      const data = await storageService.exportData()
       if (data) {
         const blob = new Blob([data], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
@@ -608,24 +586,17 @@ export default {
     importData(event) {
       const file = event.target.files[0]
       if (!file) return
-      
       const reader = new FileReader()
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
-          const success = storageManager.importData(e.target.result)
-          if (success) {
-            alert('数据导入成功！页面将刷新以应用新数据。')
-            window.location.reload()
-          } else {
-            alert('数据导入失败，请检查文件格式')
-          }
+          await storageService.importData(e.target.result)
+          alert('数据导入成功！页面将刷新以应用新数据。')
+          window.location.reload()
         } catch (error) {
-          alert('文件格式错误，请选择有效的JSON文件')
+          alert('数据导入失败，请检查文件格式')
         }
       }
       reader.readAsText(file)
-      
-      // 清空文件选择
       event.target.value = ''
     },
     
@@ -634,12 +605,12 @@ export default {
       this.confirmDialog = {
         title: '清空所有数据',
         message: '此操作将永久删除所有项目、内容和设置，且无法恢复。确定要继续吗？',
-        action: () => {
-          const success = storageManager.clearAll()
-          if (success) {
+        action: async () => {
+          try {
+            await storageService.clearAll()
             alert('数据已清空！页面将刷新。')
             window.location.reload()
-          } else {
+          } catch (e) {
             alert('清空数据失败')
           }
           this.showConfirmDialog = false

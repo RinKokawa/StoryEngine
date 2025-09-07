@@ -87,7 +87,7 @@ import ContextMenu from './ContextMenu.vue'
 import ProjectSelector from './common/ProjectSelector.vue'
 import CharacterSelector from './common/CharacterSelector.vue'
 import TextEditor from './common/TextEditor.vue'
-import storageManager from '../utils/storage.js'
+import { storageService } from '@/services/storage'
 
 export default {
   name: 'NovelEditor',
@@ -149,7 +149,7 @@ export default {
       try {
         console.log('开始加载可用项目列表...')
         // 使用异步方式获取项目列表
-        const projects = await storageManager.getProjects()
+        const projects = await storageService.getProjects()
         availableProjects.value = projects || []
         console.log(`成功加载${projects ? projects.length : 0}个项目`)
         return projects
@@ -286,39 +286,9 @@ export default {
         try {
           console.log(`开始加载章节内容: ${chapter.title || chapter.id}, 项目ID: ${props.currentProject.id}, 重试次数: ${retryCount}`)
           
-          // 直接从文件系统加载所有章节
-          const fileName = `project-chapters-${props.currentProject.id}.json`
-          let chapters = []
-          
-          // 如果在Electron环境中
-          if (window.electronAPI && window.electronAPI.readFile) {
-            try {
-              console.log('使用Electron API读取章节文件')
-              const result = await window.electronAPI.readFile(fileName)
-              if (result.success && result.data) {
-                chapters = JSON.parse(result.data)
-                console.log(`成功读取到${chapters.length}个章节`)
-              }
-            } catch (err) {
-              console.error('Electron读取章节文件失败:', err)
-            }
-          } else {
-            // 在浏览器环境中使用localStorage
-            try {
-              console.log('使用localStorage读取章节数据')
-              const key = `story_engine_${fileName.replace('.json', '')}`
-              const data = localStorage.getItem(key)
-              if (data) {
-                chapters = JSON.parse(data)
-                console.log(`成功从localStorage读取到${chapters.length}个章节`)
-              }
-            } catch (err) {
-              console.error('localStorage读取章节数据失败:', err)
-            }
-          }
-          
-          // 查找当前章节
-          const currentChapter = chapters.find(c => c.id === chapter.id)
+          // 通过存储服务直接获取章节内容
+          const contentText = await storageService.getChapterContent(props.currentProject.id, chapter.id)
+          const currentChapter = { id: chapter.id, content: contentText }
           console.log('查找章节结果:', currentChapter ? '找到章节' : '未找到章节')
           
           // 如果没有找到章节且重试次数未达到上限，进行重试
@@ -374,13 +344,12 @@ export default {
       let timer = null
       return () => {
         if (timer) clearTimeout(timer)
-        timer = setTimeout(() => {
+        timer = setTimeout(async () => {
           if (props.currentProject && props.currentChapter && content.value && content.value.trim()) {
             try {
-              storageManager.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
+              await storageService.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
               // 更新写作统计
-              const wordCount = content.value.replace(/\s/g, '').length
-              storageManager.updateTodayWriting(props.currentProject.id, wordCount)
+
             } catch (error) {
               console.error('自动保存失败:', error)
             }
@@ -668,21 +637,10 @@ export default {
 
       saving.value = true
       try {
-        // 保存章节内容到本地存储
-        const success = storageManager.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
-        
-        if (success) {
-          // 更新写作统计
-          const wordCount = content.value.replace(/\s/g, '').length
-          storageManager.updateTodayWriting(props.currentProject.id, wordCount)
-          
-          // 更新保存时间
-          lastSaveTime.value = new Date().toLocaleString('zh-CN')
-          
-          console.log('章节内容已保存')
-        } else {
-          throw new Error('保存失败')
-        }
+        await storageService.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
+        // 更新保存时间
+        lastSaveTime.value = new Date().toLocaleString('zh-CN')
+        console.log('章节内容已保存')
       } catch (error) {
         console.error('保存失败:', error)
         alert('保存失败，请重试')
@@ -754,7 +712,7 @@ export default {
     }
     
     // 创建新角色
-    const createNewCharacter = () => {
+    const createNewCharacter = async () => {
       // 隐藏角色选择器
       hideCharacterSelector()
       
@@ -763,25 +721,24 @@ export default {
       if (characterName && characterName.trim()) {
         const characterAlias = prompt('请输入角色别名(可选):')
         
-        // 创建新角色
+        // 创建新角色（使用新存储栈）
         try {
-          // 这里应该调用存储管理器来创建角色
-          // 假设storageManager有一个createCharacter方法
-          // const newCharacter = storageManager.createCharacter(props.currentProject.id, {
-          //   name: characterName.trim(),
-          //   alias: characterAlias ? characterAlias.trim() : ''
-          // })
-          
-          // 临时模拟创建角色
-          const newCharacter = {
-            id: Date.now().toString(),
-            name: characterName.trim(),
-            alias: characterAlias ? characterAlias.trim() : ''
+          if (!props.currentProject) {
+            throw new Error('当前项目不存在')
           }
-          
+          const newCharacter = await storageService.createCharacter(
+            props.currentProject.id,
+            {
+              name: characterName.trim(),
+              alias: characterAlias ? characterAlias.trim() : ''
+            }
+          )
+          // 刷新角色选择器数据
+          if (characterSelectorRef.value && typeof characterSelectorRef.value.loadCharacters === 'function') {
+            characterSelectorRef.value.loadCharacters()
+          }
           // 插入新创建的角色
           insertCharacter(newCharacter)
-          
           console.log('角色创建成功:', newCharacter)
         } catch (error) {
           console.error('创建角色失败:', error)

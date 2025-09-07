@@ -318,7 +318,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 
 import ProjectSelector from '../components/common/ProjectSelector.vue'
-import storageManager from '../utils/storage.js'
+import { storageService } from '@/services/storage'
 
 export default {
   name: 'CharacterManagement',
@@ -366,13 +366,13 @@ export default {
     })
 
     // 方法
-    const loadProjects = () => {
-      projects.value = storageManager.getProjects()
+    const loadProjects = async () => {
+      projects.value = await storageService.getProjects()
     }
 
-    const loadCharacters = () => {
+    const loadCharacters = async () => {
       if (selectedProjectId.value) {
-        characters.value = storageManager.getProjectCharacters(selectedProjectId.value) || []
+        characters.value = await storageService.getProjectCharacters(selectedProjectId.value) || []
       } else {
         characters.value = []
       }
@@ -422,7 +422,7 @@ export default {
       resetForm()
     }
 
-    const saveCharacter = () => {
+    const saveCharacter = async () => {
       if (!characterForm.name.trim()) {
         alert('请输入角色姓名')
         return
@@ -442,23 +442,20 @@ export default {
 
       if (showCreateDialog.value) {
         // 创建新角色
-        characterData.id = Date.now().toString()
-        const success = storageManager.createCharacter(selectedProjectId.value, characterData)
-        if (success) {
-          // 重新加载角色列表以确保数据同步
-          loadCharacters()
+        const created = await storageService.createCharacter(selectedProjectId.value, characterData)
+        if (created) {
+          await loadCharacters()
           closeDialogs()
         } else {
           alert('创建角色失败')
         }
       } else {
         // 更新角色
-        const success = storageManager.updateCharacter(selectedProjectId.value, characterData)
-        if (success) {
-          // 重新加载角色列表以确保数据同步
-          loadCharacters()
+        const updated = await storageService.updateCharacter(selectedProjectId.value, characterData)
+        if (updated) {
+          await loadCharacters()
           if (selectedCharacter.value && selectedCharacter.value.id === characterData.id) {
-            selectedCharacter.value = characterData
+            selectedCharacter.value = updated
           }
           closeDialogs()
         } else {
@@ -467,12 +464,11 @@ export default {
       }
     }
 
-    const deleteCharacter = (character) => {
+    const deleteCharacter = async (character) => {
       if (confirm(`确定要删除角色"${character.name}"吗？此操作不可恢复。`)) {
-        const success = storageManager.deleteCharacter(selectedProjectId.value, character.id)
-        if (success) {
-          // 重新加载角色列表以确保数据同步
-          loadCharacters()
+        const success = await storageService.deleteCharacter(selectedProjectId.value, character.id)
+        if (success === undefined) {
+          await loadCharacters()
           if (selectedCharacter.value && selectedCharacter.value.id === character.id) {
             closeSidebar()
           }
@@ -488,11 +484,11 @@ export default {
     }
 
     // 生命周期
-    onMounted(() => {
+    onMounted(async () => {
       loadProjects()
       
       // 如果有当前项目，自动选择
-      const currentProject = storageManager.getCurrentProject()
+      const currentProject = await storageService.getCurrentProject()
       if (currentProject) {
         selectedProjectId.value = currentProject.id
         loadCharacters()

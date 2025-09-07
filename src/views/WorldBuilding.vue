@@ -328,7 +328,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 
 import ProjectSelector from '../components/common/ProjectSelector.vue'
-import storageManager from '../utils/storage.js'
+import { storageService } from '@/services/storage'
 
 export default {
   name: 'WorldBuilding',
@@ -409,13 +409,13 @@ export default {
     })
 
     // 方法
-    const loadProjects = () => {
-      projects.value = storageManager.getProjects()
+    const loadProjects = async () => {
+      projects.value = await storageService.getProjects()
     }
 
-    const loadWorldItems = () => {
+    const loadWorldItems = async () => {
       if (selectedProjectId.value) {
-        worldItems.value = storageManager.getProjectWorldItems(selectedProjectId.value) || []
+        worldItems.value = await storageService.getProjectWorldItems(selectedProjectId.value) || []
       } else {
         worldItems.value = []
       }
@@ -489,7 +489,7 @@ export default {
       resetForm()
     }
 
-    const saveWorldItem = () => {
+    const saveWorldItem = async () => {
       if (!worldForm.name.trim()) {
         alert('请输入设定名称')
         return
@@ -515,21 +515,20 @@ export default {
 
       if (showCreateDialog.value) {
         // 创建新设定
-        worldData.id = Date.now().toString()
-        const success = storageManager.createWorldItem(selectedProjectId.value, worldData)
-        if (success) {
-          loadWorldItems()
+        const created = await storageService.createWorldItem(selectedProjectId.value, worldData)
+        if (created) {
+          await loadWorldItems()
           closeDialogs()
         } else {
           alert('创建世界设定失败')
         }
       } else {
         // 更新设定
-        const success = storageManager.updateWorldItem(selectedProjectId.value, worldData)
-        if (success) {
-          loadWorldItems()
+        const updated = await storageService.updateWorldItem(selectedProjectId.value, worldData)
+        if (updated) {
+          await loadWorldItems()
           if (selectedWorldItem.value && selectedWorldItem.value.id === worldData.id) {
-            selectedWorldItem.value = worldData
+            selectedWorldItem.value = updated
           }
           closeDialogs()
         } else {
@@ -538,11 +537,11 @@ export default {
       }
     }
 
-    const deleteWorldItem = (item) => {
+    const deleteWorldItem = async (item) => {
       if (confirm(`确定要删除世界设定"${item.name}"吗？此操作不可恢复。`)) {
-        const success = storageManager.deleteWorldItem(selectedProjectId.value, item.id)
-        if (success) {
-          loadWorldItems()
+        const success = await storageService.deleteWorldItem(selectedProjectId.value, item.id)
+        if (success === undefined) {
+          await loadWorldItems()
           if (selectedWorldItem.value && selectedWorldItem.value.id === item.id) {
             closeSidebar()
           }
@@ -558,7 +557,7 @@ export default {
     }
 
     // 生命周期
-    onMounted(() => {
+    onMounted(async () => {
       loadProjects()
       
       // 如果有当前项目，自动选择
@@ -566,7 +565,7 @@ export default {
         selectedProjectId.value = props.currentProject.id
         loadWorldItems()
       } else {
-        const currentProject = storageManager.getCurrentProject()
+        const currentProject = await storageService.getCurrentProject()
         if (currentProject) {
           selectedProjectId.value = currentProject.id
           loadWorldItems()

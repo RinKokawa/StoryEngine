@@ -40,16 +40,24 @@
     </div>
     
     <div class="chat-input">
-      <textarea 
-        v-model="userInput" 
-        placeholder="输入消息与AI对话..."
-        rows="3"
-        class="chat-textarea"
-        :disabled="!hasApiKey || isTyping"
-      ></textarea>
-      <button @click="sendMessage" :disabled="!userInput.trim() || isTyping || !hasApiKey">
-        发送
-      </button>
+      <div class="input-wrapper">
+        <textarea 
+          v-model="userInput" 
+          placeholder="输入消息与AI对话..."
+          rows="3"
+          class="chat-textarea"
+          :disabled="!hasApiKey || isTyping"
+        ></textarea>
+        <button 
+          class="send-btn-fab" 
+          @click="sendMessage" 
+          :disabled="!userInput.trim() || isTyping || !hasApiKey"
+          title="发送" 
+          aria-label="发送"
+        >
+          ➤
+        </button>
+      </div>
     </div>
     
     <!-- API密钥设置对话框 -->
@@ -301,6 +309,9 @@ export default {
   height: 100%;
   background: white;
   border-left: 1px solid #e0e0e0;
+  /* 避免被底部固定状态栏挡住发送按钮 */
+  position: relative;
+  z-index: 200; /* 置于状态栏之上 */
 }
 
 .chat-header {
@@ -432,6 +443,7 @@ export default {
 .chat-input textarea {
   width: 100%;
   padding: 10px;
+  padding-right: 56px; /* 为悬浮发送按钮预留空间 */
   border: 1px solid #ddd;
   border-radius: 4px;
   resize: none;
@@ -451,11 +463,41 @@ export default {
   transition: background 0.2s;
 }
 
+/* 输入区域与悬浮发送按钮布局 */
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.send-btn-fab {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  font-size: 18px; /* 图标大小 */
+  line-height: 1;
+}
+
+.send-btn-fab:hover:not(:disabled) {
+  background: #0056b3;
+}
+
 .chat-input button:hover:not(:disabled) {
   background: #0056b3;
 }
 
-.chat-input button:disabled {
+.chat-input button:disabled,
+.send-btn-fab:disabled {
   background: #cccccc;
   cursor: not-allowed;
 }

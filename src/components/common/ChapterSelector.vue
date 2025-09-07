@@ -93,8 +93,9 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
+import { storageService } from '@/services/storage'
 
-import storageManager from '../../utils/storage.js'
+/* migrated to storageService */ 
 
 export default {
   name: 'ChapterSelector',
@@ -126,9 +127,9 @@ export default {
     })
 
     // 加载章节列表
-    const loadChapters = () => {
+    const loadChapters = async () => {
       if (props.projectId) {
-        chapters.value = storageManager.getProjectChapters(props.projectId)
+        chapters.value = await storageService.getProjectChapters(props.projectId)
       }
     }
 
@@ -167,7 +168,7 @@ export default {
     }
 
     // 保存章节
-    const saveChapter = () => {
+    const saveChapter = async () => {
       if (!editingChapter.value.title.trim()) {
         alert('请输入章节标题')
         return
@@ -180,7 +181,7 @@ export default {
 
       if (chapterData.id) {
         // 更新现有章节
-        const updatedChapter = storageManager.updateChapter(props.projectId, chapterData)
+        const updatedChapter = await storageService.updateChapter(props.projectId, chapterData)
         if (updatedChapter) {
           const index = chapters.value.findIndex(c => c.id === chapterData.id)
           if (index >= 0) {
@@ -190,7 +191,7 @@ export default {
         }
       } else {
         // 创建新章节
-        const newChapter = storageManager.createChapter(props.projectId, chapterData)
+        const newChapter = await storageService.createChapter(props.projectId, chapterData)
         if (newChapter) {
           chapters.value.push(newChapter)
           emit('chapter-created', newChapter)
@@ -201,9 +202,9 @@ export default {
     }
 
     // 删除章节
-    const deleteChapter = (chapter) => {
+    const deleteChapter = async (chapter) => {
       if (confirm(`确定要删除章节"${chapter.title}"吗？此操作不可撤销。`)) {
-        const success = storageManager.deleteChapter(props.projectId, chapter.id)
+        const success = await storageService.deleteChapter(props.projectId, chapter.id)
         if (success) {
           chapters.value = chapters.value.filter(c => c.id !== chapter.id)
           emit('chapter-deleted', chapter)

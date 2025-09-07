@@ -1,5 +1,5 @@
 // 设置功能验证器
-import storageManager from './storage.js'
+import { storageService } from '@/services/storage'
 
 export class SettingsValidator {
   constructor() {
@@ -7,15 +7,15 @@ export class SettingsValidator {
   }
 
   // 验证默认设置结构
-  validateDefaultSettings() {
-    const settings = storageManager.getDefaultSettings()
+  async validateDefaultSettings() {
+    const settings = await storageService.getSettings()
     const requiredKeys = [
       'autoSave', 'autoSaveInterval', 'fontSize', 'lineHeight', 'autoIndent',
       'theme', 'sidebarCollapsed', 'windowSize',
       'openLastProject', 'minimizeToTray', 'checkUpdates'
     ]
     
-    const hasAllKeys = requiredKeys.every(key => settings.hasOwnProperty(key))
+    const hasAllKeys = requiredKeys.every(key => Object.prototype.hasOwnProperty.call(settings, key))
     this.testResults.push({
       test: '默认设置结构',
       passed: hasAllKeys,
@@ -26,8 +26,8 @@ export class SettingsValidator {
   }
 
   // 验证设置保存和读取
-  validateSettingsPersistence() {
-    const originalSettings = storageManager.getSettings()
+  async validateSettingsPersistence() {
+    const originalSettings = await storageService.getSettings()
     const testSettings = {
       ...originalSettings,
       fontSize: 20,
@@ -36,10 +36,11 @@ export class SettingsValidator {
     }
     
     // 保存测试设置
-    const saveSuccess = storageManager.saveSettings(testSettings)
+    await storageService.saveSettings(testSettings)
+    const saveSuccess = true
     
     // 读取设置
-    const loadedSettings = storageManager.getSettings()
+    const loadedSettings = await storageService.getSettings()
     
     // 验证设置是否正确保存
     const isCorrect = loadedSettings.fontSize === 20 && 
@@ -47,7 +48,7 @@ export class SettingsValidator {
                      loadedSettings.autoSave === testSettings.autoSave
     
     // 恢复原始设置
-    storageManager.saveSettings(originalSettings)
+    await storageService.saveSettings(originalSettings)
     
     this.testResults.push({
       test: '设置持久化',
@@ -59,22 +60,22 @@ export class SettingsValidator {
   }
 
   // 验证数据导出功能
-  validateDataExport() {
-    const exportData = storageManager.exportData()
+  async validateDataExport() {
+    const exportData = await storageService.exportData()
     let isValidJson = false
     let hasRequiredFields = false
     
     try {
       const data = JSON.parse(exportData)
       isValidJson = true
-      hasRequiredFields = data.hasOwnProperty('projects') && 
-                         data.hasOwnProperty('settings') && 
-                         data.hasOwnProperty('exportTime')
+      hasRequiredFields = Object.prototype.hasOwnProperty.call(data, 'projects') && 
+                         Object.prototype.hasOwnProperty.call(data, 'settings') && 
+                         Object.prototype.hasOwnProperty.call(data, 'exportDate')
     } catch (error) {
       isValidJson = false
     }
     
-    const passed = exportData && isValidJson && hasRequiredFields
+    const passed = !!exportData && isValidJson && hasRequiredFields
     this.testResults.push({
       test: '数据导出',
       passed: passed,
@@ -85,9 +86,9 @@ export class SettingsValidator {
   }
 
   // 验证主题设置
-  validateThemeSettings() {
+  async validateThemeSettings() {
     const validThemes = ['light', 'dark', 'auto']
-    const currentSettings = storageManager.getSettings()
+    const currentSettings = await storageService.getSettings()
     const isValidTheme = validThemes.includes(currentSettings.theme)
     
     this.testResults.push({
@@ -100,8 +101,8 @@ export class SettingsValidator {
   }
 
   // 验证编辑器设置范围
-  validateEditorSettings() {
-    const settings = storageManager.getSettings()
+  async validateEditorSettings() {
+    const settings = await storageService.getSettings()
     const fontSizeValid = settings.fontSize >= 12 && settings.fontSize <= 24
     const lineHeightValid = settings.lineHeight >= 1.2 && settings.lineHeight <= 2.0
     const intervalValid = [10000, 30000, 60000, 120000].includes(settings.autoSaveInterval)
@@ -117,21 +118,21 @@ export class SettingsValidator {
   }
 
   // 运行所有验证
-  runAllValidations() {
+  async runAllValidations() {
     console.log('🔍 开始验证设置功能...')
     
     this.testResults = []
     
-    const tests = [
+    const results = await Promise.all([
       this.validateDefaultSettings(),
       this.validateSettingsPersistence(),
       this.validateDataExport(),
       this.validateThemeSettings(),
       this.validateEditorSettings()
-    ]
+    ])
     
-    const passedTests = tests.filter(Boolean).length
-    const totalTests = tests.length
+    const passedTests = results.filter(Boolean).length
+    const totalTests = results.length
     
     console.log(`\n📊 验证结果: ${passedTests}/${totalTests} 项测试通过\n`)
     

@@ -140,7 +140,7 @@
 <script>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
-import storageManager from '../../utils/storage.js'
+import { storageService } from '@/services/storage'
 import { VolumeModel, ChapterModel } from '../../utils/dataModels.js'
 
 export default {
@@ -268,7 +268,7 @@ export default {
         console.log('[DEBUG] 准备调用 storageManager.getProjectVolumes')
         let volumesData
         try {
-          volumesData = await storageManager.getProjectVolumes(props.projectId)
+          volumesData = await storageService.getProjectVolumes(props.projectId)
           console.log('[DEBUG] getProjectVolumes 调用成功, 返回数据长度:', volumesData ? volumesData.length : 0)
         } catch (error) {
           console.error('[ERROR] getProjectVolumes 调用失败:', error)
@@ -282,7 +282,7 @@ export default {
         console.log('[DEBUG] 准备调用 storageManager.getProjectChapters')
         let chaptersData
         try {
-          chaptersData = await storageManager.getProjectChapters(props.projectId)
+          chaptersData = await storageService.getProjectChapters(props.projectId)
           console.log('[DEBUG] getProjectChapters 调用成功, 返回数据长度:', chaptersData ? chaptersData.length : 0)
         } catch (error) {
           console.error('[ERROR] getProjectChapters 调用失败:', error)
@@ -344,7 +344,7 @@ export default {
         description: '故事的开始',
         status: 'writing'
       }
-      return await storageManager.createVolume(props.projectId, volumeData)
+      return await storageService.createVolume(props.projectId, volumeData)
     }
 
     // 创建默认章节
@@ -354,7 +354,7 @@ export default {
         status: 'draft',
         notes: ''
       }
-      return await storageManager.createChapter(props.projectId, volumeId, chapterData)
+      return await storageService.createChapter(props.projectId, volumeId, chapterData)
     }
 
     // 切换卷的展开状态（使用新 Set 以触发响应式）
@@ -422,7 +422,7 @@ export default {
             lastModified: new Date().toISOString()
           }
           
-          await storageManager.updateVolume(props.projectId, updatedVolume)
+          await storageService.updateVolume(props.projectId, updatedVolume)
           
           const index = volumes.value.findIndex(v => v.id === editingVolume.value.id)
           if (index !== -1) {
@@ -436,7 +436,7 @@ export default {
             status: volumeForm.status
           }
           
-          const newVolume = await storageManager.createVolume(props.projectId, volumeData)
+          const newVolume = await storageService.createVolume(props.projectId, volumeData)
           // 防止重复添加（storageManager.createVolume 已更新缓存数组）
           if (!volumes.value.some(v => v.id === newVolume.id)) {
             volumes.value.push(newVolume)
@@ -464,7 +464,7 @@ export default {
         isProcessing.value = true
         
         try {
-          await storageManager.deleteVolume(props.projectId, volumeId)
+          await storageService.deleteVolume(props.projectId, volumeId)
           volumes.value = volumes.value.filter(v => v.id !== volumeId)
           chapters.value = chapters.value.filter(c => c.volumeId !== volumeId)
           {
@@ -536,7 +536,7 @@ export default {
             lastModified: new Date().toISOString()
           }
           
-          await storageManager.updateChapter(props.projectId, updatedChapter)
+          await storageService.updateChapter(props.projectId, updatedChapter)
           
           const index = chapters.value.findIndex(c => c.id === editingChapter.value.id)
           if (index !== -1) {
@@ -551,7 +551,7 @@ export default {
             notes: chapterForm.notes
           }
           
-          const newChapter = await storageManager.createChapter(props.projectId, currentVolumeId.value, chapterData)
+          const newChapter = await storageService.createChapter(props.projectId, currentVolumeId.value, chapterData)
           
           // 检查是否已存在相同ID的章节（防止重复添加）
           if (!chapters.value.some(c => c.id === newChapter.id)) {
@@ -579,7 +579,7 @@ export default {
         isProcessing.value = true
         
         try {
-          await storageManager.deleteChapter(props.projectId, chapterId)
+          await storageService.deleteChapter(props.projectId, chapterId)
           chapters.value = chapters.value.filter(c => c.id !== chapterId)
           emit('chapter-deleted', chapterId)
         } catch (error) {

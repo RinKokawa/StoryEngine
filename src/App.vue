@@ -28,7 +28,8 @@ import StoryEditor from './views/StoryEditor.vue'
 import CharacterManagement from './views/CharacterManagement.vue'
 import WorldBuilding from './views/WorldBuilding.vue'
 import Settings from './components/Settings.vue'
-import storageManager from './utils/storage.js'
+/* migrated to storageService */ 
+import { useProjectStore } from '@/stores/project'
 
 export default {
   name: 'App',
@@ -48,13 +49,19 @@ export default {
       currentProject: null,
       appSettings: {},
       themeMediaQuery: null,
-      themeChangeHandler: null
+      themeChangeHandler: null,
+      projectStore: null
     }
   },
-  mounted() {
-    // 启动时加载当前项目和设置
-    this.currentProject = storageManager.getCurrentProject()
-    this.appSettings = storageManager.getSettings()
+  async mounted() {
+    // 启动时加载当前项目和设置（改用项目仓库）
+    this.projectStore = useProjectStore()
+    this.projectStore.initialize()
+      .then(() => {
+        this.currentProject = this.projectStore.currentProject
+      })
+      .catch(console.error)
+    this.appSettings = await (await import('@/services/storage')).storageService.getSettings()
     this.applySidebarSettings()
     this.applyThemeSettings()
   },
@@ -73,8 +80,14 @@ export default {
       this.currentPage = page
       console.log('导航到:', page, params)
     },
-    handleProjectSelected(project) {
+    async handleProjectSelected(project) {
       this.currentProject = project
+      try {
+        if (!this.projectStore) this.projectStore = useProjectStore()
+        await this.projectStore.setCurrentProject(project)
+      } catch (e) {
+        console.error('设置当前项目失败', e)
+      }
       console.log('选择项目:', project)
     },
     getPageTitle() {
