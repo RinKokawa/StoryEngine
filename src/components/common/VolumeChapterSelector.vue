@@ -1,98 +1,167 @@
-
 <template>
-  <div class="volume-chapter-selector">
-    <div class="selector-header">
-      <h3>卷章管理</h3>
-      <button @click="createVolume" class="create-btn" title="创建新卷" :disabled="isLoading || isDataLoading">
-        <span>+卷</span>
-      </button>
+  <div class="vscode-file-explorer">
+    <!-- 标题栏 -->
+    <div class="explorer-header">
+      <div class="header-title">
+        <svg class="folder-icon" viewBox="0 0 16 16" width="16" height="16">
+          <path fill="currentColor" d="M1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25H7.5L6.25 3.5H1.75z"/>
+        </svg>
+        <span>卷章管理</span>
+      </div>
+      <div class="header-actions">
+        <button @click="createVolume" class="action-btn" title="新建卷" :disabled="isLoading">
+          <svg viewBox="0 0 16 16" width="14" height="14">
+            <path fill="currentColor" d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/>
+          </svg>
+        </button>
+        <button @click="refreshData" class="action-btn" title="刷新数据" :disabled="isLoading">
+          <svg viewBox="0 0 16 16" width="14" height="14">
+            <path fill="currentColor" d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/>
+          </svg>
+        </button>
+        <button @click="refreshAllWordCounts" class="action-btn" title="更新字数统计" :disabled="isLoading || isProcessing">
+          <svg viewBox="0 0 16 16" width="14" height="14">
+            <path fill="currentColor" d="M2 3.75C2 2.784 2.784 2 3.75 2h8.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25ZM4.75 6a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5A.75.75 0 0 1 4.75 6ZM5.5 8.25a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5Z"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <!-- 加载状态指示器 -->
-    <div v-if="isLoading || isDataLoading" class="loading-indicator">
-      <div class="spinner"></div>
-      <p>{{ isLoading ? '加载中...' : '数据同步中...' }}</p>
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="loading-spinner"></div>
+      <span>加载中...</span>
     </div>
 
-    <!-- 错误状态提示 -->
+    <!-- 错误状态 -->
     <div v-else-if="loadError" class="error-state">
-      <p>{{ loadError }}</p>
+      <svg class="error-icon" viewBox="0 0 16 16" width="16" height="16">
+        <path fill="currentColor" d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z"/>
+      </svg>
+      <span>{{ loadError }}</span>
       <button @click="retryLoad" class="retry-btn">重试</button>
     </div>
 
-    <div v-else class="volumes-list">
-      <div v-for="volume in volumes" :key="volume.id" class="volume-item">
-        <div class="volume-header" @click="toggleVolume(volume.id)">
-          <span class="volume-toggle" :class="{ expanded: expandedVolumes.has(volume.id) }">
-            {{ expandedVolumes.has(volume.id) ? '▼' : '▶' }}
-          </span>
-          <span class="volume-title">{{ volume.title }}</span>
-          <div class="volume-actions">
-            <button @click.stop="editVolume(volume)" class="edit-btn" title="编辑卷">✏️</button>
-            <button @click.stop="deleteVolume(volume.id)" class="delete-btn" title="删除卷">🗑️</button>
+    <!-- 文件树 -->
+    <div v-else class="file-tree">
+      <!-- 卷列表 -->
+      <div v-for="volume in volumes" :key="volume.id" class="tree-item volume-item">
+        <div 
+          class="tree-node" 
+          :class="{ 'expanded': expandedVolumes.has(volume.id) }"
+          @click="toggleVolume(volume.id)"
+        >
+          <div class="node-content">
+            <svg class="chevron-icon" :class="{ 'expanded': expandedVolumes.has(volume.id) }" viewBox="0 0 16 16" width="16" height="16">
+              <path fill="currentColor" d="M6 4.75a.75.75 0 0 1 1.28-.53l3.25 3.25a.75.75 0 0 1 0 1.06L7.28 11.78a.75.75 0 0 1-1.28-.53V4.75Z"/>
+            </svg>
+            <svg class="folder-icon" :class="{ 'open': expandedVolumes.has(volume.id) }" viewBox="0 0 16 16" width="16" height="16">
+              <path fill="currentColor" d="M1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25H7.5L6.25 3.5H1.75z"/>
+            </svg>
+            <span class="node-label">{{ volume.title }}</span>
+            <span class="node-badge" v-if="getVolumeChapterCount(volume.id)">{{ getVolumeChapterCount(volume.id) }}</span>
+          </div>
+          <div class="node-actions" @click.stop>
+            <button @click="editVolume(volume)" class="action-btn" title="编辑">
+              <svg viewBox="0 0 16 16" width="12" height="12">
+                <path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Z"/>
+              </svg>
+            </button>
+            <button @click="deleteVolume(volume.id)" class="action-btn delete" title="删除">
+              <svg viewBox="0 0 16 16" width="12" height="12">
+                <path fill="currentColor" d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.748 1.748 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/>
+              </svg>
+            </button>
           </div>
         </div>
 
-        <div v-if="expandedVolumes.has(volume.id)" class="chapters-list">
-          <div class="chapter-actions">
-            <button @click="createChapter(volume.id)" class="create-chapter-btn" :disabled="isProcessing">
-              + 新建章节
-            </button>
-          </div>
-          
-          <div v-for="chapter in (chaptersByVolume.get(volume.id) || [])" :key="chapter.id" 
-               class="chapter-item" 
-               :class="{ active: selectedChapter?.id === chapter.id, 'disabled': selectingId === chapter.id }"
-               @click="selectChapter(chapter)">
-            <div class="chapter-info">
-              <span class="chapter-title">{{ chapter.title || '未命名章节' }}</span>
-              <span class="chapter-meta">{{ chapter.wordCount || 0 }}字</span>
-            </div>
-            <div class="chapter-actions">
-              <button @click.stop="editChapter(chapter)" class="edit-btn" title="编辑章节">✏️</button>
-              <button @click.stop="deleteChapter(chapter.id)" class="delete-btn" title="删除章节">🗑️</button>
+        <!-- 章节列表 -->
+        <div v-if="expandedVolumes.has(volume.id)" class="tree-children">
+          <div 
+            v-for="chapter in getVolumeChapters(volume.id)" 
+            :key="chapter.id"
+            class="tree-item chapter-item"
+            :class="{ 'selected': selectedChapter?.id === chapter.id }"
+            @click="selectChapter(chapter)"
+          >
+            <div class="tree-node">
+              <div class="node-content">
+                <div class="node-indent"></div>
+                <svg class="file-icon" viewBox="0 0 16 16" width="16" height="16">
+                  <path fill="currentColor" d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/>
+                </svg>
+                <span class="node-label">{{ chapter.title || '未命名章节' }}</span>
+                <span class="node-meta" v-if="chapter.wordCount">{{ formatWordCount(chapter.wordCount) }}</span>
+              </div>
+              <div class="node-actions" @click.stop>
+                <button @click="editChapter(chapter)" class="action-btn" title="编辑">
+                  <svg viewBox="0 0 16 16" width="12" height="12">
+                    <path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Z"/>
+                  </svg>
+                </button>
+                <button @click="deleteChapter(chapter.id)" class="action-btn delete" title="删除">
+                  <svg viewBox="0 0 16 16" width="12" height="12">
+                    <path fill="currentColor" d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.748 1.748 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div v-if="(chaptersByVolume.get(volume.id) || []).length === 0" class="empty-chapters">
-            暂无章节
+          <!-- 添加章节按钮 -->
+          <div class="tree-item add-item" @click="createChapter(volume.id)">
+            <div class="tree-node">
+              <div class="node-content">
+                <div class="node-indent"></div>
+                <svg class="add-icon" viewBox="0 0 16 16" width="16" height="16">
+                  <path fill="currentColor" d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/>
+                </svg>
+                <span class="node-label add-label">新建章节</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-if="getVolumeChapters(volume.id).length === 0" class="tree-item empty-item">
+            <div class="tree-node">
+              <div class="node-content">
+                <div class="node-indent"></div>
+                <span class="empty-text">暂无章节</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div v-if="volumes.length === 0" class="empty-volumes">
-        <p>暂无卷，点击上方按钮创建第一卷</p>
+      <!-- 空状态 -->
+      <div v-if="volumes.length === 0" class="empty-state">
+        <svg class="empty-icon" viewBox="0 0 16 16" width="24" height="24">
+          <path fill="currentColor" d="M1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25H7.5L6.25 3.5H1.75z"/>
+        </svg>
+        <p>暂无卷</p>
+        <button @click="createVolume" class="create-first-btn">创建第一卷</button>
       </div>
     </div>
 
-    <!-- 卷编辑对话框 -->
-    <div v-if="showVolumeDialog" class="dialog-overlay" @click.self="closeVolumeDialog">
-      <div class="dialog">
-        <h4>{{ editingVolume ? '编辑卷' : '创建新卷' }}</h4>
-        <form @submit.prevent="saveVolume">
-          <div class="form-group">
-            <label>卷标题:</label>
-            <input v-model="volumeForm.title" type="text" required placeholder="请输入卷标题">
+    <!-- 编辑对话框 -->
+    <div v-if="showVolumeDialog" class="modal-overlay" @click.self="closeVolumeDialog">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>{{ editingVolume ? '编辑卷' : '新建卷' }}</h3>
+          <button @click="closeVolumeDialog" class="close-btn">×</button>
+        </div>
+        <form @submit.prevent="saveVolume" class="modal-form">
+          <div class="form-field">
+            <label>标题</label>
+            <input v-model="volumeForm.title" type="text" required placeholder="输入卷标题">
           </div>
-          <div class="form-group">
-            <label>描述:</label>
-            <textarea 
-              v-model="volumeForm.description" 
-              placeholder="卷的简介或描述"
-              rows="3"
-            ></textarea>
+          <div class="form-field">
+            <label>描述</label>
+            <textarea v-model="volumeForm.description" placeholder="卷的描述（可选）" rows="3"></textarea>
           </div>
-          <div class="form-group">
-            <label>状态:</label>
-            <select v-model="volumeForm.status">
-              <option value="draft">草稿</option>
-              <option value="writing">写作中</option>
-              <option value="completed">已完成</option>
-            </select>
-          </div>
-          <div class="form-actions">
+          <div class="modal-actions">
             <button type="button" @click="closeVolumeDialog" :disabled="isProcessing">取消</button>
-            <button type="submit" :disabled="isProcessing">
+            <button type="submit" :disabled="isProcessing" class="primary">
               {{ isProcessing ? '保存中...' : '保存' }}
             </button>
           </div>
@@ -101,33 +170,29 @@
     </div>
 
     <!-- 章节编辑对话框 -->
-    <div v-if="showChapterDialog" class="dialog-overlay" @click.self="closeChapterDialog">
-      <div class="dialog">
-        <h4>{{ editingChapter ? '编辑章节' : '创建新章节' }}</h4>
-        <form @submit.prevent="saveChapter">
-          <div class="form-group">
-            <label>章节标题:</label>
-            <input v-model="chapterForm.title" type="text" required placeholder="请输入章节标题">
+    <div v-if="showChapterDialog" class="modal-overlay" @click.self="closeChapterDialog">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>{{ editingChapter ? '编辑章节' : '新建章节' }}</h3>
+          <button @click="closeChapterDialog" class="close-btn">×</button>
+        </div>
+        <form @submit.prevent="saveChapter" class="modal-form">
+          <div class="form-field">
+            <label>标题</label>
+            <input v-model="chapterForm.title" type="text" required placeholder="输入章节标题">
           </div>
-          <div class="form-group">
-            <label>状态:</label>
-            <select v-model="chapterForm.status">
-              <option value="draft">草稿</option>
-              <option value="writing">写作中</option>
-              <option value="completed">已完成</option>
+          <div class="form-field">
+            <label>所属卷</label>
+            <select v-model="chapterForm.volumeId" required>
+              <option value="">选择卷</option>
+              <option v-for="volume in volumes" :key="volume.id" :value="volume.id">
+                {{ volume.title }}
+              </option>
             </select>
           </div>
-          <div class="form-group">
-            <label>简介:</label>
-            <textarea 
-              v-model="chapterForm.notes" 
-              placeholder="章节简介或备注"
-              rows="3"
-            ></textarea>
-          </div>
-          <div class="form-actions">
+          <div class="modal-actions">
             <button type="button" @click="closeChapterDialog" :disabled="isProcessing">取消</button>
-            <button type="submit" :disabled="isProcessing">
+            <button type="submit" :disabled="isProcessing" class="primary">
               {{ isProcessing ? '保存中...' : '保存' }}
             </button>
           </div>
@@ -138,13 +203,11 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-
+import { ref, computed, watch, onMounted } from 'vue'
 import { storageService } from '@/services/storage'
 
 export default {
   name: 'VolumeChapterSelector',
-
   props: {
     projectId: {
       type: String,
@@ -155,111 +218,53 @@ export default {
       default: null
     }
   },
-  emits: ['chapter-selected', 'chapter-created', 'chapter-updated', 'chapter-deleted', 'data-loaded'],
+  emits: ['chapter-selected', 'data-updated'],
   setup(props, { emit }) {
+    // 响应式数据
     const volumes = ref([])
     const chapters = ref([])
     const expandedVolumes = ref(new Set())
-    
-    // 加载和处理状态
     const isLoading = ref(false)
     const isProcessing = ref(false)
     const loadError = ref(null)
-    const loadAttempts = ref(0)
-    const maxLoadAttempts = 5
-    
-    // 数据加载状态 - 用于防止在数据未完全加载时点击章节
-    const isDataLoading = ref(false)
-    // 正在选择的章节ID（仅禁用被点击项）
-    const selectingId = ref(null)
-    
-    // 轮询相关
-    const pollingTimer = ref(null)
-    const pollingCount = ref(0)
-    const maxPollingCount = 10 // 恢复原来的轮询次数
-    const pollingInterval = 500 // 恢复原来的轮询间隔
-    
-    // 防止重复创建
-    const operationInProgress = ref(false)
-    const operationTimeout = ref(null)
-    
+
     // 对话框状态
     const showVolumeDialog = ref(false)
     const showChapterDialog = ref(false)
     const editingVolume = ref(null)
     const editingChapter = ref(null)
-    const currentVolumeId = ref(null)
-    
+
     // 表单数据
-    const volumeForm = reactive({
+    const volumeForm = ref({
       title: '',
-      description: '',
-      status: 'draft'
+      description: ''
     })
-    
-    const chapterForm = reactive({
+
+    const chapterForm = ref({
       title: '',
-      status: 'draft',
-      notes: ''
+      volumeId: ''
     })
-    
+
+    // 计算属性
     const chaptersByVolume = computed(() => {
       const map = new Map()
-      const sorted = [...chapters.value].sort((a, b) => a.order - b.order)
-      for (const c of sorted) {
-        if (!map.has(c.volumeId)) map.set(c.volumeId, [])
-        map.get(c.volumeId).push(c)
-      }
+      chapters.value.forEach(chapter => {
+        const volumeId = chapter.volumeId
+        if (!map.has(volumeId)) {
+          map.set(volumeId, [])
+        }
+        map.get(volumeId).push(chapter)
+      })
       return map
     })
 
-    // 监听项目ID变化，重新加载数据
-    watch(() => props.projectId, (newProjectId) => {
-      console.log('[DEBUG] watch projectId 触发, 新ID:', newProjectId)
-      if (newProjectId) {
-        console.log('[DEBUG] 项目ID变化，准备加载数据:', newProjectId)
-        try {
-          loadData()
-        } catch (error) {
-          console.error('[ERROR] watch 回调中加载数据失败:', error)
-        }
-      } else {
-        console.log('[DEBUG] 项目ID为空，跳过加载')
-      }
-    }, { immediate: true })
-    
-    // 监听选中章节变化，自动展开其所在的卷
-    watch(() => props.selectedChapter, (ch) => {
-      if (ch && ch.volumeId) {
-        const s = new Set(expandedVolumes.value)
-        s.add(ch.volumeId)
-        expandedVolumes.value = s
-      }
-    })
-
-    // 获取指定卷的章节
-    const getVolumeChapters = (volumeId) => {
-      return chapters.value.filter(c => c.volumeId === volumeId).sort((a, b) => a.order - b.order)
-    }
-
-    // 加载数据
+    // 方法
     const loadData = async () => {
-      console.log('[DEBUG] loadData 函数开始执行')
-      
-      if (!props.projectId) {
-        console.log('[DEBUG] 无项目ID，跳过加载')
-        return
-      }
-      
-      if (isLoading.value) {
-        console.log('[DEBUG] 已经在加载中，跳过重复加载')
-        return
-      }
-      
-      console.log('[DEBUG] 设置 isLoading = true')
+      if (!props.projectId) return
+
       isLoading.value = true
       loadError.value = null
-      
+
       try {
         // 加载卷数据
         let volumesData
@@ -269,9 +274,9 @@ export default {
           console.error('加载卷数据失败:', error)
           volumesData = []
         }
-        
+
         volumes.value = volumesData || []
-        
+
         // 加载章节数据
         let chaptersData
         try {
@@ -280,139 +285,143 @@ export default {
           console.error('加载章节数据失败:', error)
           chaptersData = []
         }
-        
+
         chapters.value = chaptersData || []
-        
-        // 默认展开第一卷（如果有）
-        if (volumes.value.length > 0) {
-          console.log('[DEBUG] 展开第一卷:', volumes.value[0].id)
-          const s = new Set(expandedVolumes.value)
-          s.add(volumes.value[0].id)
-          expandedVolumes.value = s
+
+        // 默认展开第一卷
+        if (volumes.value.length > 0 && expandedVolumes.value.size === 0) {
+          expandedVolumes.value.add(volumes.value[0].id)
         }
-        
-        // 如果有选中的章节，确保其所在的卷是展开的
-        if (props.selectedChapter) {
-          console.log('[DEBUG] 有选中的章节:', props.selectedChapter.id)
-          const chapter = chapters.value.find(c => c.id === props.selectedChapter.id)
-          if (chapter && chapter.volumeId) {
-            console.log('[DEBUG] 展开章节所在的卷:', chapter.volumeId)
-            const s = new Set(expandedVolumes.value)
-            s.add(chapter.volumeId)
-            expandedVolumes.value = s
-          }
-        }
-        
-        // 重置加载尝试次数
-        loadAttempts.value = 0
-        console.log('[DEBUG] 数据加载完成')
-        
-        // 发出数据加载完成事件
-        emit('data-loaded', {
-          volumes: volumes.value,
-          chapters: chapters.value,
-          hasData: volumes.value.length > 0 || chapters.value.length > 0
-        })
+
       } catch (error) {
-        console.error('[ERROR] 加载卷章数据失败:', error)
+        console.error('加载数据失败:', error)
         loadError.value = '加载数据失败，请重试'
       } finally {
-        console.log('[DEBUG] 设置 isLoading = false')
         isLoading.value = false
       }
     }
 
-    // 手动重试加载
     const retryLoad = () => {
-      loadAttempts.value = 0
       loadData()
     }
 
-    // 创建默认卷
-    const createDefaultVolume = async () => {
-      const volumeData = {
-        title: '第一卷',
-        description: '故事的开始',
-        status: 'writing'
-      }
-      return await storageService.createVolume(props.projectId, volumeData)
+    const refreshData = () => {
+      loadData()
     }
 
-    // 创建默认章节
-    const createDefaultChapter = async (volumeId) => {
-      const chapterData = {
-        title: '第一章',
-        status: 'draft',
-        notes: ''
-      }
-      return await storageService.createChapter(props.projectId, volumeId, chapterData)
-    }
-
-    // 切换卷的展开状态（使用新 Set 以触发响应式）
     const toggleVolume = (volumeId) => {
-      const s = new Set(expandedVolumes.value)
-      if (s.has(volumeId)) {
-        s.delete(volumeId)
+      if (expandedVolumes.value.has(volumeId)) {
+        expandedVolumes.value.delete(volumeId)
       } else {
-        s.add(volumeId)
+        expandedVolumes.value.add(volumeId)
       }
-      expandedVolumes.value = s
     }
 
-    // 选择章节（按章节粒度防抖）
+    const getVolumeChapters = (volumeId) => {
+      return chaptersByVolume.value.get(volumeId) || []
+    }
+
+    const getVolumeChapterCount = (volumeId) => {
+      const count = getVolumeChapters(volumeId).length
+      return count > 0 ? count : ''
+    }
+
+    const formatWordCount = (wordCount) => {
+      if (!wordCount || wordCount === 0) return ''
+      if (wordCount >= 10000) {
+        return `${(wordCount / 10000).toFixed(1)}万字`
+      }
+      return `${wordCount}字`
+    }
+
+    // 计算字数（去除HTML标签和空白字符）
+    const calculateWordCount = (content) => {
+      if (!content) return 0
+      // 去除HTML标签
+      const textContent = content.replace(/<[^>]*>/g, '')
+      // 去除多余空白字符并计算字数
+      return textContent.replace(/\s+/g, '').length
+    }
+
+    // 更新章节字数
+    const updateChapterWordCount = async (chapterId, content) => {
+      try {
+        const wordCount = calculateWordCount(content)
+        
+        // 更新本地数据
+        const chapterIndex = chapters.value.findIndex(c => c.id === chapterId)
+        if (chapterIndex !== -1) {
+          chapters.value[chapterIndex] = {
+            ...chapters.value[chapterIndex],
+            wordCount: wordCount,
+            lastModified: new Date().toISOString()
+          }
+        }
+
+        // 保存到存储
+        const chapter = chapters.value[chapterIndex]
+        if (chapter) {
+          await storageService.updateChapter(props.projectId, {
+            ...chapter,
+            wordCount: wordCount
+          })
+        }
+
+        return wordCount
+      } catch (error) {
+        console.error('更新章节字数失败:', error)
+        return 0
+      }
+    }
+
+    // 批量更新所有章节字数
+    const refreshAllWordCounts = async () => {
+      try {
+        for (const chapter of chapters.value) {
+          if (chapter.content) {
+            await updateChapterWordCount(chapter.id, chapter.content)
+          }
+        }
+        emit('data-updated')
+      } catch (error) {
+        console.error('批量更新字数失败:', error)
+      }
+    }
+
     const selectChapter = (chapter) => {
-      if (isLoading.value) {
-        console.log('[DEBUG] 加载中，暂时无法选择章节')
-        return
-      }
-      if (selectingId.value === chapter.id) return
-      console.log('[DEBUG] 选择章节:', chapter.id, chapter.title)
-      selectingId.value = chapter.id
       emit('chapter-selected', chapter)
-      setTimeout(() => {
-        selectingId.value = null
-      }, 200)
     }
 
-    // 创建卷
+    // 卷管理
     const createVolume = () => {
-      if (isProcessing.value) return
-      
       editingVolume.value = null
-      volumeForm.title = ''
-      volumeForm.description = ''
-      volumeForm.status = 'draft'
+      volumeForm.value = {
+        title: '',
+        description: ''
+      }
       showVolumeDialog.value = true
     }
 
-    // 编辑卷
     const editVolume = (volume) => {
-      if (isProcessing.value) return
-      
       editingVolume.value = volume
-      volumeForm.title = volume.title
-      volumeForm.description = volume.description || ''
-      volumeForm.status = volume.status
+      volumeForm.value = {
+        title: volume.title,
+        description: volume.description || ''
+      }
       showVolumeDialog.value = true
     }
 
-    // 保存卷
     const saveVolume = async () => {
       if (isProcessing.value) return
-      
+
       isProcessing.value = true
-      
       try {
         if (editingVolume.value) {
           // 更新卷
           const updatedVolume = {
             ...editingVolume.value,
-            title: volumeForm.title,
-            description: volumeForm.description,
-            status: volumeForm.status,
-            lastModified: new Date().toISOString()
+            ...volumeForm.value
           }
-          
           await storageService.updateVolume(props.projectId, updatedVolume)
           
           const index = volumes.value.findIndex(v => v.id === editingVolume.value.id)
@@ -421,110 +430,83 @@ export default {
           }
         } else {
           // 创建新卷
-          const volumeData = {
-            title: volumeForm.title,
-            description: volumeForm.description,
-            status: volumeForm.status
-          }
-          
-          const newVolume = await storageService.createVolume(props.projectId, volumeData)
-          // 防止重复添加
-          if (!volumes.value.some(v => v.id === newVolume.id)) {
+          const newVolume = await storageService.createVolume(props.projectId, volumeForm.value)
+          if (newVolume && !volumes.value.some(v => v.id === newVolume.id)) {
             volumes.value.push(newVolume)
-          }
-          {
-            const s = new Set(expandedVolumes.value)
-            s.add(newVolume.id)
-            expandedVolumes.value = s
+            expandedVolumes.value.add(newVolume.id)
           }
         }
+
         closeVolumeDialog()
+        emit('data-updated')
       } catch (error) {
         console.error('保存卷失败:', error)
-        alert('保存卷失败，请重试')
+        alert('保存失败，请重试')
       } finally {
         isProcessing.value = false
       }
     }
 
-    // 删除卷
     const deleteVolume = async (volumeId) => {
-      if (isProcessing.value) return
-      
-      if (confirm('确定要删除这个卷吗？卷下的所有章节也会被删除。')) {
-        isProcessing.value = true
-        
-        try {
-          await storageService.deleteVolume(props.projectId, volumeId)
-          volumes.value = volumes.value.filter(v => v.id !== volumeId)
-          chapters.value = chapters.value.filter(c => c.volumeId !== volumeId)
-          {
-            const s = new Set(expandedVolumes.value)
-            s.delete(volumeId)
-            expandedVolumes.value = s
-          }
-        } catch (error) {
-          console.error('删除卷失败:', error)
-          alert('删除卷失败，请重试')
-        } finally {
-          isProcessing.value = false
-        }
+      const volume = volumes.value.find(v => v.id === volumeId)
+      if (!volume) return
+
+      if (!confirm(`确定要删除卷"${volume.title}"吗？这将同时删除该卷下的所有章节。`)) {
+        return
+      }
+
+      try {
+        await storageService.deleteVolume(props.projectId, volumeId)
+        volumes.value = volumes.value.filter(v => v.id !== volumeId)
+        chapters.value = chapters.value.filter(c => c.volumeId !== volumeId)
+        expandedVolumes.value.delete(volumeId)
+        emit('data-updated')
+      } catch (error) {
+        console.error('删除卷失败:', error)
+        alert('删除失败，请重试')
       }
     }
 
-    // 创建章节
+    const closeVolumeDialog = () => {
+      showVolumeDialog.value = false
+      editingVolume.value = null
+    }
+
+    // 章节管理
     const createChapter = (volumeId) => {
-      if (isProcessing.value || operationInProgress.value) return
-      
-      // 防止重复创建
-      operationInProgress.value = true
-      
-      // 设置超时，5秒后重置操作状态
-      if (operationTimeout.value) clearTimeout(operationTimeout.value)
-      operationTimeout.value = setTimeout(() => {
-        operationInProgress.value = false
-      }, 5000)
-      
       editingChapter.value = null
-      currentVolumeId.value = volumeId
-      chapterForm.title = ''
-      chapterForm.status = 'draft'
-      chapterForm.notes = ''
+      chapterForm.value = {
+        title: '',
+        volumeId: volumeId
+      }
       showChapterDialog.value = true
-      
-      // 对话框显示后重置操作状态
-      setTimeout(() => {
-        operationInProgress.value = false
-      }, 500)
     }
 
-    // 编辑章节
     const editChapter = (chapter) => {
-      if (isProcessing.value) return
-      
       editingChapter.value = chapter
-      currentVolumeId.value = chapter.volumeId
-      chapterForm.title = chapter.title
-      chapterForm.status = chapter.status
-      chapterForm.notes = chapter.notes || ''
+      chapterForm.value = {
+        title: chapter.title,
+        volumeId: chapter.volumeId
+      }
       showChapterDialog.value = true
     }
 
-    // 保存章节
     const saveChapter = async () => {
       if (isProcessing.value) return
-      
+
       isProcessing.value = true
-      
       try {
         if (editingChapter.value) {
           // 更新章节
           const updatedChapter = {
             ...editingChapter.value,
-            title: chapterForm.title,
-            status: chapterForm.status,
-            notes: chapterForm.notes,
+            ...chapterForm.value,
             lastModified: new Date().toISOString()
+          }
+          
+          // 如果有内容，计算字数
+          if (updatedChapter.content) {
+            updatedChapter.wordCount = calculateWordCount(updatedChapter.content)
           }
           
           await storageService.updateChapter(props.projectId, updatedChapter)
@@ -533,553 +515,652 @@ export default {
           if (index !== -1) {
             chapters.value[index] = updatedChapter
           }
-          emit('chapter-updated', updatedChapter)
         } else {
           // 创建新章节
-          const chapterData = {
-            title: chapterForm.title,
-            status: chapterForm.status,
-            notes: chapterForm.notes
+          const newChapterData = {
+            ...chapterForm.value,
+            wordCount: 0,
+            content: '',
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
           }
           
-          const newChapter = await storageService.createChapter(props.projectId, currentVolumeId.value, chapterData)
-          
-          // 检查是否已存在相同ID的章节（防止重复添加）
-          if (!chapters.value.some(c => c.id === newChapter.id)) {
+          const newChapter = await storageService.createChapter(
+            props.projectId, 
+            chapterForm.value.volumeId, 
+            newChapterData
+          )
+          if (newChapter && !chapters.value.some(c => c.id === newChapter.id)) {
             chapters.value.push(newChapter)
-            emit('chapter-created', newChapter)
-            selectChapter(newChapter)
-          } else {
-            console.warn('章节已存在，避免重复添加:', newChapter.id)
           }
         }
+
         closeChapterDialog()
+        emit('data-updated')
       } catch (error) {
         console.error('保存章节失败:', error)
-        alert('保存章节失败，请重试')
+        alert('保存失败，请重试')
       } finally {
         isProcessing.value = false
       }
     }
 
-    // 删除章节
     const deleteChapter = async (chapterId) => {
-      if (isProcessing.value) return
-      
-      if (confirm('确定要删除这个章节吗？')) {
-        isProcessing.value = true
-        
-        try {
-          await storageService.deleteChapter(props.projectId, chapterId)
-          chapters.value = chapters.value.filter(c => c.id !== chapterId)
-          emit('chapter-deleted', chapterId)
-        } catch (error) {
-          console.error('删除章节失败:', error)
-          alert('删除章节失败，请重试')
-        } finally {
-          isProcessing.value = false
-        }
-      }
-    }
+      const chapter = chapters.value.find(c => c.id === chapterId)
+      if (!chapter) return
 
-    // 关闭对话框
-    const closeVolumeDialog = () => {
-      showVolumeDialog.value = false
-      editingVolume.value = null
+      if (!confirm(`确定要删除章节"${chapter.title}"吗？`)) {
+        return
+      }
+
+      try {
+        await storageService.deleteChapter(props.projectId, chapterId)
+        chapters.value = chapters.value.filter(c => c.id !== chapterId)
+        emit('data-updated')
+      } catch (error) {
+        console.error('删除章节失败:', error)
+        alert('删除失败，请重试')
+      }
     }
 
     const closeChapterDialog = () => {
       showChapterDialog.value = false
       editingChapter.value = null
-      currentVolumeId.value = null
     }
 
-    // 组件卸载时清理定时器
-    const cleanup = () => {
-      if (operationTimeout.value) {
-        clearTimeout(operationTimeout.value)
+    // 监听项目变化
+    watch(() => props.projectId, () => {
+      if (props.projectId) {
+        loadData()
       }
-    }
+    }, { immediate: true })
 
-    // 启动轮询机制，确保数据能够被正确加载
-    const startPolling = () => {
-      console.log('[DEBUG] 启动轮询机制')
-      
-      // 清除可能存在的旧定时器
-      if (pollingTimer.value) {
-        clearInterval(pollingTimer.value)
-      }
-      
-      // 重置轮询计数
-      pollingCount.value = 0
-      
-      // 设置轮询定时器
-      pollingTimer.value = setInterval(() => {
-        pollingCount.value++
-        console.log(`[DEBUG] 轮询第 ${pollingCount.value} 次`)
-        
-        // 如果已经有数据了，或者达到最大轮询次数，则停止轮询
-        if (volumes.value.length > 0 || pollingCount.value >= maxPollingCount) {
-          console.log('[DEBUG] 停止轮询:', 
-            volumes.value.length > 0 ? '已有数据' : '达到最大轮询次数')
-          clearInterval(pollingTimer.value)
-          pollingTimer.value = null
-          return
-        }
-        
-        // 如果有项目ID但没有数据，尝试加载数据
-        if (props.projectId && volumes.value.length === 0) {
-          console.log('[DEBUG] 轮询中尝试加载数据, 项目ID:', props.projectId)
-          try {
-            loadData().catch(error => 
-              console.error('[ERROR] 轮询中加载数据失败:', error))
-          } catch (error) {
-            console.error('[ERROR] 轮询中调用loadData异常:', error)
-          }
-        }
-      }, pollingInterval)
-    }
-    
-    // 组件卸载时清理定时器
-    onUnmounted(() => {
-      console.log('[DEBUG] 组件卸载，清理定时器')
-      if (pollingTimer.value) {
-        clearInterval(pollingTimer.value)
-        pollingTimer.value = null
-      }
-      
-      if (operationTimeout.value) {
-        clearTimeout(operationTimeout.value)
-        operationTimeout.value = null
-      }
-    })
-
+    // 生命周期
     onMounted(() => {
-      console.log('[DEBUG] VolumeChapterSelector组件挂载开始')
-      console.log('[DEBUG] 组件挂载时的项目ID:', props.projectId)
-      
-      // 确保组件挂载时加载数据，但使用setTimeout避免阻塞渲染
-      setTimeout(() => {
-        console.log('[DEBUG] onMounted setTimeout 触发')
-        if (props.projectId) {
-          console.log('[DEBUG] onMounted中准备加载数据, 项目ID:', props.projectId)
-          try {
-            // 直接加载数据
-            loadData()
-              .then(() => {
-                console.log('[DEBUG] 初始数据加载成功')
-                // 如果数据加载成功但为空，启动轮询
-                if (volumes.value.length === 0) {
-                  console.log('[DEBUG] 数据为空，启动轮询')
-                  startPolling()
-                }
-              })
-              .catch(error => {
-                console.error('[ERROR] onMounted中加载数据失败:', error)
-                // 如果加载失败，启动轮询
-                startPolling()
-              })
-          } catch (error) {
-            console.error('[ERROR] onMounted中调用loadData异常:', error)
-            // 即使出现异常，也启动轮询机制
-            startPolling()
-          }
-        } else {
-          console.log('[DEBUG] onMounted中项目ID为空，跳过加载')
-        }
-      }, 100)
-      
-      console.log('[DEBUG] VolumeChapterSelector组件挂载完成')
+      if (props.projectId) {
+        loadData()
+      }
     })
+
+    // 暴露给父组件的方法
+    const expose = {
+      updateChapterWordCount,
+      refreshAllWordCounts,
+      loadData,
+      calculateWordCount
+    }
+
+    // 使用 defineExpose 暴露方法（Vue 3.2+）
+    if (typeof defineExpose !== 'undefined') {
+      defineExpose(expose)
+    }
 
     return {
+      // 数据
       volumes,
       chapters,
       expandedVolumes,
       isLoading,
       isProcessing,
-      isDataLoading,
-      selectingId,
       loadError,
+      chaptersByVolume,
+
+      // 对话框
       showVolumeDialog,
       showChapterDialog,
       editingVolume,
       editingChapter,
       volumeForm,
       chapterForm,
-      chaptersByVolume,
-      getVolumeChapters,
+
+      // 方法
+      loadData,
+      retryLoad,
+      refreshData,
       toggleVolume,
+      getVolumeChapters,
+      getVolumeChapterCount,
+      formatWordCount,
       selectChapter,
+
+      // 卷管理
       createVolume,
       editVolume,
       saveVolume,
       deleteVolume,
+      closeVolumeDialog,
+
+      // 章节管理
       createChapter,
       editChapter,
       saveChapter,
       deleteChapter,
-      closeVolumeDialog,
       closeChapterDialog,
-      retryLoad
+
+      // 字数管理
+      calculateWordCount,
+      updateChapterWordCount,
+      refreshAllWordCounts
     }
   }
 }
 </script>
 
 <style scoped>
-.volume-chapter-selector {
+.vscode-file-explorer {
   height: 100%;
+  background: var(--vscode-sideBar-background, #252526);
+  color: var(--vscode-sideBar-foreground, #cccccc);
+  font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  font-size: 13px;
   display: flex;
   flex-direction: column;
-  background: #f8f9fa;
+  user-select: none;
 }
 
-.selector-header {
+/* 标题栏 */
+.explorer-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #e9ecef;
-  background: white;
-}
-
-.selector-header h3 {
-  margin: 0;
-  font-size: 16px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--vscode-sideBarSectionHeader-background, #2d2d30);
+  border-bottom: 1px solid var(--vscode-sideBar-border, #3e3e42);
   font-weight: 600;
-  color: #333;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.create-btn {
-  background: #007bff;
-  color: white;
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.folder-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
+  background: none;
   border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+  color: var(--vscode-icon-foreground, #c5c5c5);
   cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.1s ease;
 }
 
-.create-btn:hover:not(:disabled) {
-  background: #0056b3;
+.action-btn:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground, #37373d);
 }
 
-.create-btn:disabled {
-  background: #a0c4e4;
+.action-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.volumes-list {
+/* 加载和错误状态 */
+.loading-state, .error-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--vscode-progressBar-background, #0e70c0);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon {
+  color: var(--vscode-errorForeground, #f85149);
+}
+
+.retry-btn {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.retry-btn:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+/* 文件树 */
+.file-tree {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 4px 0;
 }
 
-.volume-item {
-  margin-bottom: 8px;
-  background: white;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+.tree-item {
+  position: relative;
 }
 
-.volume-header {
+.tree-node {
   display: flex;
   align-items: center;
-  padding: 12px;
+  justify-content: space-between;
+  padding: 4px 8px 4px 12px;
   cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  transition: background-color 0.1s ease;
+  min-height: 22px;
 }
 
-.volume-header:hover {
-  background: #f8f9fa;
+.tree-node:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
 }
 
-.volume-toggle {
-  margin-right: 8px;
-  font-size: 12px;
-  color: #666;
-  transition: transform 0.2s;
-}
-
-.volume-toggle.expanded {
-  transform: rotate(0deg);
-}
-
-.volume-title {
-  flex: 1;
-  font-weight: 500;
-  color: #333;
-}
-
-.volume-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.volume-actions button {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 3px;
-  font-size: 12px;
-  opacity: 0.7;
-  transition: opacity 0.2s, background-color 0.2s;
-}
-
-.volume-actions button:hover {
-  opacity: 1;
-  background: #e9ecef;
-}
-
-.chapters-list {
-  border-top: 1px solid #e9ecef;
-  padding: 8px;
-}
-
-.chapter-actions {
-  margin-bottom: 8px;
-}
-
-.create-chapter-btn {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-.create-chapter-btn:hover:not(:disabled) {
-  background: #1e7e34;
-}
-
-.create-chapter-btn:disabled {
-  background: #8fcb9b;
-  cursor: not-allowed;
-}
-
-.chapter-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  margin-bottom: 4px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.chapter-item:hover:not(.disabled) {
-  background: #e9ecef;
-}
-
-.chapter-item.active {
-  background: #007bff;
-  color: white;
-}
-
-.chapter-item.disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
-.chapter-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.chapter-title {
-  font-size: 14px;
+.volume-item .tree-node {
   font-weight: 500;
 }
 
-.chapter-meta {
-  font-size: 12px;
-  opacity: 0.7;
+.chapter-item.selected .tree-node {
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+  color: var(--vscode-list-activeSelectionForeground, #ffffff);
 }
 
-.chapter-item .chapter-actions {
+.node-content {
   display: flex;
-  gap: 4px;
-  margin: 0;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
-.chapter-item .chapter-actions button {
-  background: none;
-  border: none;
-  padding: 2px;
-  cursor: pointer;
-  border-radius: 3px;
+.node-indent {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.chevron-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.folder-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  flex-shrink: 0;
+}
+
+.folder-icon.open {
+  color: var(--vscode-tree-tableOddRowsBackground, #dcb67a);
+}
+
+.file-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  flex-shrink: 0;
+}
+
+.add-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  flex-shrink: 0;
+}
+
+.node-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-label {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-style: italic;
+}
+
+.node-badge {
+  background: var(--vscode-badge-background, #4d4d4d);
+  color: var(--vscode-badge-foreground, #ffffff);
   font-size: 10px;
-  opacity: 0.7;
-  transition: opacity 0.2s, background-color 0.2s;
-}
-
-.chapter-item .chapter-actions button:hover {
-  opacity: 1;
-  background: rgba(255,255,255,0.2);
-}
-
-.chapter-item.active .chapter-actions button:hover {
-  background: rgba(255,255,255,0.2);
-}
-
-.empty-chapters, .empty-volumes {
+  padding: 1px 4px;
+  border-radius: 8px;
+  min-width: 16px;
   text-align: center;
-  color: #666;
-  font-size: 14px;
-  padding: 20px;
+  font-weight: 600;
 }
 
-/* 加载状态和错误状态 */
-.loading-indicator, .error-state {
+.node-meta {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.node-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.tree-node:hover .node-actions {
+  opacity: 1;
+}
+
+.node-actions .action-btn {
+  padding: 2px;
+}
+
+.node-actions .action-btn.delete:hover {
+  background: var(--vscode-errorBackground, #5a1d1d);
+  color: var(--vscode-errorForeground, #f85149);
+}
+
+/* 树形结构缩进 */
+.tree-children {
+  margin-left: 0;
+}
+
+.tree-children .tree-node {
+  padding-left: 28px;
+}
+
+/* 添加项目样式 */
+.add-item .tree-node:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.add-item .tree-node:hover .add-label {
+  color: var(--vscode-foreground, #cccccc);
+}
+
+/* 空状态 */
+.empty-item {
+  pointer-events: none;
+}
+
+.empty-text {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  flex: 1;
+  padding: 32px 16px;
   text-align: center;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  gap: 12px;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(0, 123, 255, 0.1);
-  border-radius: 50%;
-  border-top-color: #007bff;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+.empty-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  opacity: 0.6;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.error-state p {
-  color: #dc3545;
-  margin-bottom: 16px;
-}
-
-.retry-btn {
-  background: #007bff;
-  color: white;
+.create-first-btn {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+  font-size: 12px;
 }
 
-.retry-btn:hover {
-  background: #0056b3;
+.create-first-btn:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
 }
 
-/* 对话框样式 */
-.dialog-overlay {
+/* 模态框 */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 
-.dialog {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
+.modal-dialog {
+  background: var(--vscode-editorWidget-background, #2d2d30);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 6px;
   width: 400px;
   max-width: 90vw;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.dialog h4 {
-  margin: 0 0 16px 0;
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+  background: var(--vscode-editorGroupHeader-tabsBackground, #2d2d30);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 18px;
-  color: #333;
+  width: 24px;
+  height: 24px;
 }
 
-.form-group {
+.close-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, #37373d);
+}
+
+.modal-form {
+  padding: 20px;
+}
+
+.form-field {
   margin-bottom: 16px;
 }
 
-.form-group label {
+.form-field label {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 12px;
   font-weight: 500;
-  color: #333;
+  color: var(--vscode-foreground, #cccccc);
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.form-field input,
+.form-field textarea,
+.form-field select {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: inherit;
   box-sizing: border-box;
 }
 
-.textarea-wrapper {
-  height: 80px;
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, #007acc);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc);
 }
 
-.form-actions {
+.form-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.modal-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  justify-content: flex-end;
   margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vscode-editorWidget-border, #454545);
 }
 
-.form-actions button {
+.modal-actions button {
   padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.1s ease;
 }
 
-.form-actions button[type="button"] {
-  background: #6c757d;
-  color: white;
+.modal-actions button[type="button"] {
+  background: var(--vscode-button-secondaryBackground, #5a5d5e);
+  color: var(--vscode-button-secondaryForeground, #ffffff);
 }
 
-.form-actions button[type="button"]:hover:not(:disabled) {
-  background: #545b62;
+.modal-actions button[type="button"]:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground, #6c7070);
 }
 
-.form-actions button[type="button"]:disabled {
-  background: #adb5bd;
+.modal-actions button.primary {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.modal-actions button.primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.modal-actions button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.form-actions button[type="submit"] {
-  background: #007bff;
-  color: white;
+/* 滚动条样式 */
+.file-tree::-webkit-scrollbar {
+  width: 10px;
 }
 
-.form-actions button[type="submit"]:hover:not(:disabled) {
-  background: #0056b3;
+.file-tree::-webkit-scrollbar-track {
+  background: var(--vscode-scrollbarSlider-background, #79797966);
 }
 
-.form-actions button[type="submit"]:disabled {
-  background: #a0c4e4;
-  cursor: not-allowed;
+.file-tree::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background, #79797966);
+  border-radius: 5px;
+}
+
+.file-tree::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, #646464b3);
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .vscode-file-explorer {
+    --vscode-sideBar-background: #252526;
+    --vscode-sideBar-foreground: #cccccc;
+    --vscode-sideBarSectionHeader-background: #2d2d30;
+    --vscode-sideBar-border: #3e3e42;
+    --vscode-icon-foreground: #c5c5c5;
+    --vscode-toolbar-hoverBackground: #37373d;
+    --vscode-list-hoverBackground: #2a2d2e;
+    --vscode-list-activeSelectionBackground: #094771;
+    --vscode-list-activeSelectionForeground: #ffffff;
+    --vscode-descriptionForeground: #9d9d9d;
+    --vscode-progressBar-background: #0e70c0;
+    --vscode-errorForeground: #f85149;
+    --vscode-button-background: #0e639c;
+    --vscode-button-foreground: #ffffff;
+    --vscode-button-hoverBackground: #1177bb;
+    --vscode-badge-background: #4d4d4d;
+    --vscode-badge-foreground: #ffffff;
+    --vscode-editorWidget-background: #2d2d30;
+    --vscode-editorWidget-border: #454545;
+    --vscode-editorGroupHeader-tabsBackground: #2d2d30;
+    --vscode-input-background: #3c3c3c;
+    --vscode-input-foreground: #cccccc;
+    --vscode-input-border: #3c3c3c;
+    --vscode-focusBorder: #007acc;
+    --vscode-button-secondaryBackground: #5a5d5e;
+    --vscode-button-secondaryForeground: #ffffff;
+    --vscode-button-secondaryHoverBackground: #6c7070;
+  }
+}
+
+/* 浅色主题适配 */
+@media (prefers-color-scheme: light) {
+  .vscode-file-explorer {
+    --vscode-sideBar-background: #f3f3f3;
+    --vscode-sideBar-foreground: #383a42;
+    --vscode-sideBarSectionHeader-background: #e8e8e8;
+    --vscode-sideBar-border: #e5e5e5;
+    --vscode-icon-foreground: #424242;
+    --vscode-toolbar-hoverBackground: #e8e8e8;
+    --vscode-list-hoverBackground: #e8e8e8;
+    --vscode-list-activeSelectionBackground: #0078d4;
+    --vscode-list-activeSelectionForeground: #ffffff;
+    --vscode-descriptionForeground: #717171;
+    --vscode-progressBar-background: #0078d4;
+    --vscode-errorForeground: #e51400;
+    --vscode-button-background: #0078d4;
+    --vscode-button-foreground: #ffffff;
+    --vscode-button-hoverBackground: #106ebe;
+    --vscode-badge-background: #c4c4c4;
+    --vscode-badge-foreground: #333333;
+    --vscode-editorWidget-background: #f8f8f8;
+    --vscode-editorWidget-border: #c8c8c8;
+    --vscode-editorGroupHeader-tabsBackground: #f8f8f8;
+    --vscode-input-background: #ffffff;
+    --vscode-input-foreground: #383a42;
+    --vscode-input-border: #cecece;
+    --vscode-focusBorder: #0078d4;
+    --vscode-button-secondaryBackground: #e1e1e1;
+    --vscode-button-secondaryForeground: #383a42;
+    --vscode-button-secondaryHoverBackground: #d6d6d6;
+  }
 }
 </style>
