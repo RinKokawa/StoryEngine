@@ -95,8 +95,6 @@
 import { ref, computed, watch } from 'vue'
 import { storageService } from '@/services/storage'
 
-/* migrated to storageService */ 
-
 export default {
   name: 'ChapterSelector',
   props: {

@@ -28,7 +28,6 @@ import StoryEditor from './views/StoryEditor.vue'
 import CharacterManagement from './views/CharacterManagement.vue'
 import WorldBuilding from './views/WorldBuilding.vue'
 import Settings from './components/Settings.vue'
-/* migrated to storageService */ 
 import { useProjectStore } from '@/stores/project'
 
 export default {

@@ -5,8 +5,6 @@
 
 import { storageService } from '@/services/storage'
 
-/* migrated to storageService */ 
-
 class QwenApiService {
   constructor() {
     this.baseUrl = ''

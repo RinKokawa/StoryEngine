@@ -141,7 +141,6 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 import { storageService } from '@/services/storage'
-import { VolumeModel, ChapterModel } from '../../utils/dataModels.js'
 
 export default {
   name: 'VolumeChapterSelector',
@@ -262,35 +261,27 @@ export default {
       loadError.value = null
       
       try {
-        console.log('[DEBUG] 开始加载卷章数据...项目ID:', props.projectId)
-        
         // 加载卷数据
-        console.log('[DEBUG] 准备调用 storageManager.getProjectVolumes')
         let volumesData
         try {
           volumesData = await storageService.getProjectVolumes(props.projectId)
-          console.log('[DEBUG] getProjectVolumes 调用成功, 返回数据长度:', volumesData ? volumesData.length : 0)
         } catch (error) {
-          console.error('[ERROR] getProjectVolumes 调用失败:', error)
+          console.error('加载卷数据失败:', error)
           volumesData = []
         }
         
         volumes.value = volumesData || []
-        console.log('[DEBUG] 卷数据已设置, 长度:', volumes.value.length)
         
         // 加载章节数据
-        console.log('[DEBUG] 准备调用 storageManager.getProjectChapters')
         let chaptersData
         try {
           chaptersData = await storageService.getProjectChapters(props.projectId)
-          console.log('[DEBUG] getProjectChapters 调用成功, 返回数据长度:', chaptersData ? chaptersData.length : 0)
         } catch (error) {
-          console.error('[ERROR] getProjectChapters 调用失败:', error)
+          console.error('加载章节数据失败:', error)
           chaptersData = []
         }
         
         chapters.value = chaptersData || []
-        console.log('[DEBUG] 章节数据已设置, 长度:', chapters.value.length)
         
         // 默认展开第一卷（如果有）
         if (volumes.value.length > 0) {
@@ -437,7 +428,7 @@ export default {
           }
           
           const newVolume = await storageService.createVolume(props.projectId, volumeData)
-          // 防止重复添加（storageManager.createVolume 已更新缓存数组）
+          // 防止重复添加
           if (!volumes.value.some(v => v.id === newVolume.id)) {
             volumes.value.push(newVolume)
           }

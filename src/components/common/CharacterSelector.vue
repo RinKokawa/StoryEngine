@@ -32,7 +32,6 @@
 
 <script>
 import { ref, defineComponent, watch, onMounted } from 'vue'
-/* migrated to storageService */ 
 import { storageService } from '@/services/storage'
 
 export default defineComponent({
@@ -72,7 +71,7 @@ export default defineComponent({
       
       try {
         console.log('开始加载项目角色，项目ID:', props.projectId)
-        // 使用storageManager加载真实角色数据
+        // 加载角色数据
         const projectCharacters = await storageService.getProjectCharacters(props.projectId)
         
         if (projectCharacters && Array.isArray(projectCharacters)) {

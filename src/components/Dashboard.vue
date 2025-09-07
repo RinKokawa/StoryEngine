@@ -166,7 +166,6 @@
 </template>
 
 <script>
-/* migrated to storageService */ 
 import { useProjectStore } from '@/stores/project'
 
 export default {
