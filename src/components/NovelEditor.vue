@@ -31,17 +31,6 @@
           @update:modelValue="handleContentChange"
         />
       </div>
-      
-      <!-- 行号显示 -->
-      <div class="line-numbers" ref="lineNumbers">
-        <div 
-          v-for="n in lineCount" 
-          :key="n" 
-          class="line-number"
-        >
-          {{ n }}
-        </div>
-      </div>
     </div>
     
     <!-- 未选择章节提示 -->
@@ -127,7 +116,6 @@ export default {
     const currentLine = ref(1)
     const currentColumn = ref(1)
     const editor = ref(null)
-    const lineNumbers = ref(null)
     const contextMenu = ref({
       visible: false,
       x: 0,
@@ -213,11 +201,6 @@ export default {
       return content.value.replace(/\s/g, '').length
     })
 
-    // 计算行数
-    const lineCount = computed(() => {
-      return content.value.split('\n').length
-    })
-
     // 处理内容变化
     const handleContentChange = (event) => {
       updateCursorPosition()
@@ -252,11 +235,6 @@ export default {
           textarea.setSelectionRange(newPosition, newPosition)
         })
       }
-      // 注意：我们现在在input事件中处理@符号，这里可以保留作为备用
-      // else if (event.key === '@') {
-      //   console.log('检测到@符号输入 (keyPress事件)')
-      //   showCharacterSelector()
-      // }
     }
 
     // 初始化内容缩进
@@ -421,13 +399,6 @@ export default {
         
         currentLine.value = lines.length
         currentColumn.value = lines[lines.length - 1].length + 1
-      }
-    }
-
-    // 处理滚动同步
-    const handleScroll = () => {
-      if (editor.value && lineNumbers.value) {
-        lineNumbers.value.scrollTop = editor.value.scrollTop
       }
     }
 
@@ -889,9 +860,7 @@ export default {
       currentLine,
       currentColumn,
       wordCount,
-      lineCount,
       editor,
-      lineNumbers,
       contextMenu,
       characterSelector,
       characterSelectorRef,
@@ -900,7 +869,6 @@ export default {
       loadChapterContent,
       loadAvailableProjects,
       autoSaveContent,
-      handleScroll,
       handleContextMenu,
       hideContextMenu,
       showCharacterSelector,
@@ -950,8 +918,6 @@ export default {
   align-items: center;
   gap: 15px;
 }
-
-
 
 .current-project {
   font-size: 14px;
@@ -1004,24 +970,6 @@ export default {
   overflow: hidden;
 }
 
-.line-numbers {
-  width: 60px;
-  background: #f8f9fa;
-  border-right: 1px solid #e0e0e0;
-  padding: 20px 0;
-  overflow: hidden;
-  user-select: none;
-}
-
-.line-number {
-  height: 24px;
-  line-height: 24px;
-  text-align: center;
-  font-size: 12px;
-  color: #999;
-  font-family: 'Consolas', 'Monaco', monospace;
-}
-
 .editor-wrapper {
   flex: 1;
   display: flex;
@@ -1039,11 +987,6 @@ export default {
   font-size: 16px;
   line-height: 24px;
   font-family: 'Microsoft YaHei', sans-serif;
-}
-
-.editor::placeholder {
-  color: #ccc;
-  font-style: italic;
 }
 
 .status-bar {
@@ -1113,24 +1056,6 @@ export default {
   line-height: 1.5;
 }
 
-/* 滚动条样式 */
-.editor::-webkit-scrollbar {
-  width: 8px;
-}
-
-.editor::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.editor::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.editor::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
 /* 响应式设计 */
 @media (max-width: 768px) {
   .toolbar {
@@ -1145,15 +1070,6 @@ export default {
   
   .editor-container {
     margin: 10px;
-  }
-  
-  .line-numbers {
-    width: 40px;
-  }
-  
-  .editor {
-    padding: 15px;
-    font-size: 14px;
   }
   
   .status-bar {
