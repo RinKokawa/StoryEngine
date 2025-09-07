@@ -207,47 +207,39 @@
             </div>
             <div class="form-group">
               <label>外貌描述</label>
-              <div class="textarea-wrapper">
-                <TextEditor
-                  v-model="characterForm.appearance"
-                  placeholder="描述角色的外貌特征..."
-                  :wordWrap="true"
-                  :autofocus="false"
-                />
-              </div>
+              <textarea 
+                v-model="characterForm.appearance" 
+                placeholder="描述角色的外貌特征..."
+                rows="4"
+                class="form-textarea"
+              ></textarea>
             </div>
             <div class="form-group">
               <label>性格特点</label>
-              <div class="textarea-wrapper">
-                <TextEditor
-                  v-model="characterForm.personality"
-                  placeholder="描述角色的性格特点..."
-                  :wordWrap="true"
-                  :autofocus="false"
-                />
-              </div>
+              <textarea 
+                v-model="characterForm.personality" 
+                placeholder="描述角色的性格特点..."
+                rows="4"
+                class="form-textarea"
+              ></textarea>
             </div>
             <div class="form-group">
               <label>背景故事</label>
-              <div class="background-textarea-wrapper">
-                <TextEditor
-                  v-model="characterForm.background"
-                  placeholder="角色的背景故事..."
-                  :wordWrap="true"
-                  :autofocus="false"
-                />
-              </div>
+              <textarea 
+                v-model="characterForm.background" 
+                placeholder="角色的背景故事..."
+                rows="6"
+                class="form-textarea"
+              ></textarea>
             </div>
             <div class="form-group">
               <label>角色描述</label>
-              <div class="description-textarea-wrapper">
-                <TextEditor
-                  v-model="characterForm.description"
-                  placeholder="角色的简要描述..."
-                  :wordWrap="true"
-                  :autofocus="false"
-                />
-              </div>
+              <textarea 
+                v-model="characterForm.description" 
+                placeholder="角色的简要描述..."
+                rows="4"
+                class="form-textarea"
+              ></textarea>
             </div>
           </form>
         </div>
@@ -324,14 +316,14 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
-import TextEditor from '../components/common/TextEditor.vue'
+
 import ProjectSelector from '../components/common/ProjectSelector.vue'
 import storageManager from '../utils/storage.js'
 
 export default {
   name: 'CharacterManagement',
   components: {
-    TextEditor,
+
     ProjectSelector
   },
   setup() {

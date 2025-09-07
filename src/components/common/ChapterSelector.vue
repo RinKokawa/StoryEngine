@@ -74,14 +74,12 @@
           </div>
           <div class="form-group">
             <label>章节简介</label>
-            <div class="textarea-wrapper">
-              <TextEditor
-                v-model="editingChapter.notes"
-                placeholder="章节简介或备注（可选）"
-                :wordWrap="true"
-                :autofocus="false"
-              />
-            </div>
+            <textarea
+              v-model="editingChapter.notes"
+              placeholder="章节简介或备注（可选）"
+              rows="3"
+              class="form-textarea"
+            ></textarea>
           </div>
         </div>
         <div class="dialog-footer">
@@ -95,7 +93,7 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
-import TextEditor from './TextEditor.vue'
+
 import storageManager from '../../utils/storage.js'
 
 export default {

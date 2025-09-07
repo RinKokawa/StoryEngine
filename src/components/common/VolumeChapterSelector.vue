@@ -75,14 +75,11 @@
           </div>
           <div class="form-group">
             <label>描述:</label>
-            <div class="textarea-wrapper">
-              <TextEditor
-                v-model="volumeForm.description"
-                placeholder="卷的简介或描述"
-                :wordWrap="true"
-                :autofocus="false"
-              />
-            </div>
+            <textarea 
+              v-model="volumeForm.description" 
+              placeholder="卷的简介或描述"
+              rows="3"
+            ></textarea>
           </div>
           <div class="form-group">
             <label>状态:</label>
@@ -121,14 +118,11 @@
           </div>
           <div class="form-group">
             <label>简介:</label>
-            <div class="textarea-wrapper">
-              <TextEditor
-                v-model="chapterForm.notes"
-                placeholder="章节简介或备注"
-                :wordWrap="true"
-                :autofocus="false"
-              />
-            </div>
+            <textarea 
+              v-model="chapterForm.notes" 
+              placeholder="章节简介或备注"
+              rows="3"
+            ></textarea>
           </div>
           <div class="form-actions">
             <button type="button" @click="closeChapterDialog" :disabled="isProcessing">取消</button>
@@ -144,15 +138,13 @@
 
 <script>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import TextEditor from './TextEditor.vue'
+
 import storageManager from '../../utils/storage.js'
 import { VolumeModel, ChapterModel } from '../../utils/dataModels.js'
 
 export default {
   name: 'VolumeChapterSelector',
-  components: {
-    TextEditor
-  },
+
   props: {
     projectId: {
       type: String,
