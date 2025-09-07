@@ -1,3 +1,4 @@
+
 <template>
   <div class="volume-chapter-selector">
     <div class="selector-header">
@@ -417,7 +418,10 @@ export default {
           }
           
           const newVolume = await storageManager.createVolume(props.projectId, volumeData)
-          volumes.value.push(newVolume)
+          // 防止重复添加（storageManager.createVolume 已更新缓存数组）
+          if (!volumes.value.some(v => v.id === newVolume.id)) {
+            volumes.value.push(newVolume)
+          }
           expandedVolumes.value.add(newVolume.id)
         }
         closeVolumeDialog()
