@@ -40,10 +40,10 @@
             </button>
           </div>
           
-          <div v-for="chapter in getVolumeChapters(volume.id)" :key="chapter.id" 
+          <div v-for="chapter in (chaptersByVolume.get(volume.id) || [])" :key="chapter.id" 
                class="chapter-item" 
-               :class="{ active: selectedChapter?.id === chapter.id, 'disabled': isDataLoading }"
-               @click="!isDataLoading && selectChapter(chapter)">
+               :class="{ active: selectedChapter?.id === chapter.id, 'disabled': selectingId === chapter.id }"
+               @click="selectChapter(chapter)">
             <div class="chapter-info">
               <span class="chapter-title">{{ chapter.title || '未命名章节' }}</span>
               <span class="chapter-meta">{{ chapter.wordCount || 0 }}字</span>
@@ -54,7 +54,7 @@
             </div>
           </div>
 
-          <div v-if="getVolumeChapters(volume.id).length === 0" class="empty-chapters">
+          <div v-if="(chaptersByVolume.get(volume.id) || []).length === 0" class="empty-chapters">
             暂无章节
           </div>
         </div>
@@ -171,6 +171,8 @@ export default {
     
     // 数据加载状态 - 用于防止在数据未完全加载时点击章节
     const isDataLoading = ref(false)
+    // 正在选择的章节ID（仅禁用被点击项）
+    const selectingId = ref(null)
     
     // 轮询相关
     const pollingTimer = ref(null)
@@ -201,6 +203,16 @@ export default {
       status: 'draft',
       notes: ''
     })
+    
+    const chaptersByVolume = computed(() => {
+      const map = new Map()
+      const sorted = [...chapters.value].sort((a, b) => a.order - b.order)
+      for (const c of sorted) {
+        if (!map.has(c.volumeId)) map.set(c.volumeId, [])
+        map.get(c.volumeId).push(c)
+      }
+      return map
+    })
 
     // 监听项目ID变化，重新加载数据
     watch(() => props.projectId, (newProjectId) => {
@@ -216,6 +228,15 @@ export default {
         console.log('[DEBUG] 项目ID为空，跳过加载')
       }
     }, { immediate: true })
+    
+    // 监听选中章节变化，自动展开其所在的卷
+    watch(() => props.selectedChapter, (ch) => {
+      if (ch && ch.volumeId) {
+        const s = new Set(expandedVolumes.value)
+        s.add(ch.volumeId)
+        expandedVolumes.value = s
+      }
+    })
 
     // 获取指定卷的章节
     const getVolumeChapters = (volumeId) => {
@@ -274,7 +295,9 @@ export default {
         // 默认展开第一卷（如果有）
         if (volumes.value.length > 0) {
           console.log('[DEBUG] 展开第一卷:', volumes.value[0].id)
-          expandedVolumes.value.add(volumes.value[0].id)
+          const s = new Set(expandedVolumes.value)
+          s.add(volumes.value[0].id)
+          expandedVolumes.value = s
         }
         
         // 如果有选中的章节，确保其所在的卷是展开的
@@ -283,7 +306,9 @@ export default {
           const chapter = chapters.value.find(c => c.id === props.selectedChapter.id)
           if (chapter && chapter.volumeId) {
             console.log('[DEBUG] 展开章节所在的卷:', chapter.volumeId)
-            expandedVolumes.value.add(chapter.volumeId)
+            const s = new Set(expandedVolumes.value)
+            s.add(chapter.volumeId)
+            expandedVolumes.value = s
           }
         }
         
@@ -332,36 +357,30 @@ export default {
       return await storageManager.createChapter(props.projectId, volumeId, chapterData)
     }
 
-    // 切换卷的展开状态
+    // 切换卷的展开状态（使用新 Set 以触发响应式）
     const toggleVolume = (volumeId) => {
-      if (expandedVolumes.value.has(volumeId)) {
-        expandedVolumes.value.delete(volumeId)
+      const s = new Set(expandedVolumes.value)
+      if (s.has(volumeId)) {
+        s.delete(volumeId)
       } else {
-        expandedVolumes.value.add(volumeId)
+        s.add(volumeId)
       }
+      expandedVolumes.value = s
     }
 
-    // 选择章节
+    // 选择章节（按章节粒度防抖）
     const selectChapter = (chapter) => {
-      if (isLoading.value || isDataLoading.value) {
-        console.log('[DEBUG] 数据加载中，暂时无法选择章节')
+      if (isLoading.value) {
+        console.log('[DEBUG] 加载中，暂时无法选择章节')
         return
       }
-      
+      if (selectingId.value === chapter.id) return
       console.log('[DEBUG] 选择章节:', chapter.id, chapter.title)
-      
-      // 设置数据加载状态，防止重复点击
-      isDataLoading.value = true
-      
-      // 延迟发出事件，确保UI状态更新
-      nextTick(() => {
-        emit('chapter-selected', chapter)
-        
-        // 短暂延迟后重置数据加载状态
-        setTimeout(() => {
-          isDataLoading.value = false
-        }, 500)
-      })
+      selectingId.value = chapter.id
+      emit('chapter-selected', chapter)
+      setTimeout(() => {
+        selectingId.value = null
+      }, 200)
     }
 
     // 创建卷
@@ -422,7 +441,11 @@ export default {
           if (!volumes.value.some(v => v.id === newVolume.id)) {
             volumes.value.push(newVolume)
           }
-          expandedVolumes.value.add(newVolume.id)
+          {
+            const s = new Set(expandedVolumes.value)
+            s.add(newVolume.id)
+            expandedVolumes.value = s
+          }
         }
         closeVolumeDialog()
       } catch (error) {
@@ -444,7 +467,11 @@ export default {
           await storageManager.deleteVolume(props.projectId, volumeId)
           volumes.value = volumes.value.filter(v => v.id !== volumeId)
           chapters.value = chapters.value.filter(c => c.volumeId !== volumeId)
-          expandedVolumes.value.delete(volumeId)
+          {
+            const s = new Set(expandedVolumes.value)
+            s.delete(volumeId)
+            expandedVolumes.value = s
+          }
         } catch (error) {
           console.error('删除卷失败:', error)
           alert('删除卷失败，请重试')
@@ -681,6 +708,7 @@ export default {
       isLoading,
       isProcessing,
       isDataLoading,
+      selectingId,
       loadError,
       showVolumeDialog,
       showChapterDialog,
@@ -688,6 +716,7 @@ export default {
       editingChapter,
       volumeForm,
       chapterForm,
+      chaptersByVolume,
       getVolumeChapters,
       toggleVolume,
       selectChapter,
