@@ -63,7 +63,9 @@ export default {
         this.currentProject = this.projectStore.currentProject
       })
       .catch(console.error)
-    this.appSettings = await (await import('@/services/storage')).storageService.getSettings()
+    const { ServiceFactory } = await import('@/services/storage')
+    const settingsService = ServiceFactory.getSettingsService()
+    this.appSettings = await settingsService.getSettings()
     this.applySidebarSettings()
     this.applyThemeSettings()
   },

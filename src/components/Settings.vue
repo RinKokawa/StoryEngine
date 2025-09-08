@@ -414,7 +414,7 @@
 </template>
 
 <script>
-import { storageService, ServiceFactory } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 import ToggleSwitch from './ToggleSwitch.vue'
 
 const settingsService = ServiceFactory.getSettingsService()
@@ -566,7 +566,8 @@ export default {
     },
     
     async exportData() {
-      const data = await storageService.exportData()
+      const dataService = ServiceFactory.getDataService()
+      const data = await dataService.exportData()
       if (data) {
         const blob = new Blob([data], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
@@ -588,7 +589,8 @@ export default {
       const reader = new FileReader()
       reader.onload = async (e) => {
         try {
-          await storageService.importData(e.target.result)
+          const dataService = ServiceFactory.getDataService()
+          await dataService.importData(e.target.result)
           alert('数据导入成功！页面将刷新以应用新数据。')
           window.location.reload()
         } catch (error) {
@@ -606,7 +608,8 @@ export default {
         message: '此操作将永久删除所有项目、内容和设置，且无法恢复。确定要继续吗？',
         action: async () => {
           try {
-            await storageService.clearAll()
+            const dataService = ServiceFactory.getDataService()
+            await dataService.clearAll()
             alert('数据已清空！页面将刷新。')
             window.location.reload()
           } catch (e) {

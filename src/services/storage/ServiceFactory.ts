@@ -11,6 +11,8 @@ import { SettingsService } from './services/SettingsService'
 import { CharacterService } from './services/CharacterService'
 import { OutlineService } from './services/OutlineService'
 import { WorldService } from './services/WorldService'
+import { StatsService } from './services/StatsService'
+import { DataService } from './services/DataService'
 
 export class ServiceFactory {
   private static _adapter: IStorageAdapter | null = null
@@ -22,6 +24,8 @@ export class ServiceFactory {
   private static _characterService: CharacterService | null = null
   private static _outlineService: OutlineService | null = null
   private static _worldService: WorldService | null = null
+  private static _statsService: StatsService | null = null
+  private static _dataService: DataService | null = null
 
   private static get adapter(): IStorageAdapter {
     if (!this._adapter) {
@@ -79,6 +83,20 @@ export class ServiceFactory {
     }
     return this._worldService
   }
+
+  static getStatsService(): StatsService {
+    if (!this._statsService) {
+      this._statsService = new StatsService(this.adapter)
+    }
+    return this._statsService
+  }
+
+  static getDataService(): DataService {
+    if (!this._dataService) {
+      this._dataService = new DataService(this.adapter)
+    }
+    return this._dataService
+  }
 }
 
 // 便捷导出
@@ -89,3 +107,5 @@ export const settingsService = () => ServiceFactory.getSettingsService()
 export const characterService = () => ServiceFactory.getCharacterService()
 export const outlineService = () => ServiceFactory.getOutlineService()
 export const worldService = () => ServiceFactory.getWorldService()
+export const statsService = () => ServiceFactory.getStatsService()
+export const dataService = () => ServiceFactory.getDataService()

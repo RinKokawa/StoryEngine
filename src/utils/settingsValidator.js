@@ -1,5 +1,5 @@
 // 设置功能验证器
-import { ServiceFactory, storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export class SettingsValidator {
   constructor() {
@@ -63,7 +63,8 @@ export class SettingsValidator {
 
   // 验证数据导出功能
   async validateDataExport() {
-    const exportData = await storageService.exportData()
+    const dataService = ServiceFactory.getDataService()
+    const exportData = await dataService.exportData()
     let isValidJson = false
     let hasRequiredFields = false
     

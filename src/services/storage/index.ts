@@ -1,12 +1,16 @@
 /**
  * 存储服务统一导出
- * 兼容旧导出，同时暴露新的分领域服务工厂，便于逐步迁移
+ * 使用新的分领域服务架构
  */
-export { UnifiedStorageService, storageService } from './storage'
+
+// 存储适配器
 export { FileStorageAdapter, LocalStorageAdapter, createStorageAdapter } from './adapters'
 
-// 新的服务工厂与分领域服务
-export { ServiceFactory, projectService, chapterService, volumeService, settingsService, characterService, outlineService, worldService } from './ServiceFactory'
+// 服务工厂与分领域服务
+export { ServiceFactory, projectService, chapterService, volumeService, settingsService, characterService, outlineService, worldService, statsService, dataService } from './ServiceFactory'
 
-// 类型导出：逐步过渡到新的 StorageInterfaces
-export type { StorageAdapter as NewStorageAdapter } from './adapters/StorageInterfaces'
+// 类型导出
+export type { StorageAdapter } from './adapters/StorageInterfaces'
+
+// 基础服务类（供扩展使用）
+export { BaseStorageService } from './services/BaseStorageService'
