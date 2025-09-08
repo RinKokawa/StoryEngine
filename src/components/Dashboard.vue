@@ -317,7 +317,10 @@ export default {
         this.targetWords = project.targetWords || 50000
       }
       
-      this.writingStats = await (await import('@/services/storage')).storageService.getWritingStats(projectId) || {}
+      const { ServiceFactory } = await import('@/services/storage')
+      // 注意：写作统计功能暂时保留使用旧服务，因为还没有专门的统计服务
+      const { storageService } = await import('@/services/storage')
+      this.writingStats = await storageService.getWritingStats(projectId) || {}
       this.todayWords = this.writingStats.todayWords || 0
       this.weekWords = this.writingStats.weekWords || 0
     },

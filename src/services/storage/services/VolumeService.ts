@@ -6,18 +6,10 @@
 import { BaseStorageService } from './BaseStorageService';
 import { StorageAdapter } from '../adapters/StorageInterfaces';
 import { AppError } from '@/types';
+import type { Volume } from '@/types/project';
 
-// 卷类型定义
-export interface Volume {
-  id: string;
-  projectId: string;
-  title: string;
-  order: number;
-  description: string;
-  status: string;
-  createdAt: string;
-  lastModified: string;
-}
+// 重新导出类型以保持兼容性
+export type { Volume };
 
 export class VolumeService extends BaseStorageService {
   /**

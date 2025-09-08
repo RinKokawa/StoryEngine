@@ -7,7 +7,7 @@ import type {
   Notification,
   PageName
 } from '@/types'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 import { ErrorHandler } from '@/utils/errorHandler'
 
 export const useAppStore = defineStore('app', {
@@ -67,7 +67,8 @@ export const useAppStore = defineStore('app', {
       
       try {
         // 加载设置
-        this.settings = await storageService.getSettings()
+        const settingsService = ServiceFactory.getSettingsService()
+        this.settings = await settingsService.getSettings()
         this.sidebarCollapsed = this.settings.sidebarCollapsed
         
         // 应用主题
@@ -104,8 +105,9 @@ export const useAppStore = defineStore('app', {
     // 设置
     async updateSettings(newSettings: Partial<AppSettings>): Promise<void> {
       try {
+        const settingsService = ServiceFactory.getSettingsService()
         this.settings = { ...this.settings, ...newSettings }
-        await storageService.saveSettings(this.settings)
+        await settingsService.saveSettings(this.settings)
         
         // 如果主题设置改变，重新应用主题
         if (newSettings.theme) {
@@ -119,6 +121,7 @@ export const useAppStore = defineStore('app', {
 
     async resetSettings(): Promise<void> {
       try {
+        const settingsService = ServiceFactory.getSettingsService()
         const defaultSettings: AppSettings = {
           autoSave: true,
           autoSaveInterval: 30000,
@@ -137,7 +140,7 @@ export const useAppStore = defineStore('app', {
         }
         
         this.settings = defaultSettings
-        await storageService.saveSettings(defaultSettings)
+        await settingsService.saveSettings(defaultSettings)
         this.applyTheme()
       } catch (error) {
         this.error = '重置设置失败'

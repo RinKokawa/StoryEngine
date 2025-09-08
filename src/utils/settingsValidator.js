@@ -1,5 +1,5 @@
 // 设置功能验证器
-import { storageService } from '@/services/storage'
+import { ServiceFactory, storageService } from '@/services/storage'
 
 export class SettingsValidator {
   constructor() {
@@ -8,7 +8,8 @@ export class SettingsValidator {
 
   // 验证默认设置结构
   async validateDefaultSettings() {
-    const settings = await storageService.getSettings()
+    const settingsService = ServiceFactory.getSettingsService()
+    const settings = await settingsService.getSettings()
     const requiredKeys = [
       'autoSave', 'autoSaveInterval', 'fontSize', 'lineHeight', 'autoIndent',
       'theme', 'sidebarCollapsed', 'windowSize',
@@ -27,7 +28,8 @@ export class SettingsValidator {
 
   // 验证设置保存和读取
   async validateSettingsPersistence() {
-    const originalSettings = await storageService.getSettings()
+    const settingsService = ServiceFactory.getSettingsService()
+    const originalSettings = await settingsService.getSettings()
     const testSettings = {
       ...originalSettings,
       fontSize: 20,
@@ -36,11 +38,11 @@ export class SettingsValidator {
     }
     
     // 保存测试设置
-    await storageService.saveSettings(testSettings)
+    await settingsService.saveSettings(testSettings)
     const saveSuccess = true
     
     // 读取设置
-    const loadedSettings = await storageService.getSettings()
+    const loadedSettings = await settingsService.getSettings()
     
     // 验证设置是否正确保存
     const isCorrect = loadedSettings.fontSize === 20 && 
@@ -48,7 +50,7 @@ export class SettingsValidator {
                      loadedSettings.autoSave === testSettings.autoSave
     
     // 恢复原始设置
-    await storageService.saveSettings(originalSettings)
+    await settingsService.saveSettings(originalSettings)
     
     this.testResults.push({
       test: '设置持久化',
@@ -87,8 +89,9 @@ export class SettingsValidator {
 
   // 验证主题设置
   async validateThemeSettings() {
+    const settingsService = ServiceFactory.getSettingsService()
     const validThemes = ['light', 'dark', 'auto']
-    const currentSettings = await storageService.getSettings()
+    const currentSettings = await settingsService.getSettings()
     const isValidTheme = validThemes.includes(currentSettings.theme)
     
     this.testResults.push({
@@ -102,7 +105,8 @@ export class SettingsValidator {
 
   // 验证编辑器设置范围
   async validateEditorSettings() {
-    const settings = await storageService.getSettings()
+    const settingsService = ServiceFactory.getSettingsService()
+    const settings = await settingsService.getSettings()
     const fontSizeValid = settings.fontSize >= 12 && settings.fontSize <= 24
     const lineHeightValid = settings.lineHeight >= 1.2 && settings.lineHeight <= 2.0
     const intervalValid = [10000, 30000, 60000, 120000].includes(settings.autoSaveInterval)

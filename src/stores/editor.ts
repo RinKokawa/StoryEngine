@@ -8,7 +8,7 @@ import type {
   CreateChapterData,
   UpdateChapterData
 } from '@/types'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 import { ErrorHandler } from '@/utils/errorHandler'
 
 import { useProjectStore } from './project'
@@ -83,8 +83,9 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        const content = await storageService.getChapterContent(projectStore.currentProject.id, chapterId)
-        const chapter = await storageService.getChapter(projectStore.currentProject.id, chapterId)
+        const chapterService = ServiceFactory.getChapterService()
+        const content = await chapterService.getChapterContent(projectStore.currentProject.id, chapterId)
+        const chapter = await chapterService.getChapter(projectStore.currentProject.id, chapterId)
         
         if (!chapter) {
           throw new Error('章节不存在')
@@ -96,7 +97,7 @@ export const useEditorStore = defineStore('editor', {
         this.lastSaved = new Date()
         
         // 设置为当前章节
-        await storageService.setCurrentChapter(projectStore.currentProject.id, chapterId)
+        await chapterService.setCurrentChapter(projectStore.currentProject.id, chapterId)
       } catch (error) {
         ErrorHandler.handleError(error, 'loadChapter')
         throw error
@@ -110,7 +111,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        await storageService.saveChapterContent(
+        const chapterService = ServiceFactory.getChapterService()
+        await chapterService.saveChapterContent(
           projectStore.currentProject.id, 
           this.currentChapter, 
           this.content
@@ -198,8 +200,10 @@ export const useEditorStore = defineStore('editor', {
     // 章节管理
     async loadChapters(projectId: string): Promise<void> {
       try {
-        this.chapters = await storageService.getProjectChapters(projectId)
-        this.volumes = await storageService.getProjectVolumes(projectId)
+        const chapterService = ServiceFactory.getChapterService()
+        const volumeService = ServiceFactory.getVolumeService()
+        this.chapters = await chapterService.getProjectChapters(projectId)
+        this.volumes = await volumeService.getProjectVolumes(projectId)
       } catch (error) {
         ErrorHandler.handleError(error, 'loadChapters')
       }
@@ -212,7 +216,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        const chapter = await storageService.createChapter(
+        const chapterService = ServiceFactory.getChapterService()
+        const chapter = await chapterService.createChapter(
           projectStore.currentProject.id, 
           volumeId, 
           data
@@ -235,7 +240,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        const updatedChapter = await storageService.updateChapter(
+        const chapterService = ServiceFactory.getChapterService()
+        const updatedChapter = await chapterService.updateChapter(
           projectStore.currentProject.id, 
           data
         )
@@ -259,7 +265,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        await storageService.deleteChapter(projectStore.currentProject.id, chapterId)
+        const chapterService = ServiceFactory.getChapterService()
+        await chapterService.deleteChapter(projectStore.currentProject.id, chapterId)
         
         this.chapters = this.chapters.filter(c => c.id !== chapterId)
         
@@ -282,7 +289,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        await storageService.reorderChapters(projectStore.currentProject.id, chapterIds)
+        const chapterService = ServiceFactory.getChapterService()
+        await chapterService.reorderChapters(projectStore.currentProject.id, chapterIds)
         
         // 更新本地章节顺序
         const reorderedChapters: Chapter[] = []
@@ -309,7 +317,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        const volume = await storageService.createVolume(projectStore.currentProject.id, data)
+        const volumeService = ServiceFactory.getVolumeService()
+        const volume = await volumeService.createVolume(projectStore.currentProject.id, data)
         this.volumes.push(volume)
         this.volumes.sort((a, b) => a.order - b.order)
         
@@ -327,7 +336,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        const updatedVolume = await storageService.updateVolume(projectStore.currentProject.id, data)
+        const volumeService = ServiceFactory.getVolumeService()
+        const updatedVolume = await volumeService.updateVolume(projectStore.currentProject.id, data)
         
         const index = this.volumes.findIndex(v => v.id === data.id)
         if (index !== -1) {
@@ -348,7 +358,8 @@ export const useEditorStore = defineStore('editor', {
       }
 
       try {
-        await storageService.deleteVolume(projectStore.currentProject.id, volumeId)
+        const volumeService = ServiceFactory.getVolumeService()
+        await volumeService.deleteVolume(projectStore.currentProject.id, volumeId)
         
         this.volumes = this.volumes.filter(v => v.id !== volumeId)
         this.chapters = this.chapters.filter(c => c.volumeId !== volumeId)
@@ -368,7 +379,8 @@ export const useEditorStore = defineStore('editor', {
       await this.loadChapters(projectId)
       
       try {
-        const currentChapterId = await storageService.getCurrentChapter(projectId)
+        const chapterService = ServiceFactory.getChapterService()
+        const currentChapterId = await chapterService.getCurrentChapter(projectId)
         if (currentChapterId) {
           await this.loadChapter(currentChapterId)
         }

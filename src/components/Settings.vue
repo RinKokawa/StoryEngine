@@ -550,7 +550,8 @@ export default {
       this.testingConnection = true
       this.connectionStatus = null
       try {
-        await storageService.saveSettings(this.settings)
+        const settingsService = ServiceFactory.getSettingsService()
+        await settingsService.saveSettings(this.settings)
         const { default: qwenApiService } = await import('../utils/qwenApiServer.js')
         qwenApiService.loadConfig()
         const success = await qwenApiService.testConnection()

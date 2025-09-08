@@ -32,7 +32,7 @@
 
 <script>
 import { ref, defineComponent, watch, onMounted } from 'vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default defineComponent({
   name: 'CharacterSelector',
@@ -72,7 +72,8 @@ export default defineComponent({
       try {
         console.log('开始加载项目角色，项目ID:', props.projectId)
         // 加载角色数据
-        const projectCharacters = await storageService.getProjectCharacters(props.projectId)
+        const characterService = ServiceFactory.getCharacterService()
+        const projectCharacters = await characterService.getProjectCharacters(props.projectId)
         
         if (projectCharacters && Array.isArray(projectCharacters)) {
           characters.value = projectCharacters

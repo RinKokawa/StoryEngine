@@ -93,7 +93,7 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'ChapterSelector',
@@ -127,7 +127,8 @@ export default {
     // 加载章节列表
     const loadChapters = async () => {
       if (props.projectId) {
-        chapters.value = await storageService.getProjectChapters(props.projectId)
+        const chapterService = ServiceFactory.getChapterService()
+        chapters.value = await chapterService.getProjectChapters(props.projectId)
       }
     }
 
@@ -179,7 +180,8 @@ export default {
 
       if (chapterData.id) {
         // 更新现有章节
-        const updatedChapter = await storageService.updateChapter(props.projectId, chapterData)
+        const chapterService = ServiceFactory.getChapterService()
+        const updatedChapter = await chapterService.updateChapter(props.projectId, chapterData)
         if (updatedChapter) {
           const index = chapters.value.findIndex(c => c.id === chapterData.id)
           if (index >= 0) {
@@ -189,7 +191,8 @@ export default {
         }
       } else {
         // 创建新章节
-        const newChapter = await storageService.createChapter(props.projectId, chapterData)
+        const chapterService = ServiceFactory.getChapterService()
+        const newChapter = await chapterService.createChapter(props.projectId, undefined, chapterData)
         if (newChapter) {
           chapters.value.push(newChapter)
           emit('chapter-created', newChapter)
@@ -202,10 +205,13 @@ export default {
     // 删除章节
     const deleteChapter = async (chapter) => {
       if (confirm(`确定要删除章节"${chapter.title}"吗？此操作不可撤销。`)) {
-        const success = await storageService.deleteChapter(props.projectId, chapter.id)
-        if (success) {
+        try {
+          const chapterService = ServiceFactory.getChapterService()
+          await chapterService.deleteChapter(props.projectId, chapter.id)
           chapters.value = chapters.value.filter(c => c.id !== chapter.id)
           emit('chapter-deleted', chapter)
+        } catch (error) {
+          console.error('删除章节失败:', error)
         }
       }
     }

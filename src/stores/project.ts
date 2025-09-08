@@ -7,7 +7,7 @@ import type {
   CreateProjectData,
   UpdateProjectData
 } from '@/types'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 import { ErrorHandler } from '@/utils/errorHandler'
 import { AppError } from '@/types'
 
@@ -59,7 +59,8 @@ export const useProjectStore = defineStore('project', {
       this.error = null
       
       try {
-        this.projects = await storageService.getProjects()
+        const projectService = ServiceFactory.getProjectService()
+        this.projects = await projectService.getProjects()
         this.lastUpdated = new Date()
       } catch (error) {
         this.error = '加载项目失败'
@@ -78,7 +79,8 @@ export const useProjectStore = defineStore('project', {
           throw new AppError('缺少必需字段')
         }
         
-        const project = await storageService.createProject(data)
+        const projectService = ServiceFactory.getProjectService()
+        const project = await projectService.createProject(data)
         this.projects.push(project)
         this.lastUpdated = new Date()
         
@@ -97,7 +99,8 @@ export const useProjectStore = defineStore('project', {
       this.error = null
       
       try {
-        const updatedProject = await storageService.updateProject(data)
+        const projectService = ServiceFactory.getProjectService()
+        const updatedProject = await projectService.updateProject(data)
         
         const index = this.projects.findIndex(p => p.id === data.id)
         if (index !== -1) {
@@ -125,14 +128,15 @@ export const useProjectStore = defineStore('project', {
       this.error = null
       
       try {
-        await storageService.deleteProject(id)
+        const projectService = ServiceFactory.getProjectService()
+        await projectService.deleteProject(id)
         
         this.projects = this.projects.filter(p => p.id !== id)
         
         // 如果删除的是当前项目，清空当前项目
         if (this.currentProject?.id === id) {
           this.currentProject = null
-          await storageService.setCurrentProject(null)
+          await projectService.setCurrentProject(null)
         }
         
         this.lastUpdated = new Date()
@@ -147,8 +151,9 @@ export const useProjectStore = defineStore('project', {
 
     async setCurrentProject(project: Project | null): Promise<void> {
       try {
+        const projectService = ServiceFactory.getProjectService()
         this.currentProject = project
-        await storageService.setCurrentProject(project)
+        await projectService.setCurrentProject(project)
       } catch (error) {
         this.error = '设置当前项目失败'
         ErrorHandler.handleError(error, 'setCurrentProject')
@@ -158,7 +163,8 @@ export const useProjectStore = defineStore('project', {
 
     async refreshProject(id: string): Promise<void> {
       try {
-        const project = await storageService.getProject(id)
+        const projectService = ServiceFactory.getProjectService()
+        const project = await projectService.getProject(id)
         if (project) {
           const index = this.projects.findIndex(p => p.id === id)
           if (index !== -1) {
@@ -179,7 +185,8 @@ export const useProjectStore = defineStore('project', {
       await this.loadProjects()
       
       try {
-        this.currentProject = await storageService.getCurrentProject()
+        const projectService = ServiceFactory.getProjectService()
+        this.currentProject = await projectService.getCurrentProject()
       } catch (error) {
         ErrorHandler.handleError(error, 'initialize')
       }

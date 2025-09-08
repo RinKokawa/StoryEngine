@@ -5,24 +5,10 @@
 
 import { BaseStorageService } from './BaseStorageService';
 import { StorageAdapter } from '../adapters/StorageInterfaces';
+import type { AppSettings, ThemeMode } from '@/types/app';
 
-// 应用设置类型定义
-export interface AppSettings {
-  autoSave: boolean;
-  autoSaveInterval: number;
-  fontSize: number;
-  lineHeight: number;
-  autoIndent: boolean;
-  theme: string;
-  sidebarCollapsed: boolean;
-  windowSize: string;
-  openLastProject: boolean;
-  minimizeToTray: boolean;
-  checkUpdates: boolean;
-  autoBackup?: boolean;
-  maxBackups?: number;
-  backupInterval?: number;
-}
+// 重新导出类型以保持兼容性
+export type { AppSettings };
 
 export class SettingsService extends BaseStorageService {
   /**
@@ -44,7 +30,7 @@ export class SettingsService extends BaseStorageService {
       fontSize: 16,
       lineHeight: 1.5,
       autoIndent: true,
-      theme: 'light',
+      theme: 'light' as ThemeMode,
       sidebarCollapsed: true,
       windowSize: 'normal',
       openLastProject: true,

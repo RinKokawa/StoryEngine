@@ -87,7 +87,7 @@ import ContextMenu from './ContextMenu.vue'
 import ProjectSelector from './common/ProjectSelector.vue'
 import CharacterSelector from './common/CharacterSelector.vue'
 import TextEditor from './common/TextEditor.vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'NovelEditor',
@@ -149,7 +149,8 @@ export default {
       try {
         console.log('开始加载可用项目列表...')
         // 使用异步方式获取项目列表
-        const projects = await storageService.getProjects()
+        const projectService = ServiceFactory.getProjectService()
+        const projects = await projectService.getProjects()
         availableProjects.value = projects || []
         console.log(`成功加载${projects ? projects.length : 0}个项目`)
         return projects
@@ -287,7 +288,8 @@ export default {
           console.log(`开始加载章节内容: ${chapter.title || chapter.id}, 项目ID: ${props.currentProject.id}, 重试次数: ${retryCount}`)
           
           // 通过存储服务直接获取章节内容
-          const contentText = await storageService.getChapterContent(props.currentProject.id, chapter.id)
+          const chapterService = ServiceFactory.getChapterService()
+          const contentText = await chapterService.getChapterContent(props.currentProject.id, chapter.id)
           const currentChapter = { id: chapter.id, content: contentText }
           console.log('查找章节结果:', currentChapter ? '找到章节' : '未找到章节')
           
@@ -347,7 +349,8 @@ export default {
         timer = setTimeout(async () => {
           if (props.currentProject && props.currentChapter && content.value && content.value.trim()) {
             try {
-              await storageService.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
+              const chapterService = ServiceFactory.getChapterService()
+              await chapterService.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
               // 更新写作统计
 
             } catch (error) {
@@ -637,7 +640,8 @@ export default {
 
       saving.value = true
       try {
-        await storageService.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
+        const chapterService = ServiceFactory.getChapterService()
+        await chapterService.saveChapterContent(props.currentProject.id, props.currentChapter.id, content.value)
         // 更新保存时间
         lastSaveTime.value = new Date().toLocaleString('zh-CN')
         console.log('章节内容已保存')
@@ -726,7 +730,8 @@ export default {
           if (!props.currentProject) {
             throw new Error('当前项目不存在')
           }
-          const newCharacter = await storageService.createCharacter(
+          const characterService = ServiceFactory.getCharacterService()
+          const newCharacter = await characterService.createCharacter(
             props.currentProject.id,
             {
               name: characterName.trim(),

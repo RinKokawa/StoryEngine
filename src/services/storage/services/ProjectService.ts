@@ -6,45 +6,14 @@
 import { BaseStorageService } from './BaseStorageService';
 import { StorageAdapter } from '../adapters/StorageInterfaces';
 import { AppError } from '@/types';
+import type { 
+  Project, 
+  CreateProjectData, 
+  UpdateProjectData
+} from '@/types/project';
 
-// 项目类型定义
-export interface Project {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  targetWords: number;
-  wordCount: number;
-  status: string;
-  createdAt: string;
-  lastModified: string;
-  settings: {
-    autoSave: boolean;
-    autoSaveInterval: number;
-    fontSize: number;
-    lineHeight: number;
-    autoIndent: boolean;
-  };
-  chapters?: number;
-}
-
-export interface CreateProjectData {
-  name: string;
-  type: string;
-  description?: string;
-  targetWords: number;
-}
-
-export interface UpdateProjectData {
-  id: string;
-  name?: string;
-  type?: string;
-  description?: string;
-  targetWords?: number;
-  status?: string;
-  wordCount?: number;
-  chapters?: number;
-}
+// 重新导出类型以保持兼容性
+export type { Project, CreateProjectData, UpdateProjectData };
 
 export class ProjectService extends BaseStorageService {
   /**

@@ -6,34 +6,14 @@
 import { BaseStorageService } from './BaseStorageService';
 import { StorageAdapter } from '../adapters/StorageInterfaces';
 import { AppError } from '@/types';
+import type { 
+  Chapter, 
+  CreateChapterData, 
+  UpdateChapterData
+} from '@/types/project';
 
-// 章节类型定义
-export interface Chapter {
-  id: string;
-  projectId: string;
-  volumeId?: string;
-  title: string;
-  order: number;
-  content: string;
-  wordCount: number;
-  status: string;
-  createdAt: string;
-  lastModified: string;
-}
-
-export interface CreateChapterData {
-  title: string;
-  content?: string;
-}
-
-export interface UpdateChapterData {
-  id: string;
-  title?: string;
-  content?: string;
-  status?: string;
-  volumeId?: string;
-  order?: number;
-}
+// 重新导出类型以保持兼容性
+export type { Chapter, CreateChapterData, UpdateChapterData };
 
 export class ChapterService extends BaseStorageService {
   /**

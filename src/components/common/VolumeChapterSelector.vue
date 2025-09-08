@@ -204,7 +204,7 @@
 
 <script>
 import { ref, computed, watch, onMounted } from 'vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'VolumeChapterSelector',
@@ -269,7 +269,8 @@ export default {
         // 加载卷数据
         let volumesData
         try {
-          volumesData = await storageService.getProjectVolumes(props.projectId)
+          const volumeService = ServiceFactory.getVolumeService()
+          volumesData = await volumeService.getProjectVolumes(props.projectId)
         } catch (error) {
           console.error('加载卷数据失败:', error)
           volumesData = []
@@ -280,7 +281,8 @@ export default {
         // 加载章节数据
         let chaptersData
         try {
-          chaptersData = await storageService.getProjectChapters(props.projectId)
+          const chapterService = ServiceFactory.getChapterService()
+          chaptersData = await chapterService.getProjectChapters(props.projectId)
         } catch (error) {
           console.error('加载章节数据失败:', error)
           chaptersData = []
@@ -361,7 +363,8 @@ export default {
         // 保存到存储
         const chapter = chapters.value[chapterIndex]
         if (chapter) {
-          await storageService.updateChapter(props.projectId, {
+          const chapterService = ServiceFactory.getChapterService()
+          await chapterService.updateChapter(props.projectId, {
             ...chapter,
             wordCount: wordCount
           })
@@ -416,13 +419,14 @@ export default {
 
       isProcessing.value = true
       try {
+        const volumeService = ServiceFactory.getVolumeService()
         if (editingVolume.value) {
           // 更新卷
           const updatedVolume = {
             ...editingVolume.value,
             ...volumeForm.value
           }
-          await storageService.updateVolume(props.projectId, updatedVolume)
+          await volumeService.updateVolume(props.projectId, updatedVolume)
           
           const index = volumes.value.findIndex(v => v.id === editingVolume.value.id)
           if (index !== -1) {
@@ -430,7 +434,7 @@ export default {
           }
         } else {
           // 创建新卷
-          const newVolume = await storageService.createVolume(props.projectId, volumeForm.value)
+          const newVolume = await volumeService.createVolume(props.projectId, volumeForm.value)
           if (newVolume && !volumes.value.some(v => v.id === newVolume.id)) {
             volumes.value.push(newVolume)
             expandedVolumes.value.add(newVolume.id)
@@ -456,7 +460,8 @@ export default {
       }
 
       try {
-        await storageService.deleteVolume(props.projectId, volumeId)
+        const volumeService = ServiceFactory.getVolumeService()
+        await volumeService.deleteVolume(props.projectId, volumeId)
         volumes.value = volumes.value.filter(v => v.id !== volumeId)
         chapters.value = chapters.value.filter(c => c.volumeId !== volumeId)
         expandedVolumes.value.delete(volumeId)
@@ -509,7 +514,8 @@ export default {
             updatedChapter.wordCount = calculateWordCount(updatedChapter.content)
           }
           
-          await storageService.updateChapter(props.projectId, updatedChapter)
+          const chapterService = ServiceFactory.getChapterService()
+          await chapterService.updateChapter(props.projectId, updatedChapter)
           
           const index = chapters.value.findIndex(c => c.id === editingChapter.value.id)
           if (index !== -1) {
@@ -525,7 +531,8 @@ export default {
             lastModified: new Date().toISOString()
           }
           
-          const newChapter = await storageService.createChapter(
+          const chapterService = ServiceFactory.getChapterService()
+          const newChapter = await chapterService.createChapter(
             props.projectId, 
             chapterForm.value.volumeId, 
             newChapterData
@@ -554,7 +561,8 @@ export default {
       }
 
       try {
-        await storageService.deleteChapter(props.projectId, chapterId)
+        const chapterService = ServiceFactory.getChapterService()
+        await chapterService.deleteChapter(props.projectId, chapterId)
         chapters.value = chapters.value.filter(c => c.id !== chapterId)
         emit('data-updated')
       } catch (error) {

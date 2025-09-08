@@ -3,7 +3,7 @@
  * 用于调用通义千问 API 进行 AI 辅助写作
  */
 
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 class QwenApiService {
   constructor() {
@@ -22,7 +22,8 @@ class QwenApiService {
    * 加载 API 配置
    */
   async loadConfig() {
-    const settings = await storageService.getSettings()
+    const settingsService = ServiceFactory.getSettingsService()
+    const settings = await settingsService.getSettings()
     this.baseUrl = settings.qwenApiBase || 'https://dashscope.aliyuncs.com/api/v1'
     this.apiKey = settings.qwenApiKey || ''
     this.model = settings.qwenModel || 'qwen-turbo'
