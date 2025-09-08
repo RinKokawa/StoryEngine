@@ -760,6 +760,77 @@ export class UnifiedStorageService {
     }
   }
 
+  // 笔记管理
+  async getProjectNotes(projectId: string): Promise<any[]> {
+    const cacheKey = this.getCacheKey('notes', projectId)
+    let notes = this.getCache<any[]>(cacheKey)
+    
+    if (!notes) {
+      notes = await this.readJsonFile(`project_${projectId}_notes.json`, [])
+      this.setCache(cacheKey, notes)
+    }
+    
+    return notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  }
+
+  async createNote(data: any): Promise<any> {
+    const notes = await this.getProjectNotes(data.projectId)
+    
+    const note = {
+      id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title: data.title,
+      type: data.type || 'idea',
+      content: data.content,
+      chapterId: data.chapterId || null,
+      tags: data.tags || [],
+      projectId: data.projectId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    notes.unshift(note)
+    await this.writeJsonFile(`project_${data.projectId}_notes.json`, notes)
+    this.clearCache(`notes_${data.projectId}`)
+    
+    return note
+  }
+
+  async updateNote(noteId: string, data: any): Promise<any> {
+    const notes = await this.getProjectNotes(data.projectId)
+    const index = notes.findIndex(n => n.id === noteId)
+    
+    if (index === -1) {
+      throw new AppError('笔记不存在')
+    }
+    
+    notes[index] = { ...notes[index], ...data, updatedAt: new Date().toISOString() }
+    await this.writeJsonFile(`project_${data.projectId}_notes.json`, notes)
+    this.clearCache(`notes_${data.projectId}`)
+    
+    return notes[index]
+  }
+
+  async deleteNote(noteId: string): Promise<void> {
+    // 需要先找到笔记所属的项目
+    const projects = await this.getProjects()
+    
+    for (const project of projects) {
+      const notes = await this.getProjectNotes(project.id)
+      const noteIndex = notes.findIndex(n => n.id === noteId)
+      
+      if (noteIndex !== -1) {
+        notes.splice(noteIndex, 1)
+        await this.writeJsonFile(`project_${project.id}_notes.json`, notes)
+        this.clearCache(`notes_${project.id}`)
+        return
+      }
+    }
+    
+    throw new AppError('笔记不存在')
+  }
+
+
+
   // 辅助方法
   private async updateProjectWordCount(projectId: string): Promise<void> {
     const chapters = await this.getProjectChapters(projectId)

@@ -9,6 +9,7 @@
       <Dashboard v-if="currentPage === 'dashboard'" :current-project="currentProject" @navigate="handleNavigation" @project-changed="handleProjectSelected" />
       <ProjectManager v-else-if="currentPage === 'projects'" @navigate="handleNavigation" @project-selected="handleProjectSelected" />
       <StoryEditor v-else-if="currentPage === 'editor'" :current-project="currentProject" @project-changed="handleProjectSelected" />
+      <StoryEditorIDE v-else-if="currentPage === 'editor-ide'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <OutlineManagement v-else-if="currentPage === 'outline'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <CharacterManagement v-else-if="currentPage === 'characters'" :current-project="currentProject" @project-changed="handleProjectSelected" />
       <WorldBuilding v-else-if="currentPage === 'worldview'" :current-project="currentProject" @project-changed="handleProjectSelected" />
@@ -26,6 +27,7 @@ import Dashboard from './components/Dashboard.vue'
 import ProjectManager from './components/ProjectManager.vue'
 import Sidebar from './components/Sidebar.vue'
 import StoryEditor from './views/StoryEditor.vue'
+import StoryEditorIDE from './views/StoryEditorIDE.vue'
 import CharacterManagement from './views/CharacterManagement.vue'
 import WorldBuilding from './views/WorldBuilding.vue'
 import OutlineManagement from './views/OutlineManagement.vue'
@@ -36,6 +38,7 @@ export default {
   name: 'App',
   components: {
     StoryEditor,
+    StoryEditorIDE,
     Dashboard,
     ProjectManager,
     Sidebar,
@@ -97,6 +100,7 @@ export default {
         dashboard: '仪表盘',
         projects: '项目管理',
         editor: '故事编辑',
+        'editor-ide': 'IDE模式',
         outline: '大纲管理',
         characters: '角色管理',
         worldview: '世界设定',

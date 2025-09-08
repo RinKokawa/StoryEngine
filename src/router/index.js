@@ -12,6 +12,11 @@ const routes = [
     component: () => import('../views/StoryEditor.vue')
   },
   {
+    path: '/story-editor-ide',
+    name: 'StoryEditorIDE',
+    component: () => import('../views/StoryEditorIDE.vue')
+  },
+  {
     path: '/character-management',
     name: 'CharacterManagement',
     component: () => import('../views/CharacterManagement.vue')
@@ -25,6 +30,11 @@ const routes = [
     path: '/world-building',
     name: 'WorldBuilding',
     component: () => import('../views/WorldBuilding.vue')
+  },
+  {
+    path: '/ide-demo',
+    name: 'IDEDemo',
+    component: () => import('../views/IDEDemo.vue')
   }
 ]
 

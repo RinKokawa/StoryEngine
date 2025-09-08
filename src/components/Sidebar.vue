@@ -28,6 +28,13 @@
           </a>
         </li>
         <li class="nav-item">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-ide' }" @click="navigate('editor-ide')">
+            <i class="icon">💻</i>
+            <span v-show="!isCollapsed">IDE模式</span>
+            <span v-show="!isCollapsed" class="beta-badge">Beta</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a href="#" class="nav-link" @click="navigate('outline')">
             <i class="icon">📋</i>
             <span v-show="!isCollapsed">大纲管理</span>
@@ -217,6 +224,16 @@ export default {
 
 .nav-link span {
   font-size: 14px;
+}
+
+.beta-badge {
+  background: #e74c3c;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-left: 8px;
+  font-weight: 600;
 }
 
 /* GitHub 角标样式 */
