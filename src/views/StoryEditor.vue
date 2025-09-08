@@ -27,35 +27,38 @@
     
     <div class="editor-layout">
       <!-- 左侧章节选择器 -->
-      <div v-if="sidebarVisible" class="sidebar">
-        <!-- 项目信息区域 - 始终显示 -->
-        <!-- <div v-if="currentProject" class="sidebar-header">
-          <h3>卷章管理</h3>
-          <div class="project-info">
-            当前项目：{{ currentProject.name }}
+      <ResizableSidebar 
+        v-if="sidebarVisible" 
+        position="left"
+        :default-width="300"
+        :min-width="200"
+        :max-width="500"
+        title="拖动调整章节面板宽度"
+        @resize="width => sidebarWidth = width"
+        class="sidebar-container"
+      >
+        <div class="sidebar">
+          <div v-if="isLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p>加载中...</p>
           </div>
-        </div> -->
-        
-        <div v-if="isLoading" class="loading-state">
-          <div class="spinner"></div>
-          <p>加载中...</p>
+          <div v-else-if="loadError" class="error-state">
+            <p>{{ loadError }}</p>
+            <button @click="retryLoad" class="retry-btn">重试</button>
+          </div>
+          <VolumeChapterSelector
+            v-else-if="currentProject"
+            :key="'vcs-' + currentProject.id"
+            :project-id="currentProject.id"
+            :selected-chapter="currentChapter"
+            @chapter-selected="handleChapterSelected"
+            @chapter-created="handleChapterCreated"
+            @chapter-updated="handleChapterUpdated"
+            @chapter-deleted="handleChapterDeleted"
+            @data-loaded="handleDataLoaded"
+          />
         </div>
-        <div v-else-if="loadError" class="error-state">
-          <p>{{ loadError }}</p>
-          <button @click="retryLoad" class="retry-btn">重试</button>
-        </div>
-        <VolumeChapterSelector
-          v-else-if="currentProject"
-          :key="'vcs-' + currentProject.id"
-          :project-id="currentProject.id"
-          :selected-chapter="currentChapter"
-          @chapter-selected="handleChapterSelected"
-          @chapter-created="handleChapterCreated"
-          @chapter-updated="handleChapterUpdated"
-          @chapter-deleted="handleChapterDeleted"
-          @data-loaded="handleDataLoaded"
-        />
-      </div>
+      </ResizableSidebar>
       
       <!-- 中间编辑器 -->
       <div class="editor-content" :class="{ 'full-width': !sidebarVisible && !aiPanelVisible }">
@@ -67,11 +70,17 @@
       </div>
       
       <!-- 右侧AI对话面板 -->
-      <div v-if="aiPanelVisible" class="ai-panel">
-        <AiChatPanel
-          :current-project="currentProject"
-          :current-chapter="currentChapter"
-        />
+      <div v-if="aiPanelVisible" class="ai-panel-wrapper">
+        <div class="resize-handle-left" 
+             @mousedown="startAiPanelResize" 
+             @dblclick="resetAiPanelWidth"
+             title="拖动调整AI助手面板宽度"></div>
+        <div class="ai-panel-container" :style="{ width: `${aiPanelWidth}px` }">
+          <AiChatPanel
+            :current-project="currentProject"
+            :current-chapter="currentChapter"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -82,6 +91,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import NovelEditor from '../components/NovelEditor.vue'
 import VolumeChapterSelector from '../components/common/VolumeChapterSelector.vue'
 import AiChatPanel from '../components/common/AiChatPanel.vue'
+import ResizableSidebar from '../components/common/ResizableSidebar.vue'
 import { storageService } from '@/services/storage'
 
 export default {
@@ -89,7 +99,8 @@ export default {
   components: {
     NovelEditor,
     VolumeChapterSelector,
-    AiChatPanel
+    AiChatPanel,
+    ResizableSidebar
   },
   setup() {
     const currentProject = ref(null)
@@ -97,6 +108,8 @@ export default {
     const chapters = ref([])
     const sidebarVisible = ref(true)
     const aiPanelVisible = ref(false)
+    const sidebarWidth = ref(300)
+    const aiPanelWidth = ref(320)
     
     // 加载状态
     const isLoading = ref(false)
@@ -329,6 +342,84 @@ export default {
     const toggleAiPanel = () => {
       aiPanelVisible.value = !aiPanelVisible.value
     }
+    
+    // AI面板宽度调整
+    let isAiPanelResizing = false
+    let startX = 0
+    let startWidth = 0
+    
+    const startAiPanelResize = (e) => {
+      e.preventDefault()
+      isAiPanelResizing = true
+      startX = e.clientX
+      startWidth = aiPanelWidth.value
+      
+      document.addEventListener('mousemove', handleAiPanelMouseMove)
+      document.addEventListener('mouseup', stopAiPanelResize)
+      document.body.style.cursor = 'w-resize'
+      document.body.style.userSelect = 'none'
+      
+      console.log('开始调整AI面板宽度')
+    }
+    
+    const handleAiPanelMouseMove = (e) => {
+      if (!isAiPanelResizing) return
+      
+      // 右侧面板：向左拖动增加宽度
+      const delta = startX - e.clientX
+      let newWidth = startWidth + delta
+      
+      // 限制最小和最大宽度
+      newWidth = Math.max(250, Math.min(600, newWidth))
+      
+      aiPanelWidth.value = newWidth
+      console.log(`调整AI面板宽度: ${newWidth}px`)
+    }
+    
+    const stopAiPanelResize = () => {
+      if (!isAiPanelResizing) return
+      
+      isAiPanelResizing = false
+      document.removeEventListener('mousemove', handleAiPanelMouseMove)
+      document.removeEventListener('mouseup', stopAiPanelResize)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      
+      // 保存当前宽度到本地存储
+      try {
+        localStorage.setItem('ai-panel-width', aiPanelWidth.value.toString())
+      } catch (e) {
+        console.warn('无法保存AI面板宽度到本地存储', e)
+      }
+      
+      console.log('结束调整AI面板宽度')
+    }
+    
+    const resetAiPanelWidth = () => {
+      aiPanelWidth.value = 320 // 默认宽度
+      
+      // 更新本地存储
+      try {
+        localStorage.setItem('ai-panel-width', '320')
+      } catch (e) {
+        console.warn('无法保存AI面板宽度到本地存储', e)
+      }
+    }
+    
+    // 从本地存储加载AI面板宽度
+    onMounted(() => {
+      try {
+        const savedWidth = localStorage.getItem('ai-panel-width')
+        if (savedWidth) {
+          const parsedWidth = parseInt(savedWidth)
+          if (!isNaN(parsedWidth)) {
+            aiPanelWidth.value = Math.max(250, Math.min(600, parsedWidth))
+          }
+        }
+      } catch (e) {
+        console.warn('无法从本地存储加载AI面板宽度', e)
+      }
+    })
 
     // 监听项目变化，确保组件重新渲染
     watch(() => currentProject.value, (newProject) => {
@@ -347,6 +438,8 @@ export default {
       currentChapter,
       sidebarVisible,
       aiPanelVisible,
+      sidebarWidth,
+      aiPanelWidth,
       isLoading,
       loadError,
       toggleSidebar,
@@ -357,7 +450,9 @@ export default {
       handleChapterUpdated,
       handleChapterDeleted,
       handleDataLoaded,
-      retryLoad
+      retryLoad,
+      startAiPanelResize,
+      resetAiPanelWidth
     }
   }
 }
@@ -459,14 +554,17 @@ export default {
   overflow: hidden;
 }
 
-.sidebar {
-  width: 300px;
+.sidebar-container {
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.sidebar {
+  height: 100%;
+  background: #f8f9fa;
   padding: 0;
   overflow-y: auto;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
@@ -504,11 +602,37 @@ export default {
   min-width: 0; /* 防止内容溢出 */
 }
 
-.ai-panel {
-  width: 320px;
+.ai-panel-wrapper {
+  position: relative;
+  display: flex;
   flex-shrink: 0;
-  transition: all 0.3s ease;
+}
+
+.resize-handle-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background-color: transparent;
+  cursor: w-resize;
+  z-index: 100;
+  transition: background-color 0.2s;
+}
+
+.resize-handle-left:hover {
+  background-color: rgba(0, 123, 255, 0.2);
+}
+
+.resize-handle-left:active {
+  background-color: rgba(0, 123, 255, 0.4);
+}
+
+.ai-panel-container {
+  flex-shrink: 0;
+  border-left: 1px solid #e0e0e0;
   overflow: hidden;
+  height: 100%;
 }
 
 .editor-content.full-width {
@@ -566,15 +690,26 @@ export default {
     flex-direction: column;
   }
   
-  .sidebar {
-    width: 100%;
+  .sidebar-container {
+    width: 100% !important;
     height: 200px;
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
   }
   
+  .ai-panel-container {
+    width: 100% !important;
+    height: 300px;
+    border-left: none;
+    border-top: 1px solid #e0e0e0;
+  }
+  
   .editor-content {
     flex: 1;
+  }
+  
+  .resize-handle {
+    display: none;
   }
 }
 
