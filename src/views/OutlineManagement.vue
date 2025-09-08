@@ -228,7 +228,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useProjectStore } from '../stores/project'
 import OutlineTreeNode from '../components/common/OutlineTreeNode.vue'
 import ProjectSelector from '../components/common/ProjectSelector.vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'OutlineManagement',
@@ -244,6 +244,8 @@ export default {
   },
   emits: ['project-changed'],
   setup(props, { emit }) {
+    const projectService = ServiceFactory.getProjectService()
+    const outlineService = ServiceFactory.getOutlineService()
     const projectStore = useProjectStore()
     
     // 响应式数据
@@ -309,10 +311,10 @@ export default {
     
     const loadProjects = async () => {
       try {
-        projects.value = await storageService.getProjects() || []
+        projects.value = await projectService.getProjects() || []
         
         // 如果有当前项目，自动选择
-        const currentProject = await storageService.getCurrentProject()
+        const currentProject = await projectService.getCurrentProject()
         if (currentProject) {
           selectedProjectId.value = currentProject.id
           loadOutlines(currentProject.id)
@@ -328,7 +330,7 @@ export default {
     const loadOutlines = async (projectId) => {
       if (!projectId) return
       try {
-        outlines.value = await storageService.getProjectOutlines(projectId) || []
+        outlines.value = await outlineService.getProjectOutlines(projectId) || []
       } catch (error) {
         console.error('加载大纲失败:', error)
         outlines.value = []
@@ -377,7 +379,7 @@ export default {
     const deleteOutline = async (outline) => {
       if (confirm(`确定要删除大纲"${outline.title}"吗？此操作不可恢复。`)) {
         try {
-          await storageService.deleteOutline(currentProject.value.id, outline.id)
+          await outlineService.deleteOutline(currentProject.value.id, outline.id)
           
           // 重新加载大纲列表
           await loadOutlines(currentProject.value.id)
@@ -401,13 +403,13 @@ export default {
       try {
         if (showEditDialog.value && selectedOutline.value) {
           // 更新现有大纲
-          await storageService.updateOutline(currentProject.value.id, {
+          await outlineService.updateOutline(currentProject.value.id, {
             id: selectedOutline.value.id,
             ...outlineForm.value
           })
         } else {
           // 创建新大纲
-          await storageService.createOutline(currentProject.value.id, outlineForm.value)
+          await outlineService.createOutline(currentProject.value.id, outlineForm.value)
         }
         
         // 重新加载大纲列表

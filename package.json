@@ -36,6 +36,7 @@
     "electron": "^30.0.1",
     "electron-builder": "24.6.4",
     "jsdom": "^26.1.0",
+    "sass": "^1.92.1",
     "terser": "^5.44.0",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",

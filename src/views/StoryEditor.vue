@@ -92,7 +92,7 @@ import NovelEditor from '../components/NovelEditor.vue'
 import VolumeChapterSelector from '../components/common/VolumeChapterSelector.vue'
 import AiChatPanel from '../components/common/AiChatPanel.vue'
 import ResizableSidebar from '../components/common/ResizableSidebar.vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'StoryEditor',
@@ -103,6 +103,8 @@ export default {
     ResizableSidebar
   },
   setup() {
+    const projectService = ServiceFactory.getProjectService()
+    const chapterService = ServiceFactory.getChapterService()
     const currentProject = ref(null)
     const currentChapterId = ref(null)
     const chapters = ref([])
@@ -130,7 +132,7 @@ export default {
       
       try {
         console.log('开始加载当前项目...')
-        const project = await storageService.getCurrentProject()
+        const project = await projectService.getCurrentProject()
         
         if (project) {
           console.log('当前项目加载成功:', project.name)
@@ -174,7 +176,7 @@ export default {
       
       try {
         console.log('开始加载章节列表...')
-        const projectChapters = await storageService.getProjectChapters(currentProject.value.id) || []
+        const projectChapters = await chapterService.getProjectChapters(currentProject.value.id) || []
         chapters.value = projectChapters
         console.log(`成功加载${projectChapters.length}个章节`)
       } catch (error) {
@@ -190,7 +192,7 @@ export default {
       try {
         if (chapters.value.length > 0) {
           console.log('开始加载当前章节...')
-          const chapterId = await storageService.getCurrentChapter(currentProject.value.id)
+          const chapterId = await chapterService.getCurrentChapter(currentProject.value.id)
           
           if (chapterId && chapters.value.find(c => c.id === chapterId)) {
             currentChapterId.value = chapterId
@@ -198,7 +200,7 @@ export default {
           } else {
             // 如果没有设置当前章节，默认选择第一章
             currentChapterId.value = chapters.value[0].id
-            await storageService.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+            await chapterService.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
             console.log('设置默认章节:', chapters.value[0].id)
           }
         } else {
@@ -222,7 +224,7 @@ export default {
       try {
         console.log('项目切换:', project.name)
         currentProject.value = project
-        await storageService.setCurrentProject(project)
+        await projectService.setCurrentProject(project)
         await loadChapters()
         await loadCurrentChapter()
       } catch (error) {
@@ -240,7 +242,7 @@ export default {
       try {
         console.log('选择章节:', chapter.title || chapter.id)
         currentChapterId.value = chapter.id
-        await storageService.setCurrentChapter(currentProject.value.id, chapter.id)
+        await chapterService.setCurrentChapter(currentProject.value.id, chapter.id)
       } catch (error) {
         console.error('选择章节失败:', error)
         alert('选择章节失败，请重试')
@@ -258,7 +260,7 @@ export default {
         if (!chapters.value.some(c => c.id === chapter.id)) {
           chapters.value.push(chapter)
           currentChapterId.value = chapter.id
-          await storageService.setCurrentChapter(currentProject.value.id, chapter.id)
+          await chapterService.setCurrentChapter(currentProject.value.id, chapter.id)
         } else {
           console.warn('章节已存在，避免重复添加:', chapter.id)
         }
@@ -296,7 +298,7 @@ export default {
         if (currentChapterId.value === chapterId) {
           if (chapters.value.length > 0) {
             currentChapterId.value = chapters.value[0].id
-            await storageService.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+            await chapterService.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
           } else {
             currentChapterId.value = null
           }
@@ -324,7 +326,7 @@ export default {
             if (firstChapter) {
               console.log('自动选择第一个章节:', firstChapter.title || firstChapter.id)
               currentChapterId.value = firstChapter.id
-              await storageService.setCurrentChapter(currentProject.value.id, firstChapter.id)
+              await chapterService.setCurrentChapter(currentProject.value.id, firstChapter.id)
             }
           }
         }

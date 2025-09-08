@@ -1,0 +1,152 @@
+/**
+ * 暗色主题样式
+ */
+
+@import '../variables.scss';
+
+body.dark-theme {
+  // 主色调
+  --primary-color: #60a5fa;
+  --primary-color-light: #93c5fd;
+  --primary-color-dark: #3b82f6;
+  
+  // 辅助色
+  --secondary-color: #9ca3af;
+  --secondary-color-light: #d1d5db;
+  --secondary-color-dark: #6b7280;
+  
+  // 功能色
+  --success-color: #34d399;
+  --info-color: #22d3ee;
+  --warning-color: #fbbf24;
+  --danger-color: #f87171;
+  
+  // 中性色
+  --text-color: #f3f4f6;
+  --text-color-secondary: #d1d5db;
+  --border-color: #4b5563;
+  --bg-color: #1f2937;
+  --bg-color-light: #374151;
+  --bg-color-dark: #111827;
+  
+  // 阴影
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  
+  // 暗色主题特定组件样式
+  .sidebar {
+    background-color: #111827;
+    color: #f3f4f6;
+    border-right-color: #4b5563;
+  }
+  
+  .editor-header {
+    background: #1f2937;
+    border-bottom-color: #4b5563;
+  }
+  
+  .settings-header,
+  .settings-nav,
+  .settings-panel,
+  .settings-footer {
+    background-color: #1f2937;
+    border-color: #4b5563;
+  }
+  
+  .settings-header h2,
+  .settings-section h3,
+  .setting-item label {
+    color: #f3f4f6;
+  }
+  
+  .settings-header p,
+  .setting-description,
+  .save-status {
+    color: #d1d5db;
+  }
+  
+  .nav-item {
+    color: #d1d5db;
+    
+    &:hover {
+      background-color: #374151;
+    }
+    
+    &.active {
+      background-color: #1e3a8a;
+      color: #60a5fa;
+    }
+  }
+  
+  .setting-item {
+    border-bottom-color: #4b5563;
+  }
+  
+  .storage-info {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+  }
+  
+  .modal-dialog {
+    background-color: #1f2937;
+    
+    h3 {
+      color: #f3f4f6;
+    }
+    
+    p {
+      color: #d1d5db;
+    }
+  }
+  
+  .node-content {
+    background: #1f2937;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .node-title {
+    color: #f3f4f6;
+  }
+  
+  .node-content-preview {
+    background: rgba(55, 65, 81, 0.5);
+    color: #d1d5db;
+  }
+  
+  // 暗色主题特定表单元素样式
+  input, select, textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+    
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+  
+  button.btn-primary {
+    background-color: #3b82f6;
+    
+    &:hover {
+      background-color: #2563eb;
+    }
+  }
+  
+  button.btn-secondary {
+    background-color: #6b7280;
+    
+    &:hover {
+      background-color: #4b5563;
+    }
+  }
+  
+  button.btn-danger {
+    background-color: #ef4444;
+    
+    &:hover {
+      background-color: #dc2626;
+    }
+  }
+}

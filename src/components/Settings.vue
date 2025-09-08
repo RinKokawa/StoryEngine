@@ -414,8 +414,10 @@
 </template>
 
 <script>
-import { storageService } from '@/services/storage'
+import { storageService, ServiceFactory } from '@/services/storage'
 import ToggleSwitch from './ToggleSwitch.vue'
+
+const settingsService = ServiceFactory.getSettingsService()
 
 export default {
   name: 'Settings',
@@ -466,7 +468,7 @@ export default {
   },
   methods: {
     async loadSettings() {
-      this.settings = { ...(await storageService.getSettings()) }
+      this.settings = { ...(await settingsService.getSettings()) }
       this.originalSettings = { ...this.settings }
     },
     
@@ -477,12 +479,8 @@ export default {
     },
     
     applySettings() {
-      // 应用主题
-      if (this.settings.theme === 'dark') {
-        document.body.classList.add('dark-theme')
-      } else {
-        document.body.classList.remove('dark-theme')
-      }
+      // 应用主题（委托服务，集中管理）
+      settingsService.applyTheme(this.settings.theme)
       
       // 应用字体设置到编辑器
       this.$emit('settings-changed', this.settings)
@@ -492,7 +490,7 @@ export default {
       this.saveStatus = 'saving'
       setTimeout(async () => {
         try {
-          await storageService.saveSettings(this.settings)
+          await settingsService.saveSettings(this.settings)
           this.saveStatus = 'saved'
           this.originalSettings = { ...this.settings }
           this.applySettings()

@@ -1,0 +1,95 @@
+// 颜色变量
+:root {
+  // 主色调
+  --primary-color: #2196f3;
+  --primary-color-light: #64b5f6;
+  --primary-color-dark: #1976d2;
+  
+  // 辅助色
+  --secondary-color: #6c757d;
+  --secondary-color-light: #868e96;
+  --secondary-color-dark: #5a6268;
+  
+  // 功能色
+  --success-color: #28a745;
+  --info-color: #17a2b8;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  
+  // 中性色
+  --text-color: #2c3e50;
+  --text-color-secondary: #6c757d;
+  --border-color: #e0e0e0;
+  --bg-color: #f8f9fa;
+  --bg-color-light: #ffffff;
+  --bg-color-dark: #e9ecef;
+  
+  // 阴影
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+  
+  // 字体
+  --font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-size-base: 14px;
+  --font-size-sm: 12px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-xxl: 24px;
+  
+  // 间距
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  // 边框
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 16px;
+  --border-width: 1px;
+  
+  // 动画
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+  
+  // 布局
+  --sidebar-width: 250px;
+  --sidebar-width-collapsed: 60px;
+  --header-height: 60px;
+  --footer-height: 50px;
+}
+
+// 暗色主题变量
+body.dark-theme {
+  // 主色调
+  --primary-color: #60a5fa;
+  --primary-color-light: #93c5fd;
+  --primary-color-dark: #3b82f6;
+  
+  // 辅助色
+  --secondary-color: #9ca3af;
+  --secondary-color-light: #d1d5db;
+  --secondary-color-dark: #6b7280;
+  
+  // 功能色
+  --success-color: #34d399;
+  --info-color: #22d3ee;
+  --warning-color: #fbbf24;
+  --danger-color: #f87171;
+  
+  // 中性色
+  --text-color: #f3f4f6;
+  --text-color-secondary: #d1d5db;
+  --border-color: #4b5563;
+  --bg-color: #1f2937;
+  --bg-color-light: #374151;
+  --bg-color-dark: #111827;
+  
+  // 阴影
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}

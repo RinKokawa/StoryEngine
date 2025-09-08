@@ -328,7 +328,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 
 import ProjectSelector from '../components/common/ProjectSelector.vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'WorldBuilding',
@@ -344,6 +344,8 @@ export default {
   },
   emits: ['project-changed'],
   setup(props, { emit }) {
+    const projectService = ServiceFactory.getProjectService()
+    const worldService = ServiceFactory.getWorldService()
     const selectedProjectId = ref('')
     const projects = ref([])
     const worldItems = ref([])
@@ -410,12 +412,12 @@ export default {
 
     // 方法
     const loadProjects = async () => {
-      projects.value = await storageService.getProjects()
+      projects.value = await projectService.getProjects()
     }
 
     const loadWorldItems = async () => {
       if (selectedProjectId.value) {
-        worldItems.value = await storageService.getProjectWorldItems(selectedProjectId.value) || []
+        worldItems.value = await worldService.getProjectWorldItems(selectedProjectId.value) || []
       } else {
         worldItems.value = []
       }
@@ -515,7 +517,7 @@ export default {
 
       if (showCreateDialog.value) {
         // 创建新设定
-        const created = await storageService.createWorldItem(selectedProjectId.value, worldData)
+        const created = await worldService.createWorldItem(selectedProjectId.value, worldData)
         if (created) {
           await loadWorldItems()
           closeDialogs()
@@ -524,7 +526,7 @@ export default {
         }
       } else {
         // 更新设定
-        const updated = await storageService.updateWorldItem(selectedProjectId.value, worldData)
+        const updated = await worldService.updateWorldItem(selectedProjectId.value, worldData)
         if (updated) {
           await loadWorldItems()
           if (selectedWorldItem.value && selectedWorldItem.value.id === worldData.id) {
@@ -539,7 +541,7 @@ export default {
 
     const deleteWorldItem = async (item) => {
       if (confirm(`确定要删除世界设定"${item.name}"吗？此操作不可恢复。`)) {
-        const success = await storageService.deleteWorldItem(selectedProjectId.value, item.id)
+        const success = await worldService.deleteWorldItem(selectedProjectId.value, item.id)
         if (success === undefined) {
           await loadWorldItems()
           if (selectedWorldItem.value && selectedWorldItem.value.id === item.id) {
@@ -565,7 +567,7 @@ export default {
         selectedProjectId.value = props.currentProject.id
         loadWorldItems()
       } else {
-        const currentProject = await storageService.getCurrentProject()
+        const currentProject = await projectService.getCurrentProject()
         if (currentProject) {
           selectedProjectId.value = currentProject.id
           loadWorldItems()

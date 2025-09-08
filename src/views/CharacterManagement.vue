@@ -318,7 +318,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 
 import ProjectSelector from '../components/common/ProjectSelector.vue'
-import { storageService } from '@/services/storage'
+import { ServiceFactory } from '@/services/storage'
 
 export default {
   name: 'CharacterManagement',
@@ -327,6 +327,8 @@ export default {
     ProjectSelector
   },
   setup() {
+    const projectService = ServiceFactory.getProjectService()
+    const characterService = ServiceFactory.getCharacterService()
     const selectedProjectId = ref('')
     const projects = ref([])
     const characters = ref([])
@@ -367,12 +369,12 @@ export default {
 
     // 方法
     const loadProjects = async () => {
-      projects.value = await storageService.getProjects()
+      projects.value = await projectService.getProjects()
     }
 
     const loadCharacters = async () => {
       if (selectedProjectId.value) {
-        characters.value = await storageService.getProjectCharacters(selectedProjectId.value) || []
+        characters.value = await characterService.getProjectCharacters(selectedProjectId.value) || []
       } else {
         characters.value = []
       }
@@ -442,7 +444,7 @@ export default {
 
       if (showCreateDialog.value) {
         // 创建新角色
-        const created = await storageService.createCharacter(selectedProjectId.value, characterData)
+        const created = await characterService.createCharacter(selectedProjectId.value, characterData)
         if (created) {
           await loadCharacters()
           closeDialogs()
@@ -451,7 +453,7 @@ export default {
         }
       } else {
         // 更新角色
-        const updated = await storageService.updateCharacter(selectedProjectId.value, characterData)
+        const updated = await characterService.updateCharacter(selectedProjectId.value, characterData)
         if (updated) {
           await loadCharacters()
           if (selectedCharacter.value && selectedCharacter.value.id === characterData.id) {
@@ -466,7 +468,7 @@ export default {
 
     const deleteCharacter = async (character) => {
       if (confirm(`确定要删除角色"${character.name}"吗？此操作不可恢复。`)) {
-        const success = await storageService.deleteCharacter(selectedProjectId.value, character.id)
+        const success = await characterService.deleteCharacter(selectedProjectId.value, character.id)
         if (success === undefined) {
           await loadCharacters()
           if (selectedCharacter.value && selectedCharacter.value.id === character.id) {
@@ -488,7 +490,7 @@ export default {
       loadProjects()
       
       // 如果有当前项目，自动选择
-      const currentProject = await storageService.getCurrentProject()
+      const currentProject = await projectService.getCurrentProject()
       if (currentProject) {
         selectedProjectId.value = currentProject.id
         loadCharacters()

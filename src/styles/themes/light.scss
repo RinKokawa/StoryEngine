@@ -1,0 +1,105 @@
+/**
+ * 亮色主题样式
+ */
+
+@import '../variables.scss';
+
+:root {
+  // 主色调
+  --primary-color: #2196f3;
+  --primary-color-light: #64b5f6;
+  --primary-color-dark: #1976d2;
+  
+  // 辅助色
+  --secondary-color: #6c757d;
+  --secondary-color-light: #868e96;
+  --secondary-color-dark: #5a6268;
+  
+  // 功能色
+  --success-color: #28a745;
+  --info-color: #17a2b8;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  
+  // 中性色
+  --text-color: #2c3e50;
+  --text-color-secondary: #6c757d;
+  --border-color: #e0e0e0;
+  --bg-color: #f8f9fa;
+  --bg-color-light: #ffffff;
+  --bg-color-dark: #e9ecef;
+  
+  // 阴影
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+// 亮色主题特定组件样式
+.sidebar {
+  background-color: #2c3e50;
+  color: white;
+}
+
+.editor-header {
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.settings-header {
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.settings-nav {
+  background: white;
+  border-right: 1px solid #e9ecef;
+}
+
+.settings-panel {
+  background: white;
+}
+
+.modal-dialog {
+  background: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.node-content {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+// 亮色主题特定表单元素样式
+input, select, textarea {
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #2c3e50;
+}
+
+button.btn-primary {
+  background-color: #2196f3;
+  color: white;
+  
+  &:hover {
+    background-color: #1976d2;
+  }
+}
+
+button.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  
+  &:hover {
+    background-color: #5a6268;
+  }
+}
+
+button.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  
+  &:hover {
+    background-color: #c82333;
+  }
+}

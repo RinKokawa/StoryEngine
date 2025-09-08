@@ -1,0 +1,147 @@
+// 弹性布局混合器
+@mixin flex($direction: row, $justify: flex-start, $align: stretch, $wrap: nowrap) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+  flex-wrap: $wrap;
+}
+
+// 绝对定位混合器
+@mixin absolute($top: auto, $right: auto, $bottom: auto, $left: auto) {
+  position: absolute;
+  top: $top;
+  right: $right;
+  bottom: $bottom;
+  left: $left;
+}
+
+// 固定定位混合器
+@mixin fixed($top: auto, $right: auto, $bottom: auto, $left: auto) {
+  position: fixed;
+  top: $top;
+  right: $right;
+  bottom: $bottom;
+  left: $left;
+}
+
+// 文本截断混合器
+@mixin text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 多行文本截断混合器
+@mixin text-truncate-multiline($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 滚动条样式混合器
+@mixin scrollbar($width: 6px, $track-color: #f1f1f1, $thumb-color: #c1c1c1, $thumb-hover-color: #a8a8a8) {
+  &::-webkit-scrollbar {
+    width: $width;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $track-color;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $thumb-color;
+    border-radius: $width / 2;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: $thumb-hover-color;
+  }
+}
+
+// 响应式断点混合器
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == "xs" {
+    @media (max-width: 575.98px) { @content; }
+  } @else if $breakpoint == "sm" {
+    @media (min-width: 576px) and (max-width: 767.98px) { @content; }
+  } @else if $breakpoint == "md" {
+    @media (min-width: 768px) and (max-width: 991.98px) { @content; }
+  } @else if $breakpoint == "lg" {
+    @media (min-width: 992px) and (max-width: 1199.98px) { @content; }
+  } @else if $breakpoint == "xl" {
+    @media (min-width: 1200px) { @content; }
+  }
+}
+
+// 按钮样式混合器
+@mixin button-style($bg-color, $text-color, $hover-bg-color) {
+  background-color: $bg-color;
+  color: $text-color;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+  
+  &:hover {
+    background-color: $hover-bg-color;
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// 卡片样式混合器
+@mixin card {
+  background-color: var(--bg-color-light);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
+  transition: box-shadow var(--transition-normal);
+  
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// 输入框样式混合器
+@mixin input {
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  color: var(--text-color);
+  background-color: var(--bg-color-light);
+  transition: border-color var(--transition-normal);
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+  
+  &:disabled {
+    background-color: var(--bg-color-dark);
+    cursor: not-allowed;
+  }
+}
+
+// 渐变背景混合器
+@mixin gradient($start-color, $end-color, $direction: to right) {
+  background: linear-gradient($direction, $start-color, $end-color);
+}
+
+// 阴影混合器
+@mixin shadow($level: 'md') {
+  @if $level == 'sm' {
+    box-shadow: var(--shadow-sm);
+  } @else if $level == 'md' {
+    box-shadow: var(--shadow-md);
+  } @else if $level == 'lg' {
+    box-shadow: var(--shadow-lg);
+  }
+}
