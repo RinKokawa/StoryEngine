@@ -2,7 +2,7 @@
  * 暗色主题样式
  */
 
-@import '../variables.scss';
+@use '../variables';
 
 body.dark-theme {
   // 主色调
