@@ -10,43 +10,43 @@
     <nav class="sidebar-nav">
       <ul>
         <li class="nav-item">
-          <a href="#" class="nav-link" :class="{ active: currentPage === 'dashboard' }" @click="navigate('dashboard')">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'dashboard' }" @click="navigate('dashboard')" :title="'仪表盘：查看项目总体概览与最近活动'">
             <i class="icon">📊</i>
             <span v-show="!isCollapsed">仪表盘</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" :class="{ active: currentPage === 'projects' }" @click="navigate('projects')">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'projects' }" @click="navigate('projects')" :title="'项目管理：创建、打开与管理项目'">
             <i class="icon">📚</i>
             <span v-show="!isCollapsed">项目管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" :class="{ active: currentPage === 'editor' }" @click="navigate('editor')">
+          <a href="#" class="nav-link" :class="{ active: currentPage === 'editor' }" @click="navigate('editor')" :title="'故事编辑：撰写章节与进行内容编辑'">
             <i class="icon">📖</i>
             <span v-show="!isCollapsed">故事编辑</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('outline')">
+          <a href="#" class="nav-link" @click="navigate('outline')" :title="'大纲管理：规划故事结构与章节层级'">
             <i class="icon">📋</i>
             <span v-show="!isCollapsed">大纲管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('characters')">
+          <a href="#" class="nav-link" @click="navigate('characters')" :title="'角色管理：维护角色档案与关系'">
             <i class="icon">👥</i>
             <span v-show="!isCollapsed">角色管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('worldview')">
+          <a href="#" class="nav-link" @click="navigate('worldview')" :title="'世界设定：管理世界观、设定与术语'">
             <i class="icon">🌍</i>
             <span v-show="!isCollapsed">世界设定</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('settings')">
+          <a href="#" class="nav-link" @click="navigate('settings')" :title="'设置：配置主题、偏好与应用选项'">
             <i class="icon">⚙️</i>
             <span v-show="!isCollapsed">设置</span>
           </a>
