@@ -55,7 +55,7 @@
             @chapter-created="handleChapterCreated"
             @chapter-updated="handleChapterUpdated"
             @chapter-deleted="handleChapterDeleted"
-            @data-loaded="handleDataLoaded"
+            @data-updated="handleDataUpdated"
           />
         </div>
       </ResizableSidebar>
@@ -309,29 +309,29 @@ export default {
       }
     }
 
-    // 处理数据加载完成
-    const handleDataLoaded = async (data) => {
-      console.log('VolumeChapterSelector数据加载完成:', data)
+    // 处理数据更新
+    const handleDataUpdated = async () => {
+      console.log('VolumeChapterSelector数据已更新，重新加载章节列表')
       
       if (!currentProject.value) return
       
       try {
-        // 更新本地章节数据
-        if (data.chapters && data.chapters.length > 0) {
-          chapters.value = data.chapters
-          
-          // 如果当前没有选中章节，自动选择第一个章节
-          if (!currentChapterId.value) {
-            const firstChapter = data.chapters[0]
-            if (firstChapter) {
-              console.log('自动选择第一个章节:', firstChapter.title || firstChapter.id)
-              currentChapterId.value = firstChapter.id
-              await chapterService.setCurrentChapter(currentProject.value.id, firstChapter.id)
-            }
+        // 重新加载章节列表
+        await loadChapters()
+        
+        // 如果当前章节不存在了，选择第一个可用章节
+        if (currentChapterId.value && !chapters.value.find(c => c.id === currentChapterId.value)) {
+          if (chapters.value.length > 0) {
+            currentChapterId.value = chapters.value[0].id
+            await chapterService.setCurrentChapter(currentProject.value.id, chapters.value[0].id)
+            console.log('当前章节不存在，切换到第一个章节:', chapters.value[0].id)
+          } else {
+            currentChapterId.value = null
+            console.log('无可用章节')
           }
         }
       } catch (error) {
-        console.error('处理数据加载完成事件失败:', error)
+        console.error('处理数据更新事件失败:', error)
       }
     }
 
@@ -451,7 +451,7 @@ export default {
       handleChapterCreated,
       handleChapterUpdated,
       handleChapterDeleted,
-      handleDataLoaded,
+      handleDataUpdated,
       retryLoad,
       startAiPanelResize,
       resetAiPanelWidth

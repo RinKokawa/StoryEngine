@@ -218,7 +218,7 @@ export default {
       default: null
     }
   },
-  emits: ['chapter-selected', 'data-updated'],
+  emits: ['chapter-selected', 'chapter-created', 'chapter-updated', 'chapter-deleted', 'data-updated'],
   setup(props, { emit }) {
     // 响应式数据
     const volumes = ref([])
@@ -521,6 +521,8 @@ export default {
           if (index !== -1) {
             chapters.value[index] = updatedChapter
           }
+          // 更新章节时也发出事件
+          emit('chapter-updated', updatedChapter)
         } else {
           // 创建新章节
           const newChapterData = {
@@ -539,6 +541,8 @@ export default {
           )
           if (newChapter && !chapters.value.some(c => c.id === newChapter.id)) {
             chapters.value.push(newChapter)
+            // 发出章节创建事件，让父组件知道有新章节
+            emit('chapter-created', newChapter)
           }
         }
 
@@ -564,6 +568,8 @@ export default {
         const chapterService = ServiceFactory.getChapterService()
         await chapterService.deleteChapter(props.projectId, chapterId)
         chapters.value = chapters.value.filter(c => c.id !== chapterId)
+        // 发出章节删除事件
+        emit('chapter-deleted', chapterId)
         emit('data-updated')
       } catch (error) {
         console.error('删除章节失败:', error)
