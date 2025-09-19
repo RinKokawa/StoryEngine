@@ -92,6 +92,20 @@ export class ProjectService extends BaseStorageService {
         autoIndent: true
       }
     };
+
+    // 处理封面：若传入 DataURL，则写入持久化两份（主文件 + 时间戳备份）
+    if (data.coverDataUrl) {
+      try {
+        const mainCoverFile = `project_${project.id}_cover.txt`;
+        const backupCoverFile = `project_${project.id}_cover_${Date.now()}.bak.txt`;
+        await this.adapter.write(mainCoverFile, data.coverDataUrl);
+        await this.adapter.write(backupCoverFile, data.coverDataUrl);
+        project.cover = data.coverDataUrl;
+        project.coverFile = mainCoverFile;
+      } catch (err) {
+        console.warn('保存封面失败，但不阻塞项目创建:', err);
+      }
+    }
     
     await this.saveProject(project);
     return project;
@@ -107,10 +121,25 @@ export class ProjectService extends BaseStorageService {
     if (!project) {
       throw new AppError('项目不存在');
     }
-    
-    const updatedProject = { ...project, ...data, lastModified: new Date().toISOString() };
-    await this.saveProject(updatedProject);
-    return updatedProject;
+
+    const updated: Project = { ...project, ...data, lastModified: new Date().toISOString() };
+
+    // 如有新的封面 DataURL，写入持久化并更新元数据
+    if (data.coverDataUrl) {
+      try {
+        const mainCoverFile = `project_${project.id}_cover.txt`;
+        const backupCoverFile = `project_${project.id}_cover_${Date.now()}.bak.txt`;
+        await this.adapter.write(mainCoverFile, data.coverDataUrl);
+        await this.adapter.write(backupCoverFile, data.coverDataUrl);
+        updated.cover = data.coverDataUrl;
+        updated.coverFile = mainCoverFile;
+      } catch (err) {
+        console.warn('更新封面失败，保持原封面:', err);
+      }
+    }
+
+    await this.saveProject(updated);
+    return updated;
   }
 
   /**

@@ -16,6 +16,8 @@ export interface Project {
   lastModified: string
   settings: ProjectSettings
   chapters?: number // 章节数量
+  cover?: string // DataURL，用于界面显示
+  coverFile?: string // 持久化存储中的文件名
 }
 
 export interface ProjectSettings {
@@ -31,10 +33,12 @@ export interface CreateProjectData {
   type: ProjectType
   description?: string
   targetWords: number
+  coverDataUrl?: string // 可选：新建时的封面 DataURL
 }
 
 export interface UpdateProjectData extends Partial<Project> {
   id: string
+  coverDataUrl?: string // 可选：更新时的封面 DataURL
 }
 
 export interface Volume {

@@ -15,6 +15,9 @@
         class="project-card"
         @click="selectProject(project)"
       >
+        <div v-if="project.cover" class="project-cover">
+          <img :src="project.cover" alt="封面" />
+        </div>
         <div class="project-header">
           <div class="project-info">
             <h3>{{ project.name }}</h3>
@@ -87,6 +90,14 @@
         
         <div class="dialog-content">
           <div class="form-group">
+            <label>封面图片</label>
+            <input type="file" accept="image/*" @change="onCoverChange">
+            <div v-if="projectForm.coverDataUrl" class="cover-preview">
+              <img :src="projectForm.coverDataUrl" alt="封面预览" />
+              <button class="remove-cover-btn" @click="removeCover" type="button">移除封面</button>
+            </div>
+          </div>
+          <div class="form-group">
             <label>项目名称</label>
             <input 
               v-model="projectForm.name" 
@@ -155,7 +166,8 @@ export default {
         name: '',
         genre: '',
         targetWords: 50000,
-        description: ''
+        description: '',
+        coverDataUrl: ''
       },
       projects: [],
       projectStore: null
@@ -168,6 +180,18 @@ export default {
     })
   },
   methods: {
+    onCoverChange(e) {
+      const file = e.target.files && e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        this.projectForm.coverDataUrl = String(reader.result || '')
+      }
+      reader.readAsDataURL(file)
+    },
+    removeCover() {
+      this.projectForm.coverDataUrl = ''
+    },
     async loadProjects() {
       await this.projectStore.loadProjects()
       this.projects = this.projectStore.projects
@@ -183,7 +207,8 @@ export default {
         name: project.name,
         genre: project.genre,
         targetWords: project.targetWords,
-        description: project.description || ''
+        description: project.description || '',
+        coverDataUrl: project.cover || ''
       }
     },
     async deleteProject(project) {
@@ -207,14 +232,16 @@ export default {
             name: this.projectForm.name,
             type: this.projectForm.genre || '其他',
             targetWords: Number(this.projectForm.targetWords),
-            description: this.projectForm.description || ''
+            description: this.projectForm.description || '',
+            coverDataUrl: this.projectForm.coverDataUrl || undefined
           })
         } else {
           await this.projectStore.createProject({
             name: this.projectForm.name,
             type: this.projectForm.genre || '其他',
             targetWords: Number(this.projectForm.targetWords),
-            description: this.projectForm.description || ''
+            description: this.projectForm.description || '',
+            coverDataUrl: this.projectForm.coverDataUrl || undefined
           })
         }
         await this.projectStore.loadProjects()
@@ -231,7 +258,8 @@ export default {
         name: '',
         genre: '',
         targetWords: 50000,
-        description: ''
+        description: '',
+        coverDataUrl: ''
       }
     },
     getStatusText(status) {
@@ -609,5 +637,46 @@ export default {
     justify-content: space-between;
     align-items: center;
   }
+}
+.project-cover {
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.project-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 追加：封面预览样式 */
+.cover-preview {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cover-preview img {
+  width: 96px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+}
+.remove-cover-btn {
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid #e5e5e5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.remove-cover-btn:hover {
+  background: #e9ecef;
 }
 </style>
