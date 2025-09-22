@@ -182,7 +182,7 @@ export function Injectable(name?: string) {
  * 装饰器：注入依赖
  */
 export function Inject(serviceName: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex: number) {
+  return function (target: any, _propertyKey: string | symbol | undefined, parameterIndex: number) {
     // 这里可以实现参数注入的逻辑
     // 由于TypeScript装饰器的限制，这里提供一个简化版本
     // 注意：需要安装 reflect-metadata 包才能使用 Reflect.getMetadata

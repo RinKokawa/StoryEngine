@@ -6,7 +6,7 @@
 import { EnhancedBaseStorageService } from '../base/EnhancedBaseStorageService';
 import { StorageAdapter } from '../../adapters/StorageInterfaces';
 import { WritingDateUtils, DateUtils } from '@/utils/dateUtils';
-import { AppError } from '@/types';
+
 
 export interface WritingStats {
   projectId: string;
@@ -98,7 +98,6 @@ export class EnhancedStatsService extends EnhancedBaseStorageService {
     const today = DateUtils.getTodayString();
     
     // 更新今日字数
-    const previousTodayWords = stats.dailyWords[today] || 0;
     stats.dailyWords[today] = (stats.dailyWords[today] || 0) + wordCount;
     
     // 更新总字数

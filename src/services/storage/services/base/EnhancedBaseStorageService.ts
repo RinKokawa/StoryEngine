@@ -221,7 +221,6 @@ export class EnhancedBaseStorageService {
    */
   protected cleanupExpiredCache(): number {
     let cleanedCount = 0;
-    const now = Date.now();
     
     for (const [key, entry] of this.cache.entries()) {
       if (this.cacheStrategy.shouldInvalidate(key, entry.timestamp)) {

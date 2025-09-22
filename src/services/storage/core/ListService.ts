@@ -154,7 +154,7 @@ export abstract class ListService<T extends ListItem, C extends CreateData, U ex
    * 删除后的清理工作
    * @param id 被删除项目的ID
    */
-  protected async onAfterDelete(id: string): Promise<void> {
+  protected async onAfterDelete(_id: string): Promise<void> {
     // 子类可以重写此方法来执行特定的清理工作
   }
 

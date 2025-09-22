@@ -22,11 +22,11 @@ export class DefaultCacheStrategy implements CacheStrategy {
     this.defaultTimeout = defaultTimeout;
   }
 
-  getCacheTimeout(key: string): number {
+  getCacheTimeout(_key: string): number {
     return this.defaultTimeout;
   }
 
-  shouldCache(key: string, data: any): boolean {
+  shouldCache(_key: string, data: any): boolean {
     return data !== null && data !== undefined;
   }
 
@@ -74,7 +74,7 @@ export class BusinessCacheStrategy implements CacheStrategy {
     return this.defaultTimeout;
   }
 
-  shouldCache(key: string, data: any): boolean {
+  shouldCache(_key: string, data: any): boolean {
     if (data === null || data === undefined) {
       return false;
     }
@@ -124,7 +124,7 @@ export class MemoryAwareCacheStrategy implements CacheStrategy {
     this.defaultTimeout = defaultTimeout;
   }
 
-  getCacheTimeout(key: string): number {
+  getCacheTimeout(_key: string): number {
     // 内存紧张时缩短缓存时间
     const memoryPressure = this.currentCacheSize / this.maxCacheSize;
     if (memoryPressure > 0.8) {
@@ -135,7 +135,7 @@ export class MemoryAwareCacheStrategy implements CacheStrategy {
     return this.defaultTimeout;
   }
 
-  shouldCache(key: string, data: any): boolean {
+  shouldCache(_key: string, data: any): boolean {
     if (data === null || data === undefined) {
       return false;
     }

@@ -35,7 +35,7 @@ export class DefaultCacheStrategy implements CacheStrategy {
     return this.keyTimeouts.get(key) || this.defaultTimeout;
   }
 
-  shouldCache(key: string): boolean {
+  shouldCache(_key: string): boolean {
     return true;
   }
 
@@ -66,7 +66,7 @@ export class RealtimeCacheStrategy implements CacheStrategy {
     return this.realtimeKeys.has(key) ? 10 * 1000 : this.defaultTimeout;
   }
 
-  shouldCache(key: string): boolean {
+  shouldCache(_key: string): boolean {
     return true;
   }
 
@@ -91,11 +91,11 @@ export class RealtimeCacheStrategy implements CacheStrategy {
  * 无缓存策略 - 用于测试或特殊场景
  */
 export class NoCacheStrategy implements CacheStrategy {
-  getTimeout(key: string): number {
+  getTimeout(_key: string): number {
     return 0;
   }
 
-  shouldCache(key: string): boolean {
+  shouldCache(_key: string): boolean {
     return false;
   }
 }
