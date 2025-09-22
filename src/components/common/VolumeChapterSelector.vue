@@ -133,6 +133,8 @@ export default {
     const handleCreateVolume = async (volumeData) => {
       try {
         const newVolume = await createVolume(volumeData)
+        // 创建成功后立即刷新数据以确保界面更新
+        await refreshData()
         emit('data-updated')
         return newVolume
       } catch (error) {
@@ -144,6 +146,8 @@ export default {
     const handleEditVolume = async (volumeData) => {
       try {
         const updatedVolume = await updateVolume(volumeData)
+        // 更新成功后立即刷新数据以确保界面更新
+        await refreshData()
         emit('data-updated')
         return updatedVolume
       } catch (error) {
@@ -155,6 +159,8 @@ export default {
     const handleDeleteVolume = async (volumeId) => {
       try {
         await deleteVolume(volumeId)
+        // 删除成功后立即刷新数据以确保界面更新
+        await refreshData()
         emit('data-updated')
       } catch (error) {
         console.error('删除卷失败:', error)
@@ -165,6 +171,8 @@ export default {
     const handleCreateChapter = async (volumeId, chapterData) => {
       try {
         const newChapter = await createChapter(volumeId, chapterData)
+        // 创建成功后立即刷新数据以确保界面更新
+        await refreshData()
         emit('chapter-created', newChapter)
         emit('data-updated')
         return newChapter
@@ -182,6 +190,8 @@ export default {
         }
         
         const updatedChapter = await updateChapter(chapterData)
+        // 更新成功后立即刷新数据以确保界面更新
+        await refreshData()
         emit('chapter-updated', updatedChapter)
         emit('data-updated')
         return updatedChapter
@@ -194,6 +204,8 @@ export default {
     const handleDeleteChapter = async (chapterId) => {
       try {
         await deleteChapter(chapterId)
+        // 删除成功后立即刷新数据以确保界面更新
+        await refreshData()
         emit('chapter-deleted', chapterId)
         emit('data-updated')
       } catch (error) {

@@ -37,7 +37,7 @@
           name="chapters" 
           :volume="volume" 
           :chapters="getVolumeChapters(volume.id)"
-          :onCreateChapter="() => handleCreateChapter(volume.id)"
+          :onCreateChapter="(chapterData) => handleCreateChapter(volume.id, chapterData)"
         />
       </div>
     </div>
@@ -159,8 +159,8 @@ export default {
       }
     }
 
-    const handleCreateChapter = (volumeId) => {
-      emit('create-chapter', volumeId)
+    const handleCreateChapter = (volumeId, chapterData) => {
+      emit('create-chapter', volumeId, chapterData)
     }
 
     const saveVolume = async () => {

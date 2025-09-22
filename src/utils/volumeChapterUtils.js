@@ -104,8 +104,7 @@ export function validateVolumeData(volumeData) {
 export function validateChapterData(chapterData) {
   return chapterData && 
          chapterData.title && 
-         chapterData.title.trim().length > 0 &&
-         chapterData.volumeId
+         chapterData.title.trim().length > 0
 }
 
 /**
