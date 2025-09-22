@@ -1,0 +1,617 @@
+/* 卷章管理组件样式 */
+
+.vscode-file-explorer {
+  height: 100%;
+  background: var(--vscode-sideBar-background, #252526);
+  color: var(--vscode-sideBar-foreground, #cccccc);
+  font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* 标题栏 */
+.explorer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--vscode-sideBarSectionHeader-background, #2d2d30);
+  border-bottom: 1px solid var(--vscode-sideBar-border, #3e3e42);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.folder-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.1s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground, #37373d);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 加载和错误状态 */
+.loading-state, .error-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--vscode-progressBar-background, #0e70c0);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon {
+  color: var(--vscode-errorForeground, #f85149);
+}
+
+.retry-btn {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.retry-btn:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+/* 文件树 */
+.file-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.tree-item {
+  position: relative;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 4px 12px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  min-height: 22px;
+}
+
+.tree-node:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.volume-item .tree-node {
+  font-weight: 500;
+}
+
+.chapter-item.selected .tree-node {
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+  color: var(--vscode-list-activeSelectionForeground,rgb(0, 0, 0));
+}
+
+.node-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-indent {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.chevron-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.folder-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  flex-shrink: 0;
+}
+
+.folder-icon.open {
+  color: var(--vscode-tree-tableOddRowsBackground, #dcb67a);
+}
+
+.file-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  flex-shrink: 0;
+}
+
+.add-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  flex-shrink: 0;
+}
+
+.node-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-label {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-style: italic;
+}
+
+.node-badge {
+  background: var(--vscode-badge-background, #4d4d4d);
+  color: var(--vscode-badge-foreground, #ffffff);
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.node-meta {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.node-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.tree-node:hover .node-actions {
+  opacity: 1;
+}
+
+.node-actions .action-btn {
+  padding: 2px;
+}
+
+.node-actions .action-btn.delete:hover {
+  background: var(--vscode-errorBackground, #5a1d1d);
+  color: var(--vscode-errorForeground, #f85149);
+}
+
+/* 树形结构缩进 */
+.tree-children {
+  margin-left: 0;
+}
+
+.tree-children .tree-node {
+  padding-left: 28px;
+}
+
+/* 添加项目样式 */
+.add-item .tree-node:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.add-item .tree-node:hover .add-label {
+  color: var(--vscode-foreground, #cccccc);
+}
+
+/* 空状态 */
+.empty-item {
+  pointer-events: none;
+}
+
+.empty-text {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  gap: 12px;
+}
+
+.empty-icon {
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  opacity: 0.6;
+}
+
+.create-first-btn {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.create-first-btn:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+/* 模态框 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-dialog {
+  background: var(--vscode-editorWidget-background, #2d2d30);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 6px;
+  width: 400px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+  background: var(--vscode-editorGroupHeader-tabsBackground, #2d2d30);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-icon-foreground, #c5c5c5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+}
+
+.close-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, #37373d);
+}
+
+.modal-form {
+  padding: 20px;
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, #007acc);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vscode-editorWidget-border, #454545);
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.1s ease;
+}
+
+.modal-actions button[type="button"] {
+  background: var(--vscode-button-secondaryBackground, #5a5d5e);
+  color: var(--vscode-button-secondaryForeground, #ffffff);
+}
+
+.modal-actions button[type="button"]:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground, #6c7070);
+}
+
+.modal-actions button.primary {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.modal-actions button.primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.modal-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 滚动条样式 */
+.file-tree::-webkit-scrollbar,
+.volume-selector::-webkit-scrollbar,
+.chapter-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.file-tree::-webkit-scrollbar-track,
+.volume-selector::-webkit-scrollbar-track,
+.chapter-list::-webkit-scrollbar-track {
+  background: var(--vscode-scrollbarSlider-background, #79797966);
+}
+
+.file-tree::-webkit-scrollbar-thumb,
+.volume-selector::-webkit-scrollbar-thumb,
+.chapter-list::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background, #79797966);
+  border-radius: 5px;
+}
+
+.file-tree::-webkit-scrollbar-thumb:hover,
+.volume-selector::-webkit-scrollbar-thumb:hover,
+.chapter-list::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, #646464b3);
+}
+
+/* 默认深色主题变量 */
+:root {
+  --vscode-sideBar-background: #252526;
+  --vscode-sideBar-foreground: #cccccc;
+  --vscode-sideBarSectionHeader-background: #2d2d30;
+  --vscode-sideBar-border: #3e3e42;
+  --vscode-icon-foreground: #c5c5c5;
+  --vscode-toolbar-hoverBackground: #37373d;
+  --vscode-list-hoverBackground: #2a2d2e;
+  --vscode-list-activeSelectionBackground: #094771;
+  --vscode-list-activeSelectionForeground:rgb(0, 0, 0);
+  --vscode-descriptionForeground: #9d9d9d;
+  --vscode-progressBar-background: #0e70c0;
+  --vscode-errorForeground: #f85149;
+  --vscode-button-background: #0e639c;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #1177bb;
+  --vscode-badge-background: #4d4d4d;
+  --vscode-badge-foreground: #ffffff;
+  --vscode-editorWidget-background: #2d2d30;
+  --vscode-editorWidget-border: #454545;
+  --vscode-editorGroupHeader-tabsBackground: #2d2d30;
+  --vscode-input-background: #3c3c3c;
+  --vscode-input-foreground: #cccccc;
+  --vscode-input-border: #3c3c3c;
+  --vscode-focusBorder: #007acc;
+  --vscode-button-secondaryBackground: #5a5d5e;
+  --vscode-button-secondaryForeground: #ffffff;
+  --vscode-button-secondaryHoverBackground: #6c7070;
+}
+
+/* 浅色主题适配 */
+body:not(.dark-theme):not(.auto-theme) .vscode-file-explorer,
+body.light-theme .vscode-file-explorer {
+  --vscode-sideBar-background: #f3f3f3;
+  --vscode-sideBar-foreground: #383a42;
+  --vscode-sideBarSectionHeader-background: #e8e8e8;
+  --vscode-sideBar-border: #e5e5e5;
+  --vscode-icon-foreground: #424242;
+  --vscode-toolbar-hoverBackground: #e8e8e8;
+  --vscode-list-hoverBackground: #e8e8e8;
+  --vscode-list-activeSelectionBackground: #0078d4;
+  --vscode-list-activeSelectionForeground:rgb(0, 0, 0);
+  --vscode-descriptionForeground: #717171;
+  --vscode-progressBar-background: #0078d4;
+  --vscode-errorForeground: #e51400;
+  --vscode-button-background: #0078d4;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #106ebe;
+  --vscode-badge-background: #c4c4c4;
+  --vscode-badge-foreground: #333333;
+  --vscode-editorWidget-background: #f8f8f8;
+  --vscode-editorWidget-border: #c8c8c8;
+  --vscode-editorGroupHeader-tabsBackground: #f8f8f8;
+  --vscode-input-background: #ffffff;
+  --vscode-input-foreground: #383a42;
+  --vscode-input-border: #cecece;
+  --vscode-focusBorder: #0078d4;
+  --vscode-button-secondaryBackground: #e1e1e1;
+  --vscode-button-secondaryForeground: #383a42;
+  --vscode-button-secondaryHoverBackground: #d6d6d6;
+}
+
+/* 深色主题适配 */
+body.dark-theme .vscode-file-explorer {
+  --vscode-sideBar-background: #252526;
+  --vscode-sideBar-foreground: #cccccc;
+  --vscode-sideBarSectionHeader-background: #2d2d30;
+  --vscode-sideBar-border: #3e3e42;
+  --vscode-icon-foreground: #c5c5c5;
+  --vscode-toolbar-hoverBackground: #37373d;
+  --vscode-list-hoverBackground: #2a2d2e;
+  --vscode-list-activeSelectionBackground: #094771;
+  --vscode-list-activeSelectionForeground:rgb(255, 255, 255);
+  --vscode-descriptionForeground: #9d9d9d;
+  --vscode-progressBar-background: #0e70c0;
+  --vscode-errorForeground: #f85149;
+  --vscode-button-background: #0e639c;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #1177bb;
+  --vscode-badge-background: #4d4d4d;
+  --vscode-badge-foreground: #ffffff;
+  --vscode-editorWidget-background: #2d2d30;
+  --vscode-editorWidget-border: #454545;
+  --vscode-editorGroupHeader-tabsBackground: #2d2d30;
+  --vscode-input-background: #3c3c3c;
+  --vscode-input-foreground: #cccccc;
+  --vscode-input-border: #3c3c3c;
+  --vscode-focusBorder: #007acc;
+  --vscode-button-secondaryBackground: #5a5d5e;
+  --vscode-button-secondaryForeground: #ffffff;
+  --vscode-button-secondaryHoverBackground: #6c7070;
+}
+
+/* 自动主题适配 */
+body.auto-theme .vscode-file-explorer {
+  --vscode-sideBar-background: #f3f3f3;
+  --vscode-sideBar-foreground: #383a42;
+  --vscode-sideBarSectionHeader-background: #e8e8e8;
+  --vscode-sideBar-border: #e5e5e5;
+  --vscode-icon-foreground: #424242;
+  --vscode-toolbar-hoverBackground: #e8e8e8;
+  --vscode-list-hoverBackground: #e8e8e8;
+  --vscode-list-activeSelectionBackground: #0078d4;
+  --vscode-list-activeSelectionForeground:rgb(0, 0, 0);
+  --vscode-descriptionForeground: #717171;
+  --vscode-progressBar-background: #0078d4;
+  --vscode-errorForeground: #e51400;
+  --vscode-button-background: #0078d4;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #106ebe;
+  --vscode-badge-background: #c4c4c4;
+  --vscode-badge-foreground: #333333;
+  --vscode-editorWidget-background: #f8f8f8;
+  --vscode-editorWidget-border: #c8c8c8;
+  --vscode-editorGroupHeader-tabsBackground: #f8f8f8;
+  --vscode-input-background: #ffffff;
+  --vscode-input-foreground: #383a42;
+  --vscode-input-border: #cecece;
+  --vscode-focusBorder: #0078d4;
+  --vscode-button-secondaryBackground: #e1e1e1;
+  --vscode-button-secondaryForeground: #383a42;
+  --vscode-button-secondaryHoverBackground: #d6d6d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.auto-theme .vscode-file-explorer {
+    --vscode-sideBar-background: #252526;
+    --vscode-sideBar-foreground: #cccccc;
+    --vscode-sideBarSectionHeader-background: #2d2d30;
+    --vscode-sideBar-border: #3e3e42;
+    --vscode-icon-foreground: #c5c5c5;
+    --vscode-toolbar-hoverBackground: #37373d;
+    --vscode-list-hoverBackground: #2a2d2e;
+    --vscode-list-activeSelectionBackground: #094771;
+    --vscode-list-activeSelectionForeground: #ffffff;
+    --vscode-descriptionForeground: #9d9d9d;
+    --vscode-progressBar-background: #0e70c0;
+    --vscode-errorForeground: #f85149;
+    --vscode-button-background: #0e639c;
+    --vscode-button-foreground: #ffffff;
+    --vscode-button-hoverBackground: #1177bb;
+    --vscode-badge-background: #4d4d4d;
+    --vscode-badge-foreground: #ffffff;
+    --vscode-editorWidget-background: #2d2d30;
+    --vscode-editorWidget-border: #454545;
+    --vscode-editorGroupHeader-tabsBackground: #2d2d30;
+    --vscode-input-background: #3c3c3c;
+    --vscode-input-foreground: #cccccc;
+    --vscode-input-border: #3c3c3c;
+    --vscode-focusBorder: #007acc;
+    --vscode-button-secondaryBackground: #5a5d5e;
+    --vscode-button-secondaryForeground: #ffffff;
+    --vscode-button-secondaryHoverBackground: #6c7070;
+  }
+}
