@@ -10,43 +10,74 @@
     <nav class="sidebar-nav">
       <ul>
         <li class="nav-item">
-          <a href="#" class="nav-link" :class="{ active: currentPage === 'dashboard' }" @click="navigate('dashboard')" :title="'仪表盘：查看项目总体概览与最近活动'">
+          <a href="#"
+             class="nav-link"
+             :class="{ active: currentPage === 'dashboard' }"
+             @click="navigate('dashboard')"
+             :title="'仪表盘：查看项目总体概览与最近活动'"
+             data-tooltip="仪表盘">
             <i class="icon">📊</i>
             <span v-show="!isCollapsed">仪表盘</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" :class="{ active: currentPage === 'projects' }" @click="navigate('projects')" :title="'项目管理：创建、打开与管理项目'">
+          <a href="#"
+             class="nav-link"
+             :class="{ active: currentPage === 'projects' }"
+             @click="navigate('projects')"
+             :title="'项目管理：创建、打开与管理项目'"
+             data-tooltip="项目管理">
             <i class="icon">📚</i>
             <span v-show="!isCollapsed">项目管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" :class="{ active: currentPage === 'editor' }" @click="navigate('editor')" :title="'故事编辑：撰写章节与进行内容编辑'">
+          <a href="#"
+             class="nav-link"
+             :class="{ active: currentPage === 'editor' }"
+             @click="navigate('editor')"
+             :title="'故事编辑：撰写章节与进行内容编辑'"
+             data-tooltip="故事编辑">
             <i class="icon">📖</i>
             <span v-show="!isCollapsed">故事编辑</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('outline')" :title="'大纲管理：规划故事结构与章节层级'">
+          <a href="#"
+             class="nav-link"
+             @click="navigate('outline')"
+             :title="'大纲管理：规划故事结构与章节层级'"
+             data-tooltip="大纲管理">
             <i class="icon">📋</i>
             <span v-show="!isCollapsed">大纲管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('characters')" :title="'角色管理：维护角色档案与关系'">
+          <a href="#"
+             class="nav-link"
+             @click="navigate('characters')"
+             :title="'角色管理：维护角色档案与关系'"
+             data-tooltip="角色管理">
             <i class="icon">👥</i>
             <span v-show="!isCollapsed">角色管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('worldview')" :title="'世界设定：管理世界观、设定与术语'">
+          <a href="#"
+             class="nav-link"
+             @click="navigate('worldview')"
+             :title="'世界设定：管理世界观、设定与术语'"
+             data-tooltip="世界设定">
             <i class="icon">🌍</i>
             <span v-show="!isCollapsed">世界设定</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" @click="navigate('settings')" :title="'设置：配置主题、偏好与应用选项'">
+          <a href="#"
+             class="nav-link"
+             @click="navigate('settings')"
+             :title="'设置：配置主题、偏好与应用选项'"
+             data-tooltip="设置">
             <i class="icon">⚙️</i>
             <span v-show="!isCollapsed">设置</span>
           </a>
@@ -74,11 +105,20 @@ export default {
     currentPage: {
       type: String,
       default: 'dashboard'
+    },
+    initialCollapsed: {
+      type: Boolean,
+      default: true
     }
   },
   data() {
     return {
-      isCollapsed: true
+      isCollapsed: this.initialCollapsed
+    }
+  },
+  watch: {
+    initialCollapsed(newVal) {
+      this.isCollapsed = newVal
     }
   },
   methods: {
@@ -191,11 +231,35 @@ export default {
   color: #bdc3c7;
   text-decoration: none;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .collapsed .nav-link {
   justify-content: center;
   padding: 12px 10px;
+}
+
+.collapsed .nav-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(8px, -50%);
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.collapsed .nav-link:hover::after {
+  opacity: 1;
+  transform: translate(12px, -50%);
 }
 
 .nav-link:hover {
@@ -268,4 +332,4 @@ export default {
 .collapsed .github-link .icon {
   margin-right: 0;
 }
-</style>>
+</style>

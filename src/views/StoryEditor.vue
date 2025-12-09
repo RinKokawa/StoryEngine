@@ -1,26 +1,27 @@
 <template>
   <div class="story-editor">
     <div class="editor-header">
-      <div class="title-section">
-        <div class="title-row">
-          <button @click="toggleSidebar" class="sidebar-toggle" :title="sidebarVisible ? '隐藏章节面板' : '显示章节面板'">
+      <div class="title-row">
+        <div class="title-stack">
+          <p class="eyebrow">Editor</p>
+          <div class="title-line">
+            <h1>{{ projectTitle }}</h1>
+            <span class="title-divider">/</span>
+            <span class="subtitle-strong">{{ chapterTitle }}</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button
+            @click="toggleSidebar"
+            class="sidebar-toggle"
+            :title="sidebarVisible ? '隐藏章节面板' : '显示章节面板'">
             <span v-if="sidebarVisible">◀</span>
             <span v-else>▶</span>
           </button>
-          <h1>故事编辑</h1>
-          <div class="header-actions">
-            <button @click="toggleAiPanel" class="ai-toggle" :class="{ 'active': aiPanelVisible }">
-              <span>AI助手</span>
-              <span v-if="aiPanelVisible">▶</span>
-              <span v-else>◀</span>
-            </button>
-          </div>
-        </div>
-        <div v-if="currentProject" class="subtitle">
-          {{ currentProject.name }}
-          <span v-if="currentChapter" class="chapter-info">
-            - {{ currentChapter.title || `第${currentChapter.order}章` }}
-          </span>
+          <button @click="toggleAiPanel" class="ai-toggle" :class="{ 'active': aiPanelVisible }">
+            <span>AI 面板</span>
+            <span class="ai-toggle-icon" :class="{ open: aiPanelVisible }">▸</span>
+          </button>
         </div>
       </div>
     </div>
@@ -29,8 +30,8 @@
       <!-- 左侧章节选择器 -->
       <ResizableSidebar 
         v-if="sidebarVisible" 
-position="left"
- :default-width="250"
+        position="left"
+        :default-width="250"
         :min-width="200"
         :max-width="500"
         title="拖动调整章节面板宽度"
@@ -110,7 +111,7 @@ export default {
     const chapters = ref([])
     const sidebarVisible = ref(true)
     const aiPanelVisible = ref(false)
-    const sidebarWidth = ref(300)
+    const sidebarWidth = ref(250)
     const aiPanelWidth = ref(320)
     
     // 加载状态
@@ -123,6 +124,12 @@ export default {
     const currentChapter = computed(() => {
       if (!currentChapterId.value || !chapters.value.length) return null
       return chapters.value.find(c => c.id === currentChapterId.value)
+    })
+
+    const projectTitle = computed(() => currentProject.value?.name || '故事编辑')
+    const chapterTitle = computed(() => {
+      if (!currentChapter.value) return '尚未选择章节'
+      return currentChapter.value.title || `第${currentChapter.value.order}章`
     })
 
     // 加载当前项目
@@ -438,6 +445,8 @@ export default {
       currentProject,
       currentChapterId,
       currentChapter,
+      projectTitle,
+      chapterTitle,
       sidebarVisible,
       aiPanelVisible,
       sidebarWidth,
@@ -465,89 +474,115 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f5f5;
+  background: #f5f7fb;
 }
 
 .editor-header {
   background: white;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 16px 24px;
+  border-bottom: 1px solid #e6e8ec;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
 .title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   justify-content: space-between;
+}
+
+.title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.title-line h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2a44;
+}
+
+.title-divider {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.subtitle-strong {
+  font-size: 16px;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+  color: #667085;
+  margin: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .ai-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f4f6fb;
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  color: #666;
+  color: #52607a;
   transition: all 0.3s;
 }
 
 .ai-toggle:hover, .ai-toggle.active {
-  background: #e6f7ff;
-  border-color: #1890ff;
-  color: #1890ff;
-}
-
-.ai-toggle.active {
-  background: #e6f7ff;
+  background: #e9efff;
+  border-color: #4063ff;
+  color: #1f2a44;
 }
 
 .sidebar-toggle {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #dfe3e8;
+  background: #f8fafc;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  color: #666;
+  color: #52607a;
   transition: all 0.3s;
 }
 
 .sidebar-toggle:hover {
-  background: #f8f9fa;
-  border-color: #007bff;
-  color: #007bff;
+  background: #e9edf5;
+  border-color: #4063ff;
+  color: #1f2a44;
 }
 
-.title-section h1 {
-  margin: 0 0 4px 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #2c3e50;
+.ai-toggle-icon {
+  transition: transform 0.2s ease;
 }
 
-.subtitle {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.chapter-info {
-  color: #007bff;
+.ai-toggle-icon.open {
+  transform: rotate(90deg);
 }
 
 .editor-layout {

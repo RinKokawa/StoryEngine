@@ -9,12 +9,18 @@
     <!-- 无项目引导界面 -->
     <div v-else-if="!hasProjects" class="empty-dashboard">
       <div class="empty-state-container">
-        <div class="empty-icon">📝</div>
+        <div class="empty-illustration">
+          <div class="empty-icon">📝</div>
+          <div class="empty-glow"></div>
+        </div>
         <h2>欢迎使用故事引擎</h2>
-        <p>看起来您还没有创建任何项目</p>
-        <button class="create-project-btn" @click="createNewProject">创建第一个项目</button>
+        <p>目前暂无项目，先创建一个吧</p>
+        <div class="empty-actions">
+          <button class="create-project-btn" @click="createNewProject">创建项目</button>
+          <button class="secondary-btn" @click="startWriting">开始写作</button>
+        </div>
         <div class="empty-tips">
-          <h3>开始您的写作之旅</h3>
+          <h3>快速开始</h3>
           <ul>
             <li>创建一个新项目来组织您的故事</li>
             <li>添加卷和章节来构建故事结构</li>
@@ -26,8 +32,12 @@
 
     <!-- 有项目时显示仪表盘 -->
     <div v-else>
-      <div class="dashboard-header">
-        <h1>写作仪表盘</h1>
+      <div class="top-bar">
+        <div class="title-group">
+          <p class="eyebrow">Dashboard</p>
+          <h1>写作仪表盘</h1>
+          <p class="subtitle">项目与写作状态总览</p>
+        </div>
         <div class="project-selector">
           <select :value="currentProject?.id || ''" @change="switchProject">
             <option value="" disabled>选择项目</option>
@@ -39,128 +49,141 @@
       </div>
 
       <div class="dashboard-grid">
-      <!-- 写作进度和写作日历并排 -->
-      <div class="stats-row">
-        <!-- 字数统计 -->
-        <div class="card word-stats">
-          <div class="card-header">
-            <h3>写作进度</h3>
-          </div>
-          <div class="card-content">
-            <div class="stat-item">
-              <div class="stat-number">{{ totalWords.toLocaleString() }}</div>
-              <div class="stat-label">总字数</div>
+        <!-- 写作进度和写作日历并排 -->
+        <div class="grid top-grid">
+          <div class="card word-stats highlight">
+            <div class="card-header">
+              <h3>写作进度</h3>
             </div>
-            <div class="progress-section">
-              <div class="progress-info">
-                <span>目标进度</span>
-                <span>{{ Math.round(progressPercentage) }}%</span>
+            <div class="card-content">
+              <div class="stat-item">
+                <div class="stat-number">{{ totalWords.toLocaleString() }}</div>
+                <div class="stat-label">总字数</div>
               </div>
-              <div class="progress-bar">
-                <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+              <div class="progress-section">
+                <div class="progress-info">
+                  <span>目标进度</span>
+                  <span>{{ Math.round(progressPercentage) }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+                </div>
+                <div class="progress-target">目标：{{ targetWords.toLocaleString() }} 字</div>
               </div>
-              <div class="progress-target">目标：{{ targetWords.toLocaleString() }} 字</div>
-            </div>
-            <div class="daily-stats">
-              <div class="daily-item">
-                <span class="daily-number">{{ todayWords }}</span>
-                <span class="daily-label">今日</span>
-              </div>
-              <div class="daily-item">
-                <span class="daily-number">{{ weekWords }}</span>
-                <span class="daily-label">本周</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 写作日历 -->
-        <div class="card writing-calendar">
-          <div class="card-header">
-            <h3>写作日历</h3>
-          </div>
-          <div class="card-content">
-            <!-- 年月选择器 -->
-            <div class="calendar-header">
-              <button class="nav-btn" @click="previousMonth" title="上一月">
-                <i class="icon">‹</i>
-              </button>
-              <div class="date-selector" @click.stop="toggleDatePicker">
-                <span class="current-date">{{ currentYearMonth }}</span>
-                <i class="icon dropdown-icon" :class="{ 'rotated': showDatePicker }">▼</i>
-                
-                <!-- 日期选择器下拉 -->
-                <div v-if="showDatePicker" class="date-picker-dropdown" @click.stop>
-                  <div class="year-month-selector">
-                    <div class="year-selector">
-                      <label>年份</label>
-                      <select v-model="selectedYear" @change="updateCalendar">
-                        <option v-for="year in availableYears" :key="year" :value="year">
-                          {{ year }}
-                        </option>
-                      </select>
-                    </div>
-                    <div class="month-selector">
-                      <label>月份</label>
-                      <select v-model="selectedMonth" @change="updateCalendar">
-                        <option v-for="(month, index) in monthNames" :key="index" :value="index">
-                          {{ month }}
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="date-picker-actions">
-                    <button class="today-btn" @click="goToToday">今天</button>
-                    <button class="close-btn" @click.stop="showDatePicker = false">关闭</button>
-                  </div>
+              <div class="daily-stats">
+                <div class="daily-item">
+                  <span class="daily-number">{{ todayWords }}</span>
+                  <span class="daily-label">今日</span>
+                </div>
+                <div class="daily-item">
+                  <span class="daily-number">{{ weekWords }}</span>
+                  <span class="daily-label">本周</span>
                 </div>
               </div>
-              <button class="nav-btn" @click="nextMonth" title="下一月">
-                <i class="icon">›</i>
-              </button>
             </div>
+          </div>
 
-            <!-- 星期标题 -->
-            <div class="weekdays">
-              <div v-for="day in weekdayNames" :key="day" class="weekday">{{ day }}</div>
+          <!-- 写作日历 -->
+          <div class="card writing-calendar highlight">
+            <div class="card-header">
+              <h3>写作日历</h3>
             </div>
+            <div class="card-content">
+              <!-- 年月选择器 -->
+              <div class="calendar-header">
+                <button class="nav-btn" @click="previousMonth" title="上一月">
+                  <i class="icon">‹</i>
+                </button>
+                <div class="date-selector" @click.stop="toggleDatePicker">
+                  <span class="current-date">{{ currentYearMonth }}</span>
+                  <i class="icon dropdown-icon" :class="{ 'rotated': showDatePicker }">▼</i>
+                  
+                  <!-- 日期选择器下拉 -->
+                  <div v-if="showDatePicker" class="date-picker-dropdown" @click.stop>
+                    <div class="year-month-selector">
+                      <div class="year-selector">
+                        <label>年份</label>
+                        <select v-model="selectedYear" @change="updateCalendar">
+                          <option v-for="year in availableYears" :key="year" :value="year">
+                            {{ year }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="month-selector">
+                        <label>月份</label>
+                        <select v-model="selectedMonth" @change="updateCalendar">
+                          <option v-for="(month, index) in monthNames" :key="index" :value="index">
+                            {{ month }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="date-picker-actions">
+                      <button class="today-btn" @click="goToToday">今天</button>
+                      <button class="close-btn" @click.stop="showDatePicker = false">关闭</button>
+                    </div>
+                  </div>
+                </div>
+                <button class="nav-btn" @click="nextMonth" title="下一月">
+                  <i class="icon">›</i>
+                </button>
+              </div>
 
-            <!-- 日历网格 -->
-            <div class="calendar-grid">
-              <div 
-                v-for="day in calendarDays" 
-                :key="day.date"
-                class="calendar-day"
-                :class="{ 
-                  'has-writing': day.wordCount > 0,
-                  'today': day.isToday,
-                  'future': day.isFuture,
-                  'other-month': day.isOtherMonth
-                }"
-                :title="`${day.date}: ${day.wordCount} 字`"
-              >
-                <div class="day-number">{{ day.day }}</div>
-                <div v-if="day.wordCount > 0" class="day-words">{{ day.wordCount }}</div>
+              <!-- 星期标题 -->
+              <div class="weekdays">
+                <div v-for="day in weekdayNames" :key="day" class="weekday">{{ day }}</div>
+              </div>
+
+              <!-- 日历网格 -->
+              <div class="calendar-grid">
+                <div 
+                  v-for="day in calendarDays" 
+                  :key="day.date"
+                  class="calendar-day"
+                  :class="{ 
+                    'has-writing': day.wordCount > 0,
+                    'today': day.isToday,
+                    'future': day.isFuture,
+                    'other-month': day.isOtherMonth
+                  }"
+                  :title="`${day.date}: ${day.wordCount} 字`"
+                >
+                  <div class="day-number">{{ day.day }}</div>
+                  <div v-if="day.wordCount > 0" class="day-words">{{ day.wordCount }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid secondary-grid">
+          <div class="card recent-updates muted">
+            <div class="card-header">
+              <h3>最近更新</h3>
+            </div>
+            <div class="card-content">
+              <div class="placeholder-content">
+                <div class="placeholder-icon">📝</div>
+                <p>人物、世界观等内容管理功能</p>
+                <p class="placeholder-subtitle">即将上线...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card todo-card muted">
+            <div class="card-header">
+              <h3>待办事项</h3>
+            </div>
+            <div class="card-content">
+              <div class="placeholder-content">
+                <div class="placeholder-icon">📌</div>
+                <p>计划、灵感或待办会集中展示在此</p>
+                <p class="placeholder-subtitle">写作提醒模块开发中</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 最近更新占位 -->
-      <div class="card recent-updates">
-        <div class="card-header">
-          <h3>最近更新</h3>
-        </div>
-        <div class="card-content">
-          <div class="placeholder-content">
-            <div class="placeholder-icon">📝</div>
-            <p>人物、世界观等内容管理功能</p>
-            <p class="placeholder-subtitle">即将上线...</p>
-          </div>
-        </div>
-      </div>
-    </div>
     </div>
   </div>
 </template>
@@ -374,6 +397,9 @@ export default {
     createNewProject() {
       this.$emit('navigate', 'projects', { action: 'create' })
     },
+    startWriting() {
+      this.$emit('navigate', 'projects', { action: 'create' })
+    },
     addTask() {
       const text = prompt('请输入任务内容:')
       if (text) {
@@ -403,62 +429,93 @@ export default {
 
 <style scoped>
 .dashboard {
-  padding: 20px;
-  background: #f8f9fa;
+  padding: 24px 28px;
+  background: #f5f7fb;
   min-height: 100vh;
   overflow-y: auto;
   height: 100vh;
 }
 
-.dashboard-header {
+.top-bar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 24px;
 }
 
-.dashboard-header h1 {
-  color: #2c3e50;
+.title-group h1 {
+  color: #1f2a44;
+  margin: 2px 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+  color: #6b7688;
   margin: 0;
 }
 
+.subtitle {
+  color: #7a8699;
+  margin: 0;
+  font-size: 14px;
+}
+
 .project-selector select {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
   background: white;
   font-size: 14px;
+  color: #334155;
+  min-width: 180px;
+  box-shadow: 0 6px 20px rgba(31, 42, 68, 0.06);
 }
 
 .dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
-.stats-row {
+.grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 18px;
+}
+
+.top-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.secondary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   overflow: hidden;
+  border: 1px solid #e7ecf3;
 }
 
-.card.writing-calendar {
-  overflow: hidden;
+.card.highlight {
+  border-color: #dce6ff;
+  box-shadow: 0 12px 38px rgba(64, 99, 255, 0.12);
 }
 
-.writing-calendar.card {
-  overflow: visible;
+.card.muted {
+  background: #fbfcff;
+  border-style: dashed;
+  border-color: #e3e8f0;
 }
 
 .card-header {
-  padding: 20px 20px 0;
+  padding: 18px 18px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -466,12 +523,13 @@ export default {
 
 .card-header h3 {
   margin: 0;
-  color: #2c3e50;
-  font-size: 18px;
+  color: #1f2a44;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .card-content {
-  padding: 20px;
+  padding: 18px;
 }
 
 /* 最近章节 */
@@ -993,22 +1051,48 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  background: #f8f9fa;
+  min-height: calc(100vh - 40px);
+  padding: 24px;
+  background: radial-gradient(circle at 20% 20%, #eef2ff, transparent 30%), radial-gradient(circle at 80% 0%, #e0f4ff, transparent 28%), #f6f8fb;
 }
 
 .empty-state-container {
   text-align: center;
-  max-width: 500px;
-  padding: 40px;
+  max-width: 640px;
+  padding: 48px 40px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(31, 42, 68, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.empty-illustration {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  height: 110px;
+  margin-bottom: 12px;
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
+  font-size: 56px;
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  padding: 14px;
+  border-radius: 28px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.empty-glow {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(64, 99, 255, 0.22), transparent 60%);
+  filter: blur(4px);
 }
 
 .empty-state-container h2 {
@@ -1018,23 +1102,46 @@ export default {
 
 .empty-state-container p {
   margin: 0 0 30px;
-  color: #666;
+  color: #6b7280;
   font-size: 16px;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 12px;
 }
 
 .create-project-btn {
-  background: #007bff;
+  background: #4063ff;
   color: white;
   border: none;
   padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 15px;
   cursor: pointer;
   transition: background-color 0.3s;
+  box-shadow: 0 14px 30px rgba(64, 99, 255, 0.25);
 }
 
 .create-project-btn:hover {
-  background: #0056b3;
+  background: #2f55f5;
+}
+
+.secondary-btn {
+  background: #f4f6fb;
+  color: #1f2a44;
+  border: 1px solid #e2e8f0;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+  background: #e9edf5;
 }
 
 .empty-tips {
@@ -1062,19 +1169,24 @@ export default {
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .stats-row {
+  .top-grid,
+  .secondary-grid {
     grid-template-columns: 1fr;
   }
   
-  .dashboard-header {
+  .top-bar {
     flex-direction: column;
-    gap: 15px;
-    align-items: stretch;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .project-selector {
+    width: 100%;
   }
   
   .empty-state-container {
     margin: 20px;
-    padding: 30px;
+    padding: 32px 24px;
   }
 }
 </style>

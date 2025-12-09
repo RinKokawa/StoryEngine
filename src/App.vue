@@ -2,6 +2,7 @@
   <div id="app">
     <Sidebar 
       :currentPage="currentPage"
+      :initial-collapsed="sidebarCollapsed"
       @sidebar-toggle="handleSidebarToggle" 
       @navigate="handleNavigation"
     />
