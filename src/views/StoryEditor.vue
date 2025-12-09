@@ -29,8 +29,8 @@
       <!-- 左侧章节选择器 -->
       <ResizableSidebar 
         v-if="sidebarVisible" 
-        position="left"
-        :default-width="300"
+position="left"
+ :default-width="250"
         :min-width="200"
         :max-width="500"
         title="拖动调整章节面板宽度"
