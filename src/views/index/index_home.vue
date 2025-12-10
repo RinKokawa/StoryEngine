@@ -5,12 +5,18 @@ import IndexProjectCoverCard from './index_project_cover_card.vue'
 type Project = {
   name: string
   path: string
+  lastOpened?: number
 }
 
 type ProjectWithCover = Project & { cover: string | null }
 
 const STORAGE_KEY = 'novel-recent-projects'
 const projects = ref<ProjectWithCover[]>([])
+const selectedPath = ref<string | null>(null)
+
+const emit = defineEmits<{
+  (e: 'open-project', path: string): void
+}>()
 
 const loadProjects = async () => {
   const cached = localStorage.getItem(STORAGE_KEY)
@@ -26,6 +32,15 @@ const loadProjects = async () => {
   } catch (err) {
     console.error('加载最近项目失败', err)
   }
+}
+
+const handleSelect = (path: string) => {
+  selectedPath.value = path
+}
+
+const handleOpen = (path: string) => {
+  selectedPath.value = path
+  emit('open-project', path)
 }
 
 onMounted(loadProjects)
@@ -44,6 +59,10 @@ onMounted(loadProjects)
           :name="item.name"
           :path="item.path"
           :cover="item.cover"
+          :last-opened="item.lastOpened"
+          :selected="item.path === selectedPath"
+          @select="handleSelect"
+          @open="handleOpen"
         />
       </div>
     </div>
@@ -71,7 +90,7 @@ p {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
 }
 </style>

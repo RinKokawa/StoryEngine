@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import IndexNav from './views/index/index_nav.vue'
-import IndexHome from './views/index/index_home.vue'
-import IndexProjects from './views/index/index_projects.vue'
-import IndexFeed from './views/index/index_feed.vue'
-import IndexSettings from './views/index/index_settings.vue'
+import IndexNav from './index/index_nav.vue'
+import IndexHome from './index/index_home.vue'
+import IndexProjects from './index/index_projects.vue'
+import IndexFeed from './index/index_feed.vue'
+import IndexSettings from './index/index_settings.vue'
+import Editor from './editor.vue'
 
 type NavKey = 'home' | 'projects' | 'feed' | 'settings'
 
 const selected = ref<NavKey>('home')
+const mode = ref<'dashboard' | 'editor'>('dashboard')
+const currentProjectPath = ref<string | null>(null)
 const viewMap: Record<NavKey, any> = {
   home: IndexHome,
   projects: IndexProjects,
@@ -17,16 +20,31 @@ const viewMap: Record<NavKey, any> = {
 }
 
 const currentView = computed(() => viewMap[selected.value])
+
+const openProject = (path: string) => {
+  currentProjectPath.value = path
+  mode.value = 'editor'
+}
+
+const closeEditor = () => {
+  mode.value = 'dashboard'
+  currentProjectPath.value = null
+}
 </script>
 
 <template>
-  <main class="page">
-    <IndexNav :active="selected" @select="selected = $event" />
+  <template v-if="mode === 'dashboard'">
+    <main class="page">
+      <IndexNav :active="selected" @select="selected = $event" />
 
-    <section class="hero">
-      <component :is="currentView" />
-    </section>
-  </main>
+      <section class="hero">
+        <component :is="currentView" @open-project="openProject" />
+      </section>
+    </main>
+  </template>
+  <template v-else>
+    <Editor :path="currentProjectPath" @close="closeEditor" />
+  </template>
 </template>
 
 <style scoped>

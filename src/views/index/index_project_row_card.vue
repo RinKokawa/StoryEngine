@@ -6,6 +6,12 @@ const props = defineProps<{
   path: string
   cover?: string | null
   lastOpened?: number
+  selected?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'select', path: string): void
+  (e: 'open', path: string): void
 }>()
 
 const lastOpenedText = computed(() => {
@@ -16,10 +22,18 @@ const lastOpenedText = computed(() => {
     return ''
   }
 })
+
+const onClick = () => emit('select', props.path)
+const onDblClick = () => emit('open', props.path)
 </script>
 
 <template>
-  <article class="card">
+  <article
+    class="card"
+    :class="{ selected: props.selected }"
+    @click="onClick"
+    @dblclick.stop="onDblClick"
+  >
     <div class="cover" :class="{ fallback: !props.cover }">
       <img v-if="props.cover" :src="props.cover" :alt="props.name" />
       <span v-else>{{ props.name.charAt(0) || '📖' }}</span>
@@ -46,6 +60,18 @@ const lastOpenedText = computed(() => {
   gap: 0.75rem;
   align-items: center;
   padding: 0.75rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  border-color: #c5c9d5;
+}
+
+.card.selected {
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px #646cff66, 0 6px 20px rgba(0, 0, 0, 0.14);
 }
 
 .cover {

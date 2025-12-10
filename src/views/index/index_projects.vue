@@ -13,6 +13,11 @@ type Project = {
 const STORAGE_KEY = 'novel-recent-projects'
 const showCreate = ref(false)
 const projects = ref<Project[]>([])
+const selectedPath = ref<string | null>(null)
+
+const emit = defineEmits<{
+  (e: 'open-project', path: string): void
+}>()
 
 const openCreate = () => {
   showCreate.value = true
@@ -38,6 +43,7 @@ const handleCreate = async (payload: { name: string; location: string }) => {
         lastOpened: Date.now(),
         cover: cover ?? null,
       })
+      selectedPath.value = result.projectPath
       saveProjects()
     }
     showCreate.value = false
@@ -90,6 +96,15 @@ const refreshCovers = async () => {
   projects.value = updated
 }
 
+const handleSelect = (path: string) => {
+  selectedPath.value = path
+}
+
+const handleOpen = (path: string) => {
+  selectedPath.value = path
+  emit('open-project', path)
+}
+
 onMounted(loadProjects)
 </script>
 
@@ -112,6 +127,9 @@ onMounted(loadProjects)
           :path="item.path"
           :cover="item.cover ?? undefined"
           :last-opened="item.lastOpened"
+          :selected="item.path === selectedPath"
+          @select="handleSelect"
+          @open="handleOpen"
         />
       </div>
     </section>
