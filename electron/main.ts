@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'node:fs/promises'
 import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -76,6 +77,34 @@ ipcMain.handle('shell:open-external', async (_event, url: string) => {
   if (!url) return
   const { shell } = await import('electron')
   return shell.openExternal(url)
+})
+
+ipcMain.handle('select-avatar-image', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
+    ],
+  })
+  if (canceled || filePaths.length === 0) return null
+  const filePath = filePaths[0]
+  try {
+    const content = await fs.readFile(filePath)
+    const ext = path.extname(filePath).toLowerCase()
+    const mime =
+      ext === '.png'
+        ? 'image/png'
+        : ext === '.gif'
+          ? 'image/gif'
+          : ext === '.webp'
+            ? 'image/webp'
+            : 'image/jpeg'
+
+    const dataUrl = `data:${mime};base64,${content.toString('base64')}`
+    return { dataUrl, filePath }
+  } catch {
+    return null
+  }
 })
 
 ipcMain.handle('window-control', (event, action: 'minimize' | 'maximize' | 'close') => {

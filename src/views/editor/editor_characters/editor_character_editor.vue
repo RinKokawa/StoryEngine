@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import Titlebar from '../../components/titlebar.vue'
 import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue'
+import AvatarCropper from './avatarCropper.vue'
 
 const props = defineProps<{
   projectName: string
   projectPath: string
   character?: {
-    id?: string | null
-    name?: string
-    gender?: string
-    birthday?: string
-    age?: string | number
-    height?: string
-    weight?: string
-    blood?: string
-  }
+  id?: string | null
+  name?: string
+  gender?: string
+  birthday?: string
+  age?: string | number
+  height?: string
+  weight?: string
+  blood?: string
+  avatar?: string | null
+}
 }>()
 
 const emit = defineEmits<{
@@ -32,6 +34,9 @@ const age = ref('')
 const height = ref('')
 const weight = ref('')
 const blood = ref('')
+const avatar = ref<string | null>(null)
+const cropImage = ref<string | null>(null)
+const showCropper = ref(false)
 const hasSaved = ref(false)
 const currentId = ref<string | null>(null)
 const statusText = computed(() => (hasSaved.value ? '已保存' : '未保存'))
@@ -70,6 +75,7 @@ const saveCharacter = async () => {
       height: height.value,
       weight: weight.value,
       blood: blood.value,
+      avatar: avatar.value,
     }, currentId.value)
     if (result?.id) {
       currentId.value = result.id as string
@@ -115,6 +121,9 @@ const handleSaveOnly = async () => {
 watch([name, gender, birthday, age, height, weight, blood], () => {
   hasSaved.value = false
 })
+watch(avatar, () => {
+  hasSaved.value = false
+})
 
 const applyCharacter = (data?: typeof props.character) => {
   name.value = data?.name ?? ''
@@ -124,6 +133,7 @@ const applyCharacter = (data?: typeof props.character) => {
   height.value = data?.height ?? ''
   weight.value = data?.weight ?? ''
   blood.value = data?.blood ?? ''
+  avatar.value = data?.avatar ?? null
   currentId.value = (data?.id as string | undefined) ?? null
   hasSaved.value = !!data
 }
@@ -135,6 +145,23 @@ watch(
   },
   { immediate: true },
 )
+
+const pickAvatar = async () => {
+  const result = await window.ipcRenderer.invoke('select-avatar-image')
+  if (result?.dataUrl) {
+    cropImage.value = result.dataUrl as string
+    showCropper.value = true
+  }
+}
+
+const closeCropper = () => {
+  showCropper.value = false
+}
+
+const handleCropSave = (dataUrl: string) => {
+  avatar.value = dataUrl
+  showCropper.value = false
+}
 </script>
 
 <template>
@@ -148,7 +175,15 @@ watch(
       @maximize="maximize"
     />
     <div class="content">
-      <div class="avatar-placeholder"></div>
+      <button type="button" class="avatar-placeholder" @click="pickAvatar">
+        <template v-if="avatar">
+          <img :src="avatar" alt="avatar" />
+        </template>
+        <template v-else>
+          <span class="plus">＋</span>
+          <span class="hint">选择头像</span>
+        </template>
+      </button>
       <div class="grid">
         <div class="field">
           <label for="character-name">
@@ -187,6 +222,13 @@ watch(
         </div>
       </div>
     </div>
+
+    <AvatarCropper
+      v-if="showCropper && cropImage"
+      :image="cropImage"
+      @cancel="closeCropper"
+      @save="handleCropSave"
+    />
   </div>
 </template>
 
@@ -219,6 +261,37 @@ watch(
   height: 96px;
   border: 1px dashed #d0d4dd;
   border-radius: 4px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.avatar-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder:focus,
+.avatar-placeholder:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.plus {
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #6c7180;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: #6c7180;
 }
 
 .grid {
