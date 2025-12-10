@@ -38,6 +38,10 @@ const handleNavSelect = (key: string) => {
 const handleNavToggle = (collapsed: boolean) => {
   sidebarWidth.value = collapsed ? 64 : 220
 }
+
+const handleOpenExternal = (url: string) => {
+  window.ipcRenderer.invoke('shell:open-external', url)
+}
 </script>
 
 <template>
@@ -49,6 +53,7 @@ const handleNavToggle = (collapsed: boolean) => {
         :initial-collapsed="false"
         @select="handleNavSelect"
         @toggle="handleNavToggle"
+        @open-external="handleOpenExternal"
       />
       <div class="workspace" :style="{ marginLeft: sidebarWidth + 'px' }">
         <p class="placeholder">这里将是编辑页面的内容。</p>

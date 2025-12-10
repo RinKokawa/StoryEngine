@@ -74,6 +74,12 @@ ipcMain.handle('get-project-cover', async (_event, projectPath: string) => {
   return null
 })
 
+ipcMain.handle('shell:open-external', async (_event, url: string) => {
+  if (!url) return
+  const { shell } = await import('electron')
+  return shell.openExternal(url)
+})
+
 ipcMain.handle('window-control', (event, action: 'minimize' | 'maximize' | 'close') => {
   const currentWin = BrowserWindow.fromWebContents(event.sender)
   if (!currentWin) return

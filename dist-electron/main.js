@@ -51,6 +51,11 @@ ipcMain.handle("get-project-cover", async (_event, projectPath) => {
   }
   return null;
 });
+ipcMain.handle("shell:open-external", async (_event, url) => {
+  if (!url) return;
+  const { shell } = await import("electron");
+  return shell.openExternal(url);
+});
 ipcMain.handle("window-control", (event, action) => {
   const currentWin = BrowserWindow.fromWebContents(event.sender);
   if (!currentWin) return;
