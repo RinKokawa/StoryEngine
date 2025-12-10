@@ -26,3 +26,4 @@ dist-ssr
 # Release files
 release/
 参考/
+dist-electron/
