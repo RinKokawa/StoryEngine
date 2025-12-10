@@ -51,6 +51,7 @@ const projectName = computed(() => {
     <EditorCharactersModal
       v-if="showModal"
       :project-name="projectName"
+      :project-path="props.projectPath"
       @close="closeModal"
     />
   </section>

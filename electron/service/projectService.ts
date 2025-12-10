@@ -44,3 +44,54 @@ export async function ensureCharactersFolder(projectPath: string) {
   }
   return target
 }
+
+function slugify(name: string) {
+  const cleaned = name
+    .trim()
+    // replace whitespace with underscore
+    .replace(/\s+/g, '_')
+    // remove characters invalid for file names on most platforms
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+  return cleaned || 'character'
+}
+
+export async function saveCharacter(
+  projectPath: string,
+  payload: Record<string, unknown>,
+  previousId?: string | null,
+) {
+  const charactersDir = await ensureCharactersFolder(projectPath)
+  const indexPath = path.join(charactersDir, 'index.json')
+  const nameRaw = (payload?.name as string | undefined)?.trim() || '未命名角色'
+  const id = `character_${slugify(nameRaw)}`
+
+  let indexData: { characters: string[] } = { characters: [] }
+  try {
+    const content = await fs.readFile(indexPath, 'utf-8')
+    indexData = JSON.parse(content)
+  } catch {
+    // ignore, will recreate
+  }
+
+  if (!Array.isArray(indexData.characters)) {
+    indexData.characters = []
+  }
+  if (previousId && previousId !== id) {
+    indexData.characters = indexData.characters.filter((entry) => entry !== previousId)
+    const oldPath = path.join(charactersDir, `${previousId}.json`)
+    try {
+      await fs.unlink(oldPath)
+    } catch {
+      // ignore
+    }
+  }
+  if (!indexData.characters.includes(id)) {
+    indexData.characters.push(id)
+    await fs.writeFile(indexPath, JSON.stringify(indexData, null, 2), 'utf-8')
+  }
+
+  const filePath = path.join(charactersDir, `${id}.json`)
+  await fs.writeFile(filePath, JSON.stringify({ ...payload, id }, null, 2), 'utf-8')
+
+  return { id, filePath }
+}

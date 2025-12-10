@@ -2,9 +2,13 @@
 const props = withDefaults(defineProps<{
   name?: string
   showIcon?: boolean
+  statusText?: string
+  statusColor?: string
 }>(), {
   name: 'Novel Editor',
   showIcon: true,
+  statusText: '',
+  statusColor: '#e81123',
 })
 
 const emit = defineEmits<{
@@ -19,6 +23,9 @@ const emit = defineEmits<{
     <div class="left">
       <img v-if="props.showIcon" class="icon" src="/icon.png" alt="icon" />
       <span class="name">{{ props.name }}</span>
+      <span v-if="props.statusText" class="status" :style="{ color: props.statusColor }">
+        | {{ props.statusText }}
+      </span>
     </div>
     <div class="controls">
       <button type="button" class="ghost" @click="emit('minimize')">—</button>
@@ -55,6 +62,11 @@ const emit = defineEmits<{
 
 .name {
   white-space: nowrap;
+}
+
+.status {
+  margin-left: 8px;
+  font-weight: 500;
 }
 
 .controls {
