@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import EditorTitlebar from './editor/editor_titlebar.vue'
+import Titlebar from './components/titlebar.vue'
 import EditorNav from './editor/editor_nav.vue'
 
 const props = defineProps<{
@@ -46,7 +46,12 @@ const handleOpenExternal = (url: string) => {
 
 <template>
   <section class="editor">
-    <EditorTitlebar :name="displayName" @close="close" />
+    <Titlebar
+      :name="displayName"
+      @close="close"
+      @minimize="() => window.ipcRenderer.invoke('window-control', 'minimize')"
+      @maximize="() => window.ipcRenderer.invoke('window-control', 'maximize')"
+    />
     <div class="body">
       <EditorNav
         :active="activeNav"

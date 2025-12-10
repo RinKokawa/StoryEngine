@@ -1,30 +1,28 @@
 <script setup lang="ts">
-const props = defineProps<{
-  name: string
-}>()
+const props = withDefaults(defineProps<{
+  name?: string
+  showIcon?: boolean
+}>(), {
+  name: 'Novel Editor',
+  showIcon: true,
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'minimize'): void
+  (e: 'maximize'): void
 }>()
-
-const minimize = () => {
-  window.ipcRenderer.invoke('window-control', 'minimize')
-}
-
-const maximize = () => {
-  window.ipcRenderer.invoke('window-control', 'maximize')
-}
 </script>
 
 <template>
   <header class="titlebar">
     <div class="left">
-      <img class="icon" src="/icon.png" alt="icon" />
+      <img v-if="props.showIcon" class="icon" src="/icon.png" alt="icon" />
       <span class="name">{{ props.name }}</span>
     </div>
     <div class="controls">
-      <button type="button" class="ghost" @click="minimize">—</button>
-      <button type="button" class="ghost" @click="maximize">▢</button>
+      <button type="button" class="ghost" @click="emit('minimize')">—</button>
+      <button type="button" class="ghost" @click="emit('maximize')">▢</button>
       <button type="button" class="ghost close" @click="emit('close')">×</button>
     </div>
   </header>
@@ -47,6 +45,7 @@ const maximize = () => {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
+  -webkit-app-region: no-drag;
 }
 
 .icon {
@@ -55,10 +54,7 @@ const maximize = () => {
 }
 
 .name {
-  max-width: 360px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .controls {
