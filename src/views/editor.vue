@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Titlebar from './components/titlebar.vue'
 import EditorNav from './editor/editor_nav.vue'
 import EditorDashboard from './editor/editor_dashboard.vue'
+import EditorCharacters from './editor/editor_characters.vue'
 
 const props = defineProps<{
   path: string | null
@@ -33,6 +34,7 @@ const activeNav = ref('dashboard')
 const sidebarWidth = ref(64)
 const currentView = computed(() => {
   if (activeNav.value === 'dashboard') return EditorDashboard
+  if (activeNav.value === 'characters') return EditorCharacters
   return null
 })
 
@@ -65,8 +67,12 @@ const handleOpenExternal = (url: string) => {
         @toggle="handleNavToggle"
         @open-external="handleOpenExternal"
       />
-    <div class="workspace" :style="{ marginLeft: sidebarWidth + 'px' }">
-        <component v-if="currentView" :is="currentView" />
+      <div class="workspace" :style="{ marginLeft: sidebarWidth + 'px' }">
+        <component
+          v-if="currentView"
+          :is="currentView"
+          :project-path="props.path || ''"
+        />
         <p v-else class="placeholder">这里将是编辑页面的内容。</p>
       </div>
     </div>

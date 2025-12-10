@@ -31,3 +31,16 @@ export async function readProjectCover(projectPath: string) {
   }
   return null
 }
+
+export async function ensureCharactersFolder(projectPath: string) {
+  const target = path.join(projectPath, 'characters')
+  await fs.mkdir(target, { recursive: true })
+  const indexPath = path.join(target, 'index.json')
+  try {
+    await fs.access(indexPath)
+  } catch {
+    const data = { characters: [] as unknown[] }
+    await fs.writeFile(indexPath, JSON.stringify(data, null, 2), 'utf-8')
+  }
+  return target
+}

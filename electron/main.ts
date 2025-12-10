@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { createProjectOnDisk, readProjectCover } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -49,6 +49,11 @@ ipcMain.handle('create-project', async (_event, payload: { name?: string; locati
 ipcMain.handle('get-project-cover', async (_event, projectPath: string) => {
   if (!projectPath) return null
   return readProjectCover(projectPath)
+})
+
+ipcMain.handle('ensure-characters-folder', async (_event, projectPath: string) => {
+  if (!projectPath) return null
+  return ensureCharactersFolder(projectPath)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {
