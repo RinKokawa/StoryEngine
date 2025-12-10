@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import EditorCharactersModal from './editor_characters/modal.vue'
+import ActionsMenu from './editor_characters/actionsMenu.vue'
 
 const props = defineProps<{
   projectPath: string
@@ -12,6 +13,11 @@ const ensureFolder = async () => {
 }
 
 const characters = ref<Array<{ id: string; name: string; gender: string; avatar: string | null }>>([])
+const menuOpenId = ref<string | null>(null)
+const editingCharacter = ref<any | null>(null)
+const onDocumentClick = () => {
+  menuOpenId.value = null
+}
 
 const loadCharacters = async () => {
   if (!props.projectPath) {
@@ -31,6 +37,10 @@ const loadCharacters = async () => {
 onMounted(() => {
   ensureFolder()
   loadCharacters()
+  document.addEventListener('click', onDocumentClick, true)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClick, true)
 })
 watch(
   () => props.projectPath,
@@ -48,10 +58,31 @@ const openModal = () => {
 
 const closeModal = () => {
   showModal.value = false
+  editingCharacter.value = null
 }
 
 const handleSaved = () => {
   loadCharacters()
+}
+
+const toggleMenu = (id: string) => {
+  menuOpenId.value = menuOpenId.value === id ? null : id
+}
+
+const closeMenu = () => {
+  menuOpenId.value = null
+}
+
+const handleEdit = async (id: string) => {
+  try {
+    const data = await window.ipcRenderer.invoke('read-character', props.projectPath, id)
+    editingCharacter.value = data
+    showModal.value = true
+  } catch (err) {
+    console.error('读取角色失败', err)
+  } finally {
+    closeMenu()
+  }
 }
 
 const projectName = computed(() => {
@@ -82,7 +113,14 @@ const projectName = computed(() => {
             <strong>{{ item.name }}</strong>
             <span class="muted" v-if="item.gender"> - {{ item.gender }}</span>
           </div>
-          <button type="button" class="ghost more">⋯</button>
+          <div class="menu-wrap">
+            <button type="button" class="ghost more" @click.stop="toggleMenu(item.id)">⋯</button>
+            <ActionsMenu
+              v-if="menuOpenId === item.id"
+              @close="closeMenu"
+              @edit="handleEdit(item.id)"
+            />
+          </div>
         </li>
       </ul>
       <p v-else>未来在这里列出角色列表。</p>
@@ -92,6 +130,7 @@ const projectName = computed(() => {
       v-if="showModal"
       :project-name="projectName"
       :project-path="props.projectPath"
+      :character="editingCharacter"
       @close="closeModal"
       @saved="handleSaved"
     />
@@ -194,6 +233,10 @@ li > .info {
   flex: 1;
 }
 
+.menu-wrap {
+  position: relative;
+}
+
 .avatar {
   width: 32px;
   height: 32px;
@@ -230,10 +273,16 @@ li > .info {
   background: transparent;
   padding: 4px 6px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .ghost.more:hover {
   background: #f0f2f5;
+}
+
+.ghost.more:focus,
+.ghost.more:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 </style>

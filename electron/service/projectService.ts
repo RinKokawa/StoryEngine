@@ -129,3 +129,10 @@ export async function listCharacters(projectPath: string) {
   }
   return items
 }
+
+export async function readCharacter(projectPath: string, id: string) {
+  const charactersDir = await ensureCharactersFolder(projectPath)
+  const file = path.join(charactersDir, `${id}.json`)
+  const content = await fs.readFile(file, 'utf-8')
+  return JSON.parse(content)
+}

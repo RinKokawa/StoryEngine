@@ -5,6 +5,16 @@ import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue'
 const props = defineProps<{
   projectName: string
   projectPath: string
+  character?: {
+    id?: string | null
+    name?: string
+    gender?: string
+    birthday?: string
+    age?: string | number
+    height?: string
+    weight?: string
+    blood?: string
+  }
 }>()
 
 const emit = defineEmits<{
@@ -105,6 +115,26 @@ const handleSaveOnly = async () => {
 watch([name, gender, birthday, age, height, weight, blood], () => {
   hasSaved.value = false
 })
+
+const applyCharacter = (data?: typeof props.character) => {
+  name.value = data?.name ?? ''
+  gender.value = data?.gender ?? ''
+  birthday.value = data?.birthday ?? ''
+  age.value = data?.age ? String(data.age) : ''
+  height.value = data?.height ?? ''
+  weight.value = data?.weight ?? ''
+  blood.value = data?.blood ?? ''
+  currentId.value = (data?.id as string | undefined) ?? null
+  hasSaved.value = false
+}
+
+watch(
+  () => props.character,
+  (val) => {
+    applyCharacter(val)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -64,6 +64,12 @@ ipcMain.handle('save-character', async (_event, projectPath: string, payload: Re
 ipcMain.handle('list-characters', async (_event, projectPath: string) => {
   if (!projectPath) throw new Error('projectPath is required')
   return listCharacters(projectPath)
+})
+
+ipcMain.handle('read-character', async (_event, projectPath: string, id: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  if (!id) throw new Error('id is required')
+  return readCharacter(projectPath, id)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {
