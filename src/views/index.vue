@@ -29,6 +29,7 @@ const openProject = (path: string) => {
 const closeEditor = () => {
   mode.value = 'dashboard'
   currentProjectPath.value = null
+  selected.value = 'home'
 }
 </script>
 

@@ -74,11 +74,29 @@ ipcMain.handle('get-project-cover', async (_event, projectPath: string) => {
   return null
 })
 
+ipcMain.handle('window-control', (event, action: 'minimize' | 'maximize' | 'close') => {
+  const currentWin = BrowserWindow.fromWebContents(event.sender)
+  if (!currentWin) return
+  if (action === 'minimize') {
+    currentWin.minimize()
+  } else if (action === 'maximize') {
+    if (currentWin.isMaximized()) {
+      currentWin.unmaximize()
+    } else {
+      currentWin.maximize()
+    }
+  } else if (action === 'close') {
+    currentWin.close()
+  }
+})
+
 function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     minWidth: 960,
     minHeight: 540,
+    frame: false,
+    titleBarStyle: 'hidden',
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
