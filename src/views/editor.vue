@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import EditorTitlebar from './editor/editor_titlebar.vue'
+import EditorNav from './editor/editor_nav.vue'
 
 const props = defineProps<{
   path: string | null
@@ -26,13 +27,32 @@ const onKey = (e: KeyboardEvent) => {
 
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+
+const activeNav = ref('manuscript')
+const sidebarWidth = ref(220)
+
+const handleNavSelect = (key: string) => {
+  activeNav.value = key
+}
+
+const handleNavToggle = (collapsed: boolean) => {
+  sidebarWidth.value = collapsed ? 64 : 220
+}
 </script>
 
 <template>
   <section class="editor">
     <EditorTitlebar :name="displayName" @close="close" />
-    <div class="placeholder">
-      <p>这里将是编辑页面的内容。</p>
+    <div class="body">
+      <EditorNav
+        :active="activeNav"
+        :initial-collapsed="false"
+        @select="handleNavSelect"
+        @toggle="handleNavToggle"
+      />
+      <div class="workspace" :style="{ marginLeft: sidebarWidth + 'px' }">
+        <p class="placeholder">这里将是编辑页面的内容。</p>
+      </div>
     </div>
   </section>
 </template>
@@ -42,9 +62,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   padding: 0;
 }
 
-.placeholder {
+.body {
+  display: flex;
+  min-height: calc(100vh - 32px);
+}
+
+.workspace {
+  flex: 1;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e4ea;
+  margin-left: 220px;
+  box-sizing: border-box;
+}
+
+.placeholder {
+  margin: 0;
   color: #6c7180;
 }
 </style>
