@@ -90,8 +90,10 @@ h4 {
 .path {
   margin: 0.35rem 0 0;
   color: #6c7180;
-  word-break: break-all;
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .time {

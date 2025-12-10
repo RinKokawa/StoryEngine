@@ -77,6 +77,8 @@ ipcMain.handle('get-project-cover', async (_event, projectPath: string) => {
 function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    minWidth: 960,
+    minHeight: 540,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },

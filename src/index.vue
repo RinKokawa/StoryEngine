@@ -66,6 +66,11 @@ const currentView = computed(() => viewMap[selected.value])
   min-height: 540px;
 }
 
+:global(html) {
+  min-width: 960px;
+  min-height: 540px;
+}
+
 :global(#app) {
   max-width: none;
   padding: 0;
