@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -81,6 +81,11 @@ ipcMain.handle('ensure-outline', async (_event, projectPath: string) => {
 ipcMain.handle('list-volumes', async (_event, projectPath: string) => {
   if (!projectPath) throw new Error('projectPath is required')
   return listVolumes(projectPath)
+})
+
+ipcMain.handle('list-outline-structure', async (_event, projectPath: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return listOutlineStructure(projectPath)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {

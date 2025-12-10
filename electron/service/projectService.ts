@@ -178,3 +178,59 @@ export async function listVolumes(projectPath: string) {
   }
   return items
 }
+
+export async function listOutlineStructure(projectPath: string) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const outlinePath = path.join(outlineDir, 'outline.json')
+
+  let volumeIds: string[] = []
+  try {
+    const content = await fs.readFile(outlinePath, 'utf-8')
+    const parsed = JSON.parse(content)
+    if (Array.isArray(parsed.volumes)) {
+      volumeIds = parsed.volumes as string[]
+    }
+  } catch {
+    volumeIds = []
+  }
+
+  const volumes = []
+  for (const id of volumeIds) {
+    const volumeFile = path.join(outlineDir, `${id}.json`)
+    let volumeData: { volume_name?: string; chapter_list?: string[] } = {}
+    try {
+      const content = await fs.readFile(volumeFile, 'utf-8')
+      volumeData = JSON.parse(content)
+    } catch {
+      volumeData = { volume_name: id, chapter_list: [] }
+      await fs.writeFile(volumeFile, JSON.stringify(volumeData, null, 2), 'utf-8')
+    }
+
+    const chapters: Array<{ id: string; name: string; synopsis: string }> = []
+    const list = Array.isArray(volumeData.chapter_list) ? volumeData.chapter_list : []
+    for (const chId of list) {
+      const chapterPath = path.join(outlineDir, `${chId}.json`)
+      let chapterData: { chapter_name?: string; synopsis?: string } = {}
+      try {
+        const content = await fs.readFile(chapterPath, 'utf-8')
+        chapterData = JSON.parse(content)
+      } catch {
+        chapterData = { chapter_name: chId, synopsis: '' }
+        await fs.writeFile(chapterPath, JSON.stringify(chapterData, null, 2), 'utf-8')
+      }
+      chapters.push({
+        id: chId,
+        name: chapterData.chapter_name ?? chId,
+        synopsis: chapterData.synopsis ?? '',
+      })
+    }
+
+    volumes.push({
+      id,
+      name: volumeData.volume_name ?? id,
+      chapters,
+    })
+  }
+
+  return volumes
+}
