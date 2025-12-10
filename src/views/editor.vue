@@ -4,6 +4,7 @@ import Titlebar from './components/titlebar.vue'
 import EditorNav from './editor/editor_nav.vue'
 import EditorDashboard from './editor/editor_dashboard.vue'
 import EditorCharacters from './editor/editor_characters.vue'
+import EditorManuscript from './editor/editor_manuscript.vue'
 
 const props = defineProps<{
   path: string | null
@@ -34,6 +35,7 @@ const activeNav = ref('dashboard')
 const sidebarWidth = ref(64)
 const currentView = computed(() => {
   if (activeNav.value === 'dashboard') return EditorDashboard
+  if (activeNav.value === 'manuscript') return EditorManuscript
   if (activeNav.value === 'characters') return EditorCharacters
   return null
 })
