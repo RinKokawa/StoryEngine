@@ -62,6 +62,8 @@ const currentView = computed(() => viewMap[selected.value])
   height: 100vh;
   overflow: hidden;
   display: block;
+  min-width: 960px;
+  min-height: 540px;
 }
 
 :global(#app) {

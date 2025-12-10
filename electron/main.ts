@@ -1,4 +1,5 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import fs from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -23,6 +24,55 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
+
+ipcMain.handle('select-directory', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (canceled || filePaths.length === 0) {
+    return null
+  }
+  return filePaths[0]
+})
+
+ipcMain.handle('create-project', async (_event, payload: { name?: string; location?: string }) => {
+  const name = payload?.name?.trim()
+  const location = payload?.location?.trim()
+
+  if (!name || !location) {
+    throw new Error('name and location are required')
+  }
+
+  const projectDir = path.join(location, name)
+  await fs.mkdir(projectDir, { recursive: true })
+
+  const novelPath = path.join(projectDir, 'novel.json')
+  const data = {
+    name,
+    createdAt: new Date().toISOString(),
+    chapters: [],
+  }
+  await fs.writeFile(novelPath, JSON.stringify(data, null, 2), 'utf-8')
+
+  return { projectPath: projectDir }
+})
+
+ipcMain.handle('get-project-cover', async (_event, projectPath: string) => {
+  if (!projectPath) return null
+  const candidates = ['cover.png', 'cover.jpg', 'cover.jpeg']
+  for (const file of candidates) {
+    const fullPath = path.join(projectPath, file)
+    try {
+      const content = await fs.readFile(fullPath)
+      const ext = path.extname(fullPath).toLowerCase() === '.png' ? 'png' : 'jpeg'
+      const base64 = content.toString('base64')
+      return `data:image/${ext};base64,${base64}`
+    } catch {
+      // ignore and try next
+    }
+  }
+  return null
+})
 
 function createWindow() {
   win = new BrowserWindow({

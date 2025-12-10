@@ -1,13 +1,58 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import IndexProjectCoverCard from './index_project_cover_card.vue'
+
+type Project = {
+  name: string
+  path: string
+}
+
+type ProjectWithCover = Project & { cover: string | null }
+
+const STORAGE_KEY = 'novel-recent-projects'
+const projects = ref<ProjectWithCover[]>([])
+
+const loadProjects = async () => {
+  const cached = localStorage.getItem(STORAGE_KEY)
+  if (!cached) return
+  try {
+    const parsed = JSON.parse(cached) as Project[]
+    const list: ProjectWithCover[] = []
+    for (const item of parsed) {
+      const cover = await window.ipcRenderer.invoke('get-project-cover', item.path)
+      list.push({ ...item, cover: cover ?? null })
+    }
+    projects.value = list
+  } catch (err) {
+    console.error('加载最近项目失败', err)
+  }
+}
+
+onMounted(loadProjects)
+</script>
+
 <template>
   <section class="content">
     <h3>首页</h3>
     <p>欢迎回来，开始创作你的下一个章节吧。</p>
+    <div class="recent" v-if="projects.length">
+      <h4>最近项目</h4>
+      <div class="grid">
+        <IndexProjectCoverCard
+          v-for="item in projects"
+          :key="item.path"
+          :name="item.name"
+          :path="item.path"
+          :cover="item.cover"
+        />
+      </div>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .content {
-  width: min(760px, calc(100% - 32px));
+  width: min(920px, calc(100% - 32px));
   margin: 0 auto;
 }
 
@@ -18,5 +63,15 @@ h3 {
 p {
   margin: 0;
   color: #6c7180;
+}
+
+.recent {
+  margin-top: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
 }
 </style>
