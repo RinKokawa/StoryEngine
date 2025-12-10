@@ -42,13 +42,13 @@ const menu: Array<{ key: NavKey; label: string }> = [
   padding: 0.5rem 1rem;
   position: fixed;
   left: 0;
-  top: 0;
+  top: 32px;
   bottom: 0;
   border-right: 1px solid #e2e4ea;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: 1rem;
+  padding-top: 0.5rem;
   background: #fff;
   text-align: left;
 }

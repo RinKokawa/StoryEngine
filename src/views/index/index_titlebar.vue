@@ -1,31 +1,23 @@
 <script setup lang="ts">
-const props = defineProps<{
-  name: string
-}>()
-
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const minimize = () => {
-  window.ipcRenderer.invoke('window-control', 'minimize')
-}
-
-const maximize = () => {
-  window.ipcRenderer.invoke('window-control', 'maximize')
-}
+const minimize = () => window.ipcRenderer.invoke('window-control', 'minimize')
+const maximize = () => window.ipcRenderer.invoke('window-control', 'maximize')
+const close = () => emit('close')
 </script>
 
 <template>
   <header class="titlebar">
     <div class="left">
       <img class="icon" src="/icon.png" alt="icon" />
-      <span class="name">{{ props.name }}</span>
+      <span class="name">Novel Editor</span>
     </div>
     <div class="controls">
       <button type="button" class="ghost" @click="minimize">—</button>
       <button type="button" class="ghost" @click="maximize">▢</button>
-      <button type="button" class="ghost close" @click="emit('close')">×</button>
+      <button type="button" class="ghost close" @click="close">×</button>
     </div>
   </header>
 </template>
@@ -47,6 +39,7 @@ const maximize = () => {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
+  -webkit-app-region: no-drag;
 }
 
 .icon {
@@ -55,10 +48,7 @@ const maximize = () => {
 }
 
 .name {
-  max-width: 360px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .controls {

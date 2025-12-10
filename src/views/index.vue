@@ -5,6 +5,7 @@ import IndexHome from './index/index_home.vue'
 import IndexProjects from './index/index_projects.vue'
 import IndexFeed from './index/index_feed.vue'
 import IndexSettings from './index/index_settings.vue'
+import IndexTitlebar from './index/index_titlebar.vue'
 import Editor from './editor.vue'
 
 type NavKey = 'home' | 'projects' | 'feed' | 'settings'
@@ -31,10 +32,15 @@ const closeEditor = () => {
   currentProjectPath.value = null
   selected.value = 'home'
 }
+
+const closeApp = () => {
+  window.ipcRenderer.invoke('window-control', 'close')
+}
 </script>
 
 <template>
   <template v-if="mode === 'dashboard'">
+    <IndexTitlebar @close="closeApp" />
     <main class="page">
       <IndexNav :active="selected" @select="selected = $event" />
 

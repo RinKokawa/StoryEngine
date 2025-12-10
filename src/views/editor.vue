@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import EditorTitlebar from './editor/editor_titlebar.vue'
 
 const props = defineProps<{
@@ -11,6 +11,12 @@ const emit = defineEmits<{
 }>()
 
 const close = () => emit('close')
+
+const displayName = computed(() => {
+  if (!props.path) return '未命名项目'
+  const segments = props.path.split(/[\\/]/).filter(Boolean)
+  return segments[segments.length - 1] || '未命名项目'
+})
 
 const onKey = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
@@ -24,7 +30,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 <template>
   <section class="editor">
-    <EditorTitlebar :name="props.path || '未命名项目'" @close="close" />
+    <EditorTitlebar :name="displayName" @close="close" />
     <div class="placeholder">
       <p>这里将是编辑页面的内容。</p>
     </div>
