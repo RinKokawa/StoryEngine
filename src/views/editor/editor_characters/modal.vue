@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'saved'): void
 }>()
 
 const close = () => emit('close')
@@ -75,6 +76,7 @@ const handleSaveAndClose = async () => {
   const ok = await saveCharacter()
   if (ok) {
     hasSaved.value = true
+    emit('saved')
     close()
   }
 }
@@ -96,6 +98,7 @@ const handleSaveOnly = async () => {
   const ok = await saveCharacter()
   if (ok) {
     hasSaved.value = true
+    emit('saved')
   }
 }
 

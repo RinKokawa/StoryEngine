@@ -95,3 +95,37 @@ export async function saveCharacter(
 
   return { id, filePath }
 }
+
+export async function listCharacters(projectPath: string) {
+  const charactersDir = await ensureCharactersFolder(projectPath)
+  const indexPath = path.join(charactersDir, 'index.json')
+
+  let ids: string[] = []
+  try {
+    const content = await fs.readFile(indexPath, 'utf-8')
+    const parsed = JSON.parse(content)
+    if (Array.isArray(parsed.characters)) {
+      ids = parsed.characters as string[]
+    }
+  } catch {
+    ids = []
+  }
+
+  const items = []
+  for (const id of ids) {
+    try {
+      const file = path.join(charactersDir, `${id}.json`)
+      const content = await fs.readFile(file, 'utf-8')
+      const data = JSON.parse(content)
+      items.push({
+        id,
+        name: data.name ?? id,
+        gender: data.gender ?? '',
+        avatar: data.avatar ?? null,
+      })
+    } catch {
+      items.push({ id, name: id, gender: '', avatar: null })
+    }
+  }
+  return items
+}

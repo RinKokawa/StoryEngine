@@ -11,10 +11,33 @@ const ensureFolder = async () => {
   await window.ipcRenderer.invoke('ensure-characters-folder', props.projectPath)
 }
 
-onMounted(ensureFolder)
+const characters = ref<Array<{ id: string; name: string; gender: string; avatar: string | null }>>([])
+
+const loadCharacters = async () => {
+  if (!props.projectPath) {
+    characters.value = []
+    return
+  }
+  try {
+    const list = await window.ipcRenderer.invoke('list-characters', props.projectPath)
+    if (Array.isArray(list)) {
+      characters.value = list
+    }
+  } catch (err) {
+    console.error('加载角色列表失败', err)
+  }
+}
+
+onMounted(() => {
+  ensureFolder()
+  loadCharacters()
+})
 watch(
   () => props.projectPath,
-  () => ensureFolder(),
+  () => {
+    ensureFolder()
+    loadCharacters()
+  },
 )
 
 const showModal = ref(false)
@@ -25,6 +48,10 @@ const openModal = () => {
 
 const closeModal = () => {
   showModal.value = false
+}
+
+const handleSaved = () => {
+  loadCharacters()
 }
 
 const projectName = computed(() => {
@@ -45,7 +72,20 @@ const projectName = computed(() => {
       </div>
     </header>
     <div class="list-placeholder">
-      <p>未来在这里列出角色列表。</p>
+      <ul v-if="characters.length">
+        <li v-for="item in characters" :key="item.id">
+          <span class="avatar" v-if="item.avatar">
+            <img :src="item.avatar" :alt="item.name" />
+          </span>
+          <span class="avatar placeholder" v-else></span>
+          <div class="info">
+            <strong>{{ item.name }}</strong>
+            <span class="muted" v-if="item.gender"> - {{ item.gender }}</span>
+          </div>
+          <button type="button" class="ghost more">⋯</button>
+        </li>
+      </ul>
+      <p v-else>未来在这里列出角色列表。</p>
     </div>
 
     <EditorCharactersModal
@@ -53,6 +93,7 @@ const projectName = computed(() => {
       :project-name="projectName"
       :project-path="props.projectPath"
       @close="closeModal"
+      @saved="handleSaved"
     />
   </section>
 </template>
@@ -130,5 +171,69 @@ h3 {
   padding: 1rem;
   border: 1px dashed #d0d4dd;
   color: #6c7180;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: #2c2f36;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+li > .info {
+  flex: 1;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #d0d4dd;
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar.placeholder {
+  background: #f0f2f5;
+}
+
+.info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.muted {
+  color: #6c7180;
+  font-size: 0.95rem;
+}
+
+.ghost.more {
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.ghost.more:hover {
+  background: #f0f2f5;
 }
 </style>
