@@ -125,7 +125,7 @@ const applyCharacter = (data?: typeof props.character) => {
   weight.value = data?.weight ?? ''
   blood.value = data?.blood ?? ''
   currentId.value = (data?.id as string | undefined) ?? null
-  hasSaved.value = false
+  hasSaved.value = !!data
 }
 
 watch(

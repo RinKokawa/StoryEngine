@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import EditorCharactersModal from './editor_characters/modal.vue'
+import EditorCharacterEditor from './editor_characters/editor_character_editor.vue'
 import ActionsMenu from './editor_characters/actionsMenu.vue'
 
 const props = defineProps<{
@@ -37,10 +37,10 @@ const loadCharacters = async () => {
 onMounted(() => {
   ensureFolder()
   loadCharacters()
-  document.addEventListener('click', onDocumentClick, true)
+  document.addEventListener('click', onDocumentClick)
 })
 onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocumentClick, true)
+  document.removeEventListener('click', onDocumentClick)
 })
 watch(
   () => props.projectPath,
@@ -50,14 +50,14 @@ watch(
   },
 )
 
-const showModal = ref(false)
+const showEditor = ref(false)
 
-const openModal = () => {
-  showModal.value = true
+const openEditor = () => {
+  showEditor.value = true
 }
 
-const closeModal = () => {
-  showModal.value = false
+const closeEditor = () => {
+  showEditor.value = false
   editingCharacter.value = null
 }
 
@@ -74,12 +74,15 @@ const closeMenu = () => {
 }
 
 const handleEdit = async (id: string) => {
+  const fallback = characters.value.find((c) => c.id === id) || null
+  editingCharacter.value = fallback
+  showEditor.value = true
   try {
     const data = await window.ipcRenderer.invoke('read-character', props.projectPath, id)
     editingCharacter.value = data
-    showModal.value = true
   } catch (err) {
     console.error('读取角色失败', err)
+    window.alert('读取角色失败，已使用列表数据作为占位')
   } finally {
     closeMenu()
   }
@@ -99,7 +102,7 @@ const projectName = computed(() => {
       <div class="search">
         <input type="text" placeholder="搜索角色" />
         <button type="button">搜索</button>
-        <button type="button" class="primary" @click="openModal">新增角色</button>
+        <button type="button" class="primary" @click="openEditor">新增角色</button>
       </div>
     </header>
     <div class="list-placeholder">
@@ -126,12 +129,12 @@ const projectName = computed(() => {
       <p v-else>未来在这里列出角色列表。</p>
     </div>
 
-    <EditorCharactersModal
-      v-if="showModal"
+    <EditorCharacterEditor
+      v-if="showEditor"
       :project-name="projectName"
       :project-path="props.projectPath"
       :character="editingCharacter"
-      @close="closeModal"
+      @close="closeEditor"
       @saved="handleSaved"
     />
   </section>
