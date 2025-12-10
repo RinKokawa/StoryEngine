@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Titlebar from './components/titlebar.vue'
 import EditorNav from './editor/editor_nav.vue'
+import EditorDashboard from './editor/editor_dashboard.vue'
 
 const props = defineProps<{
   path: string | null
@@ -28,8 +29,12 @@ const onKey = (e: KeyboardEvent) => {
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
-const activeNav = ref('manuscript')
-const sidebarWidth = ref(220)
+const activeNav = ref('dashboard')
+const sidebarWidth = ref(64)
+const currentView = computed(() => {
+  if (activeNav.value === 'dashboard') return EditorDashboard
+  return null
+})
 
 const handleNavSelect = (key: string) => {
   activeNav.value = key
@@ -55,13 +60,14 @@ const handleOpenExternal = (url: string) => {
     <div class="body">
       <EditorNav
         :active="activeNav"
-        :initial-collapsed="false"
+        :initial-collapsed="true"
         @select="handleNavSelect"
         @toggle="handleNavToggle"
         @open-external="handleOpenExternal"
       />
-      <div class="workspace" :style="{ marginLeft: sidebarWidth + 'px' }">
-        <p class="placeholder">这里将是编辑页面的内容。</p>
+    <div class="workspace" :style="{ marginLeft: sidebarWidth + 'px' }">
+        <component v-if="currentView" :is="currentView" />
+        <p v-else class="placeholder">这里将是编辑页面的内容。</p>
       </div>
     </div>
   </section>
