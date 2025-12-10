@@ -1,16 +1,16 @@
 <template>
-  <div>
+  <div class="projects">
     <div class="top-bar">
       <button type="button">新建项目</button>
       <button type="button" class="secondary">打开项目</button>
     </div>
-    <div class="panel">
-    <h3>项目</h3>
-    <ul>
-      <li>当前没有项目，点击“新建项目”。</li>
-      <li>导入已有项目以继续编辑。</li>
-    </ul>
-    </div>
+    <section class="content">
+      <h3>项目</h3>
+      <ul>
+        <li>当前没有项目，点击“新建项目”。</li>
+        <li>导入已有项目以继续编辑。</li>
+      </ul>
+    </section>
   </div>
 </template>
 
@@ -25,15 +25,9 @@ ul {
   color: #6c7180;
 }
 
-.panel {
-  padding: 1rem 1.25rem;
-  border-radius: 20px;
-  border: 1px solid #e2e4ea;
-  background: #fff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-  width: calc(100% - 32px);
-  max-width: 760px;
-  margin: 1rem auto 0;
+.content {
+  width: min(760px, calc(100% - 32px));
+  margin: 2.5rem auto 0;
 }
 
 .top-bar {
@@ -42,6 +36,10 @@ ul {
   position: fixed;
   top: 1rem;
   right: 1rem;
+}
+
+.projects {
+  padding-top: 3rem;
 }
 
 .secondary {

@@ -33,13 +33,13 @@ const currentView = computed(() => viewMap[selected.value])
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   align-items: flex-start;
   justify-content: flex-start;
   position: relative;
   width: 100%;
   padding-left: 240px;
-  padding-top: 2.5rem;
+  padding-top: 1rem;
   min-height: 100vh;
   box-sizing: border-box;
 }
@@ -48,7 +48,7 @@ const currentView = computed(() => viewMap[selected.value])
   text-align: left;
   width: 100%;
   padding-left: 16px;
-  padding-top: 1rem;
+  padding-top: 0;
 }
 
 .hero p {
@@ -58,12 +58,15 @@ const currentView = computed(() => viewMap[selected.value])
 }
 
 :global(body) {
+  margin: 0;
   height: 100vh;
   overflow: hidden;
+  display: block;
 }
 
 :global(#app) {
   max-width: none;
   padding: 0;
+  text-align: left;
 }
 </style>

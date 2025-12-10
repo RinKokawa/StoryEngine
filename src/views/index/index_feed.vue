@@ -1,17 +1,14 @@
 <template>
-  <div class="panel">
+  <section class="content">
     <h3>动态</h3>
     <p>暂无动态，保持创作，实时更新会显示在这里。</p>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.panel {
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  border: 1px solid #e2e4ea;
-  background: #fff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+.content {
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto;
 }
 
 h3 {
