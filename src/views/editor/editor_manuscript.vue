@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import ManuscriptOutline from './editor_manuscript/manuscript_outline.vue'
+import ManuscriptBody from './editor_manuscript/manuscript_body.vue'
+import ManuscriptAi from './editor_manuscript/manuscript_ai.vue'
 
 defineProps<{
   projectPath: string
@@ -150,21 +153,9 @@ const toggle = (key: 'left' | 'center' | 'right') => {
               <strong v-else>右栏</strong>
             </header>
             <div class="panel-body">
-              <div v-if="key === 'left'" class="outline">
-                <h4>卷章结构</h4>
-                <ul>
-                  <li>卷一 · 待添加</li>
-                  <li>卷二 · 待添加</li>
-                </ul>
-              </div>
-              <div v-else-if="key === 'center'" class="manuscript-body">
-                <h4>正文内容</h4>
-                <textarea placeholder="在这里撰写正文..." />
-              </div>
-              <div v-else class="ai-chat">
-                <h4>AI 聊天</h4>
-                <div class="chat-placeholder">未来在此接入对话。</div>
-              </div>
+              <ManuscriptOutline v-if="key === 'left'" :project-path="projectPath" />
+              <ManuscriptBody v-else-if="key === 'center'" />
+              <ManuscriptAi v-else />
             </div>
           </section>
         </template>
@@ -265,43 +256,6 @@ const toggle = (key: 'left' | 'center' | 'right') => {
 .panel-body {
   flex: 1;
   padding: 0.75rem;
-}
-
-.outline h4,
-.manuscript-body h4,
-.ai-chat h4 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-}
-
-.outline ul {
-  margin: 0;
-  padding-left: 1.1rem;
-  color: #2c2f36;
-}
-
-.manuscript-body textarea {
-  width: 100%;
-  height: 100%;
-  min-height: 240px;
-  resize: vertical;
-  border: 1px solid #d0d4dd;
-  padding: 0.65rem;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.manuscript-body textarea:focus,
-.manuscript-body textarea:focus-visible {
-  outline: none;
-  box-shadow: none;
-  border-color: #646cff;
-}
-
-.ai-chat .chat-placeholder {
-  border: 1px dashed #d0d4dd;
-  padding: 0.75rem;
-  color: #6c7180;
 }
 
 .placeholder {

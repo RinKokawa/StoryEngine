@@ -32,6 +32,19 @@ export async function readProjectCover(projectPath: string) {
   return null
 }
 
+export async function ensureOutlineFolder(projectPath: string) {
+  const target = path.join(projectPath, 'outline')
+  await fs.mkdir(target, { recursive: true })
+  const outlinePath = path.join(target, 'outline.json')
+  try {
+    await fs.access(outlinePath)
+  } catch {
+    const data = { volumes: [] as string[] }
+    await fs.writeFile(outlinePath, JSON.stringify(data, null, 2), 'utf-8')
+  }
+  return target
+}
+
 export async function ensureCharactersFolder(projectPath: string) {
   const target = path.join(projectPath, 'characters')
   await fs.mkdir(target, { recursive: true })
@@ -135,4 +148,33 @@ export async function readCharacter(projectPath: string, id: string) {
   const file = path.join(charactersDir, `${id}.json`)
   const content = await fs.readFile(file, 'utf-8')
   return JSON.parse(content)
+}
+
+export async function listVolumes(projectPath: string) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const outlinePath = path.join(outlineDir, 'outline.json')
+
+  let volumeIds: string[] = []
+  try {
+    const content = await fs.readFile(outlinePath, 'utf-8')
+    const parsed = JSON.parse(content)
+    if (Array.isArray(parsed.volumes)) {
+      volumeIds = parsed.volumes as string[]
+    }
+  } catch {
+    volumeIds = []
+  }
+
+  const items = []
+  for (const id of volumeIds) {
+    const filePath = path.join(outlineDir, `${id}.json`)
+    try {
+      const content = await fs.readFile(filePath, 'utf-8')
+      const data = JSON.parse(content)
+      items.push({ id, name: data.volume_name ?? id })
+    } catch {
+      items.push({ id, name: id })
+    }
+  }
+  return items
 }
