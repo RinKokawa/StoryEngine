@@ -54,6 +54,45 @@ const handleCreate = async (payload: { name: string; location: string }) => {
   }
 }
 
+const handleImport = async () => {
+  try {
+    const dir = await window.ipcRenderer.invoke('select-directory')
+    if (!dir) return
+    // 校验 novel.json 是否存在
+    const novelPath = `${dir.replace(/[\\/]+$/, '')}/novel.json`
+    let novelData: { name?: string }
+    try {
+      const raw = await window.ipcRenderer.invoke('fs:read-file', novelPath)
+      novelData = JSON.parse(raw)
+    } catch {
+      window.alert('未找到有效的项目（缺少 novel.json）')
+      return
+    }
+
+    const existing = projects.value.find((p) => p.path === dir)
+    const cover = await window.ipcRenderer.invoke('get-project-cover', dir)
+    const entry: Project = {
+      name: novelData.name || '未命名项目',
+      path: dir,
+      lastOpened: Date.now(),
+      cover: cover ?? null,
+    }
+    if (existing) {
+      existing.lastOpened = entry.lastOpened
+      existing.cover = entry.cover
+      existing.name = entry.name
+    } else {
+      projects.value.unshift(entry)
+    }
+    selectedPath.value = dir
+    saveProjects()
+    window.alert('导入成功')
+  } catch (err) {
+    console.error('导入项目失败', err)
+    window.alert('导入失败，请检查路径或权限')
+  }
+}
+
 const saveProjects = () => {
   const slim = projects.value.map(({ name, path, lastOpened }) => ({
     name,
@@ -111,7 +150,7 @@ onMounted(loadProjects)
 <template>
   <div class="projects">
     <div class="top-bar">
-      <button type="button" class="secondary">导入项目</button>
+      <button type="button" class="secondary" @click="handleImport">导入项目</button>
       <button type="button" class="primary" @click="openCreate">新建项目</button>
     </div>
     <section class="content">
@@ -167,12 +206,13 @@ h3 {
   display: flex;
   gap: 0.75rem;
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 48px;
+  right: 16px;
+  z-index: 15;
 }
 
 .projects {
-  padding-top: 3rem;
+  padding-top: 4.5rem;
 }
 
 .secondary {

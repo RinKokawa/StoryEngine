@@ -206,22 +206,23 @@ export async function listOutlineStructure(projectPath: string) {
       await fs.writeFile(volumeFile, JSON.stringify(volumeData, null, 2), 'utf-8')
     }
 
-    const chapters: Array<{ id: string; name: string; synopsis: string }> = []
+    const chapters: Array<{ id: string; name: string; synopsis: string; content?: string }> = []
     const list = Array.isArray(volumeData.chapter_list) ? volumeData.chapter_list : []
     for (const chId of list) {
       const chapterPath = path.join(outlineDir, `${chId}.json`)
-      let chapterData: { chapter_name?: string; synopsis?: string } = {}
+      let chapterData: { chapter_name?: string; synopsis?: string; content?: string } = {}
       try {
         const content = await fs.readFile(chapterPath, 'utf-8')
         chapterData = JSON.parse(content)
       } catch {
-        chapterData = { chapter_name: chId, synopsis: '' }
+        chapterData = { chapter_name: chId, synopsis: '', content: '' }
         await fs.writeFile(chapterPath, JSON.stringify(chapterData, null, 2), 'utf-8')
       }
       chapters.push({
         id: chId,
         name: chapterData.chapter_name ?? chId,
         synopsis: chapterData.synopsis ?? '',
+        content: chapterData.content ?? '',
       })
     }
 
@@ -233,4 +234,30 @@ export async function listOutlineStructure(projectPath: string) {
   }
 
   return volumes
+}
+
+export async function saveChapterContent(
+  projectPath: string,
+  chapterId: string,
+  data: { chapter_name?: string; synopsis?: string; content?: string },
+) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const chapterPath = path.join(outlineDir, `${chapterId}.json`)
+  let existing: Record<string, unknown> = {}
+  try {
+    const raw = await fs.readFile(chapterPath, 'utf-8')
+    existing = JSON.parse(raw)
+  } catch {
+    existing = {}
+  }
+
+  const merged = {
+    ...existing,
+    chapter_name: data.chapter_name ?? (existing.chapter_name as string) ?? chapterId,
+    synopsis: data.synopsis ?? (existing.synopsis as string) ?? '',
+    content: data.content ?? (existing.content as string) ?? '',
+  }
+
+  await fs.writeFile(chapterPath, JSON.stringify(merged, null, 2), 'utf-8')
+  return merged
 }

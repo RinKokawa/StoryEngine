@@ -82,6 +82,7 @@ const toggle = () => {
   flex-direction: column;
   border-right: 1px solid #34495e;
   transition: width 0.2s ease;
+  z-index: 20;
 }
 
 .sidebar.collapsed {

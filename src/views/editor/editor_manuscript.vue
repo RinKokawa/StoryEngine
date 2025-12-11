@@ -121,6 +121,12 @@ onBeforeUnmount(() => {
 const toggle = (key: 'left' | 'center' | 'right') => {
   collapsed[key] = !collapsed[key]
 }
+
+const currentChapter = ref<{ id: string; name: string; synopsis?: string; content?: string } | null>(null)
+
+const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: string; content?: string }) => {
+  currentChapter.value = chapter
+}
 </script>
 
 <template>
@@ -153,8 +159,13 @@ const toggle = (key: 'left' | 'center' | 'right') => {
               <strong v-else>右栏</strong>
             </header>
             <div class="panel-body">
-              <ManuscriptOutline v-if="key === 'left'" :project-path="projectPath" />
-              <ManuscriptBody v-else-if="key === 'center'" />
+              <ManuscriptOutline v-if="key === 'left'" :project-path="projectPath" @open-chapter="handleOpenChapter" />
+              <ManuscriptBody
+                v-else-if="key === 'center'"
+                :project-path="projectPath"
+                :chapter="currentChapter"
+                @updated="currentChapter = $event"
+              />
               <ManuscriptAi v-else />
             </div>
           </section>

@@ -5,7 +5,12 @@ const props = defineProps<{
   projectPath: string
 }>()
 
-const volumes = ref<Array<{ id: string; name: string; chapters?: Array<{ id: string; name: string; synopsis: string }> }>>([])
+const volumes = ref<
+  Array<{ id: string; name: string; chapters?: Array<{ id: string; name: string; synopsis: string; content?: string }> }>
+>([])
+const emit = defineEmits<{
+  (e: 'open-chapter', chapter: { id: string; name: string; synopsis: string; content?: string }): void
+}>()
 const expanded = ref<Set<string>>(new Set())
 
 const ensureOutline = async () => {
@@ -68,10 +73,16 @@ const isExpanded = (id: string) => expanded.value.has(id)
           <span class="badge" v-if="v.chapters?.length">{{ v.chapters.length }}</span>
         </button>
         <div v-if="isExpanded(v.id) && v.chapters?.length" class="chapters">
-          <div v-for="c in v.chapters" :key="c.id" class="chapter-row">
+          <button
+            v-for="c in v.chapters"
+            :key="c.id"
+            type="button"
+            class="chapter-row"
+            @click="emit('open-chapter', c)"
+          >
             <span class="dot"></span>
             <span class="chapter-name">{{ c.name }}</span>
-          </div>
+          </button>
         </div>
         <p v-else-if="isExpanded(v.id)" class="placeholder sub">暂无章节。</p>
       </div>

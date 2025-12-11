@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -25,6 +25,11 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
+
+// 确保缓存/数据目录可写，避免权限错误
+const userDataPath = path.join(app.getPath('userData'), 'NovelEditor')
+app.setPath('userData', userDataPath)
+app.setPath('cache', path.join(userDataPath, 'Cache'))
 
 ipcMain.handle('select-directory', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -86,6 +91,17 @@ ipcMain.handle('list-volumes', async (_event, projectPath: string) => {
 ipcMain.handle('list-outline-structure', async (_event, projectPath: string) => {
   if (!projectPath) throw new Error('projectPath is required')
   return listOutlineStructure(projectPath)
+})
+
+ipcMain.handle('save-chapter-content', async (_event, projectPath: string, chapterId: string, data: Record<string, unknown>) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  if (!chapterId) throw new Error('chapterId is required')
+  return saveChapterContent(projectPath, chapterId, data)
+})
+
+ipcMain.handle('fs:read-file', async (_event, filePath: string) => {
+  if (!filePath) throw new Error('filePath is required')
+  return fs.readFile(filePath, 'utf-8')
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {
