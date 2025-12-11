@@ -2,6 +2,7 @@
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import EditorCharacterEditor from './editor_characters/editor_character_editor.vue'
 import ActionsMenu from './editor_characters/actionsMenu.vue'
+import EditorCharacterViewer from './editor_characters/viewer.vue'
 
 const props = defineProps<{
   projectPath: string
@@ -15,6 +16,8 @@ const ensureFolder = async () => {
 const characters = ref<Array<{ id: string; name: string; gender: string; avatar: string | null }>>([])
 const menuOpenId = ref<string | null>(null)
 const editingCharacter = ref<any | null>(null)
+const viewingCharacter = ref<any | null>(null)
+const showViewer = ref(false)
 const onDocumentClick = () => {
   menuOpenId.value = null
 }
@@ -63,6 +66,11 @@ const closeEditor = () => {
 
 const handleSaved = () => {
   loadCharacters()
+  if (showViewer.value && viewingCharacter.value?.id === editingCharacter.value?.id) {
+    if (editingCharacter.value?.id) {
+      openViewer(editingCharacter.value.id)
+    }
+  }
 }
 
 const toggleMenu = (id: string) => {
@@ -88,6 +96,24 @@ const handleEdit = async (id: string) => {
   }
 }
 
+const openViewer = async (id: string) => {
+  const fallback = characters.value.find((c) => c.id === id) || null
+  viewingCharacter.value = fallback
+  showViewer.value = true
+  try {
+    const data = await window.ipcRenderer.invoke('read-character', props.projectPath, id)
+    viewingCharacter.value = data
+  } catch (err) {
+    console.error('读取角色失败', err)
+    window.alert('读取角色失败，已使用列表数据作为占位')
+  }
+}
+
+const closeViewer = () => {
+  showViewer.value = false
+  viewingCharacter.value = null
+}
+
 const projectName = computed(() => {
   if (!props.projectPath) return '未命名项目'
   const segments = props.projectPath.split(/[\\/]/).filter(Boolean)
@@ -107,7 +133,11 @@ const projectName = computed(() => {
     </header>
     <div class="list-placeholder">
       <ul v-if="characters.length">
-        <li v-for="item in characters" :key="item.id">
+        <li
+          v-for="item in characters"
+          :key="item.id"
+          @dblclick="openViewer(item.id)"
+        >
           <span class="avatar" v-if="item.avatar">
             <img :src="item.avatar" :alt="item.name" />
           </span>
@@ -136,6 +166,13 @@ const projectName = computed(() => {
       :character="editingCharacter"
       @close="closeEditor"
       @saved="handleSaved"
+    />
+
+    <EditorCharacterViewer
+      v-if="showViewer && viewingCharacter"
+      :character="viewingCharacter"
+      :project-name="projectName"
+      @close="closeViewer"
     />
   </section>
 </template>
@@ -230,6 +267,13 @@ li {
   align-items: center;
   gap: 0.75rem;
   justify-content: space-between;
+  padding: 6px 4px;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+li:hover {
+  background: #f5f7fb;
 }
 
 li > .info {
