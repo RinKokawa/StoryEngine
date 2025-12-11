@@ -53,6 +53,9 @@ const handleNavToggle = (collapsed: boolean) => {
 const handleOpenExternal = (url: string) => {
   window.ipcRenderer.invoke('shell:open-external', url)
 }
+
+const minimizeWindow = () => window.ipcRenderer.invoke('window-control', 'minimize')
+const maximizeWindow = () => window.ipcRenderer.invoke('window-control', 'maximize')
 </script>
 
 <template>
@@ -60,8 +63,8 @@ const handleOpenExternal = (url: string) => {
     <Titlebar
       :name="displayName"
       @close="close"
-      @minimize="() => window.ipcRenderer.invoke('window-control', 'minimize')"
-      @maximize="() => window.ipcRenderer.invoke('window-control', 'maximize')"
+      @minimize="minimizeWindow"
+      @maximize="maximizeWindow"
     />
     <div class="body">
       <EditorNav
