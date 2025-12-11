@@ -56,11 +56,18 @@ export async function ensureOutlineFolder(projectPath: string) {
   const target = path.join(projectPath, 'outline')
   await fs.mkdir(target, { recursive: true })
   const outlinePath = path.join(target, 'outline.json')
+  const volumesPath = path.join(target, 'volumes.json')
   try {
     await fs.access(outlinePath)
   } catch {
     const data = { volumes: [] as string[] }
     await fs.writeFile(outlinePath, JSON.stringify(data, null, 2), 'utf-8')
+  }
+  try {
+    await fs.access(volumesPath)
+  } catch {
+    const data = { volume_list: [] as string[] }
+    await fs.writeFile(volumesPath, JSON.stringify(data, null, 2), 'utf-8')
   }
   return target
 }
@@ -220,16 +227,28 @@ export async function listVolumes(projectPath: string) {
 export async function listOutlineStructure(projectPath: string) {
   const outlineDir = await ensureOutlineFolder(projectPath)
   const outlinePath = path.join(outlineDir, 'outline.json')
+  const volumesPath = path.join(outlineDir, 'volumes.json')
 
   let volumeIds: string[] = []
   try {
-    const content = await fs.readFile(outlinePath, 'utf-8')
+    const content = await fs.readFile(volumesPath, 'utf-8')
     const parsed = JSON.parse(content)
-    if (Array.isArray(parsed.volumes)) {
-      volumeIds = parsed.volumes as string[]
+    if (Array.isArray(parsed.volume_list)) {
+      volumeIds = parsed.volume_list as string[]
     }
   } catch {
     volumeIds = []
+  }
+  if (volumeIds.length === 0) {
+    try {
+      const content = await fs.readFile(outlinePath, 'utf-8')
+      const parsed = JSON.parse(content)
+      if (Array.isArray(parsed.volumes)) {
+        volumeIds = parsed.volumes as string[]
+      }
+    } catch {
+      volumeIds = []
+    }
   }
 
   const volumes = []
@@ -299,4 +318,148 @@ export async function saveChapterContent(
   await fs.writeFile(chapterPath, JSON.stringify(merged, null, 2), 'utf-8')
   await logChange(projectPath, { action: 'save-chapter', target: chapterId, before: existing, after: merged })
   return merged
+}
+
+export async function createVolume(projectPath: string, volumeName: string) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const outlinePath = path.join(outlineDir, 'outline.json')
+  const volumesPath = path.join(outlineDir, 'volumes.json')
+
+  let indexData: { volumes: string[] } = { volumes: [] }
+  try {
+    const raw = await fs.readFile(outlinePath, 'utf-8')
+    indexData = JSON.parse(raw)
+  } catch {
+    indexData = { volumes: [] }
+  }
+
+  let volumeIndex: { volume_list: string[] } = { volume_list: [] }
+  try {
+    const raw = await fs.readFile(volumesPath, 'utf-8')
+    volumeIndex = JSON.parse(raw)
+  } catch {
+    volumeIndex = { volume_list: [] }
+  }
+
+  const id = `volume_${Date.now()}`
+  indexData.volumes.push(id)
+  await fs.writeFile(outlinePath, JSON.stringify(indexData, null, 2), 'utf-8')
+  volumeIndex.volume_list.push(id)
+  await fs.writeFile(volumesPath, JSON.stringify(volumeIndex, null, 2), 'utf-8')
+
+  const volumeFile = path.join(outlineDir, `${id}.json`)
+  const data = { volume_name: volumeName || id, chapter_list: [] as string[] }
+  await fs.writeFile(volumeFile, JSON.stringify(data, null, 2), 'utf-8')
+
+  await logChange(projectPath, { action: 'create-volume', target: id, after: data })
+  return { id, name: data.volume_name }
+}
+
+export async function deleteVolume(projectPath: string, volumeId: string) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const outlinePath = path.join(outlineDir, 'outline.json')
+  const volumesPath = path.join(outlineDir, 'volumes.json')
+  let indexData: { volumes: string[] } = { volumes: [] }
+  try {
+    const raw = await fs.readFile(outlinePath, 'utf-8')
+    indexData = JSON.parse(raw)
+  } catch {
+    indexData = { volumes: [] }
+  }
+  indexData.volumes = indexData.volumes.filter((id) => id !== volumeId)
+  await fs.writeFile(outlinePath, JSON.stringify(indexData, null, 2), 'utf-8')
+
+  let volumeIndex: { volume_list: string[] } = { volume_list: [] }
+  try {
+    const raw = await fs.readFile(volumesPath, 'utf-8')
+    volumeIndex = JSON.parse(raw)
+  } catch {
+    volumeIndex = { volume_list: [] }
+  }
+  volumeIndex.volume_list = volumeIndex.volume_list.filter((id) => id !== volumeId)
+  await fs.writeFile(volumesPath, JSON.stringify(volumeIndex, null, 2), 'utf-8')
+
+  const volumeFile = path.join(outlineDir, `${volumeId}.json`)
+  let volumeData: { chapter_list?: string[] } = {}
+  try {
+    const raw = await fs.readFile(volumeFile, 'utf-8')
+    volumeData = JSON.parse(raw)
+  } catch {
+    volumeData = {}
+  }
+  const chapters = Array.isArray(volumeData.chapter_list) ? volumeData.chapter_list : []
+  for (const chId of chapters) {
+    try {
+      await fs.unlink(path.join(outlineDir, `${chId}.json`))
+    } catch {
+      // ignore
+    }
+  }
+  try {
+    await fs.unlink(volumeFile)
+  } catch {
+    // ignore
+  }
+
+  await logChange(projectPath, { action: 'delete-volume', target: volumeId, before: volumeData })
+  return { ok: true }
+}
+
+export async function createChapter(projectPath: string, volumeId: string, chapterName: string) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const outlinePath = path.join(outlineDir, 'outline.json')
+  const volumePath = path.join(outlineDir, `${volumeId}.json`)
+
+  // ensure volume exists
+  try {
+    await fs.access(volumePath)
+  } catch {
+    throw new Error('volume not found')
+  }
+
+  let volumeData: { volume_name?: string; chapter_list?: string[] } = {}
+  try {
+    const raw = await fs.readFile(volumePath, 'utf-8')
+    volumeData = JSON.parse(raw)
+  } catch {
+    volumeData = { chapter_list: [] }
+  }
+
+  const chapterId = `chapter_${Date.now()}`
+  const list = Array.isArray(volumeData.chapter_list) ? volumeData.chapter_list : []
+  list.push(chapterId)
+  volumeData.chapter_list = list
+  await fs.writeFile(volumePath, JSON.stringify(volumeData, null, 2), 'utf-8')
+
+  const chapterFile = path.join(outlineDir, `${chapterId}.json`)
+  const data = { chapter_name: chapterName || chapterId, synopsis: '', content: '' }
+  await fs.writeFile(chapterFile, JSON.stringify(data, null, 2), 'utf-8')
+
+  await logChange(projectPath, { action: 'create-chapter', target: chapterId, after: data })
+  return { id: chapterId, name: data.chapter_name }
+}
+
+export async function deleteChapter(projectPath: string, volumeId: string, chapterId: string) {
+  const outlineDir = await ensureOutlineFolder(projectPath)
+  const volumePath = path.join(outlineDir, `${volumeId}.json`)
+
+  let volumeData: { chapter_list?: string[] } = {}
+  try {
+    const raw = await fs.readFile(volumePath, 'utf-8')
+    volumeData = JSON.parse(raw)
+  } catch {
+    volumeData = {}
+  }
+  const list = Array.isArray(volumeData.chapter_list) ? volumeData.chapter_list : []
+  volumeData.chapter_list = list.filter((id) => id !== chapterId)
+  await fs.writeFile(volumePath, JSON.stringify(volumeData, null, 2), 'utf-8')
+
+  try {
+    await fs.unlink(path.join(outlineDir, `${chapterId}.json`))
+  } catch {
+    // ignore
+  }
+
+  await logChange(projectPath, { action: 'delete-chapter', target: chapterId, before: { volumeId } })
+  return { ok: true }
 }

@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -107,6 +107,26 @@ ipcMain.handle('fs:read-file', async (_event, filePath: string) => {
 ipcMain.handle('fs:list-dir', async (_event, dirPath: string) => {
   if (!dirPath) throw new Error('dirPath is required')
   return fs.readdir(dirPath)
+})
+
+ipcMain.handle('outline:create-volume', async (_event, projectPath: string, name: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return createVolume(projectPath, name)
+})
+
+ipcMain.handle('outline:delete-volume', async (_event, projectPath: string, volumeId: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return deleteVolume(projectPath, volumeId)
+})
+
+ipcMain.handle('outline:create-chapter', async (_event, projectPath: string, volumeId: string, name: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return createChapter(projectPath, volumeId, name)
+})
+
+ipcMain.handle('outline:delete-chapter', async (_event, projectPath: string, volumeId: string, chapterId: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return deleteChapter(projectPath, volumeId, chapterId)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {
