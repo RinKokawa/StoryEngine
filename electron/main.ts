@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter, ensureWorldviewsIndex, readWorldviewItem } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -127,6 +127,17 @@ ipcMain.handle('outline:create-chapter', async (_event, projectPath: string, vol
 ipcMain.handle('outline:delete-chapter', async (_event, projectPath: string, volumeId: string, chapterId: string) => {
   if (!projectPath) throw new Error('projectPath is required')
   return deleteChapter(projectPath, volumeId, chapterId)
+})
+
+ipcMain.handle('worldview:ensure-index', async (_event, projectPath: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return ensureWorldviewsIndex(projectPath)
+})
+
+ipcMain.handle('worldview:read-item', async (_event, projectPath: string, id: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  if (!id) throw new Error('id is required')
+  return readWorldviewItem(projectPath, id)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {

@@ -72,6 +72,61 @@ export async function ensureOutlineFolder(projectPath: string) {
   return target
 }
 
+export async function ensureWorldviewsFolder(projectPath: string) {
+  const target = path.join(projectPath, 'worldviews')
+  await fs.mkdir(target, { recursive: true })
+  return target
+}
+
+export async function ensureWorldviewsIndex(projectPath: string) {
+  const folder = await ensureWorldviewsFolder(projectPath)
+  const indexPath = path.join(folder, 'index.json')
+  const defaultItems = [
+    'country',
+    'culture',
+    'economy',
+    'environment',
+    'government',
+    'history',
+    'language',
+    'religion',
+    'society',
+    'technology',
+  ]
+  try {
+    await fs.access(indexPath)
+  } catch {
+    const data = { items: defaultItems }
+    await fs.writeFile(indexPath, JSON.stringify(data, null, 2), 'utf-8')
+    return data
+  }
+  try {
+    const raw = await fs.readFile(indexPath, 'utf-8')
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed.items)) {
+      return parsed
+    }
+  } catch {
+    // ignore parse error and rewrite
+  }
+  const data = { items: defaultItems }
+  await fs.writeFile(indexPath, JSON.stringify(data, null, 2), 'utf-8')
+  return data
+}
+
+export async function readWorldviewItem(projectPath: string, id: string) {
+  const folder = await ensureWorldviewsFolder(projectPath)
+  const filePath = path.join(folder, `${id}.json`)
+  try {
+    const raw = await fs.readFile(filePath, 'utf-8')
+    return JSON.parse(raw)
+  } catch {
+    const data = { id, title: id, content: '' }
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
+    return data
+  }
+}
+
 export async function ensureCharactersFolder(projectPath: string) {
   const target = path.join(projectPath, 'characters')
   await fs.mkdir(target, { recursive: true })
