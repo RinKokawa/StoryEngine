@@ -41,6 +41,10 @@ const dirty = computed(() => {
   return content.value !== (props.chapter.content ?? '') || synopsis.value !== (props.chapter.synopsis ?? '')
 })
 
+const wordCount = computed(() => {
+  return content.value.length
+})
+
 const saving = ref(false)
 
 const saveContent = async () => {
@@ -214,6 +218,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="actions">
+        <span class="count">字数：{{ wordCount }}</span>
         <button type="button" class="primary" :disabled="!dirty || saving" @click="saveContent">
           {{ saving ? '保存中...' : '保存修改' }}
         </button>
@@ -290,6 +295,8 @@ onBeforeUnmount(() => {
   margin-top: 0.5rem;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .primary {
@@ -310,6 +317,10 @@ onBeforeUnmount(() => {
 .primary:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+.count {
+  color: #4a5a7d;
 }
 
 .placeholder {
