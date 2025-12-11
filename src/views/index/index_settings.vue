@@ -2,10 +2,25 @@
 import { ref } from 'vue'
 
 const qwenApiKey = ref('')
+const saving = ref(false)
+const savingMsg = ref('')
 
-const save = () => {
-  // 在此处接入真实的持久化逻辑（例如写入本地配置或调用后端 API）
-  console.log('保存 Qwen API Key:', qwenApiKey.value)
+const save = async () => {
+  if (!qwenApiKey.value.trim()) {
+    window.alert('请输入 Qwen API Key')
+    return
+  }
+  saving.value = true
+  savingMsg.value = ''
+  try {
+    await window.ipcRenderer.invoke('settings:save-qwen-key', qwenApiKey.value.trim())
+    savingMsg.value = '已写入应用数据目录 (.env)'
+  } catch (err) {
+    console.error('保存 Qwen Key 失败', err)
+    window.alert('保存失败，请检查权限')
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -21,9 +36,12 @@ const save = () => {
           type="password"
           placeholder="sk-..."
         />
-        <button type="button" class="primary" @click="save">保存</button>
+        <button type="button" class="primary" :disabled="saving" @click="save">
+          {{ saving ? '保存中...' : '保存' }}
+        </button>
       </div>
-      <p class="hint">仅存本地。不要泄露给他人。</p>
+      <p class="hint">保存后写入应用 userData 目录下的 .env 中的 QWEN_API_KEY，仅存本地。</p>
+      <p v-if="savingMsg" class="success">{{ savingMsg }}</p>
     </div>
   </section>
 </template>
@@ -90,5 +108,21 @@ input {
 .primary:hover {
   background: #535bf2;
   border-color: #535bf2;
+}
+
+.ghost {
+  padding: 0.55rem 1rem;
+  border: 1px solid #d0d4dd;
+  background: #f5f6fa;
+  color: #2c2f36;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.success {
+  color: #2e7d32;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
 }
 </style>

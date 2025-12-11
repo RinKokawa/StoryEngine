@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter, ensureWorldviewsIndex, readWorldviewItem, listNotes, saveNote, deleteNote } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter, ensureWorldviewsIndex, readWorldviewItem, listNotes, saveNote, deleteNote, saveEnvKey, readEnvKey } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -154,6 +154,49 @@ ipcMain.handle('notes:delete', async (_event, projectPath: string, id: string) =
   if (!projectPath) throw new Error('projectPath is required')
   if (!id) throw new Error('id is required')
   return deleteNote(projectPath, id)
+})
+
+ipcMain.handle('settings:save-qwen-key', async (_event, key: string) => {
+  if (!key) throw new Error('key is required')
+  const userData = app.getPath('userData')
+  return saveEnvKey(userData, 'QWEN_API_KEY', key)
+})
+
+async function callQwen(messages: Array<{ role: string; content: string }>) {
+  const apiKey = await readEnvKey(app.getPath('userData'), 'QWEN_API_KEY')
+  if (!apiKey) {
+    throw new Error('未配置 QWEN_API_KEY，请先在设置中保存')
+  }
+
+  const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'qwen-plus',
+      messages,
+    }),
+  })
+
+  const data = await resp.json()
+  if (!resp.ok) {
+    const message = data?.error?.message || resp.statusText
+    throw new Error(`Qwen 接口错误: ${message}`)
+  }
+
+  const content =
+    data?.choices?.[0]?.message?.content ||
+    data?.output_text ||
+    ''
+
+  return { content }
+}
+
+ipcMain.handle('ai:chat', async (_event, payload: { messages: Array<{ role: string; content: string }> }) => {
+  if (!payload?.messages?.length) throw new Error('messages is required')
+  return callQwen(payload.messages)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {

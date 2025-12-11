@@ -500,6 +500,53 @@ export async function saveChapterContent(
   return merged
 }
 
+export async function saveEnvKey(projectPath: string, key: string, value: string) {
+  const envPath = path.join(projectPath, '.env')
+  let beforeContent = ''
+  try {
+    beforeContent = await fs.readFile(envPath, 'utf-8')
+  } catch {
+    beforeContent = ''
+  }
+
+  const lines = beforeContent ? beforeContent.split(/\r?\n/) : []
+  const nextLines: string[] = []
+  let updated = false
+  for (const line of lines) {
+    if (line.startsWith(`${key}=`)) {
+      nextLines.push(`${key}=${value}`)
+      updated = true
+    } else {
+      nextLines.push(line)
+    }
+  }
+
+  if (!updated) {
+    nextLines.push(`${key}=${value}`)
+  }
+
+  const nextContent = nextLines.join('\n') + '\n'
+  await fs.writeFile(envPath, nextContent, 'utf-8')
+  await logChange(projectPath, { action: 'save-env', target: '.env', before: beforeContent, after: nextContent })
+  return { path: envPath }
+}
+
+export async function readEnvKey(projectPath: string, key: string) {
+  const envPath = path.join(projectPath, '.env')
+  try {
+    const content = await fs.readFile(envPath, 'utf-8')
+    const lines = content.split(/\r?\n/)
+    for (const line of lines) {
+      if (line.startsWith(`${key}=`)) {
+        return line.slice(key.length + 1).trim()
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export async function createVolume(projectPath: string, volumeName: string) {
   const outlineDir = await ensureOutlineFolder(projectPath)
   const outlinePath = path.join(outlineDir, 'outline.json')
