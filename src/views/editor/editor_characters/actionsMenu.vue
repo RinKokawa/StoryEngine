@@ -1,14 +1,17 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   (e: 'edit'): void
+  (e: 'view'): void
   (e: 'close'): void
 }>()
 
 const onEdit = () => emit('edit')
+const onView = () => emit('view')
 </script>
 
 <template>
   <div class="menu" @click.stop>
+    <button type="button" class="view" @click="onView">查看详细</button>
     <button type="button" @click="onEdit">编辑</button>
   </div>
 </template>
@@ -36,10 +39,19 @@ button {
   text-align: left;
   cursor: pointer;
   border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
 }
 
 button:hover {
   background: #f0f2f5;
+}
+
+button.view:hover {
+  background: #e8f0ff;
+  color: #1f5fbf;
+  cursor: pointer;
 }
 
 button:focus {

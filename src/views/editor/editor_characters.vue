@@ -151,6 +151,7 @@ const projectName = computed(() => {
             <ActionsMenu
               v-if="menuOpenId === item.id"
               @close="closeMenu"
+              @view="openViewer(item.id)"
               @edit="handleEdit(item.id)"
             />
           </div>

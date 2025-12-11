@@ -16,6 +16,26 @@ export async function createProjectOnDisk(name: string, location: string) {
   return { projectPath: projectDir }
 }
 
+async function logChange(
+  projectPath: string,
+  entry: { action: string; target: string; before?: unknown; after?: unknown },
+) {
+  try {
+    const logDir = path.join(projectPath, 'log')
+    await fs.mkdir(logDir, { recursive: true })
+    const day = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const logPath = path.join(logDir, `${day}.log`)
+    const line =
+      `[${new Date().toISOString()}] ${entry.action} ${entry.target}\n` +
+      `before: ${JSON.stringify(entry.before)}\n` +
+      `after: ${JSON.stringify(entry.after)}\n` +
+      `---\n`
+    await fs.appendFile(logPath, line, 'utf-8')
+  } catch {
+    // ignore log failures to avoid破坏主流程
+  }
+}
+
 export async function readProjectCover(projectPath: string) {
   const candidates = ['cover.png', 'cover.jpg', 'cover.jpeg']
   for (const file of candidates) {
@@ -78,6 +98,23 @@ export async function saveCharacter(
   const nameRaw = (payload?.name as string | undefined)?.trim() || '未命名角色'
   const id = `character_${slugify(nameRaw)}`
 
+  let beforeData: Record<string, unknown> | null = null
+  if (previousId) {
+    try {
+      const existingRaw = await fs.readFile(path.join(charactersDir, `${previousId}.json`), 'utf-8')
+      beforeData = JSON.parse(existingRaw)
+    } catch {
+      beforeData = null
+    }
+  } else {
+    try {
+      const existingRaw = await fs.readFile(path.join(charactersDir, `${id}.json`), 'utf-8')
+      beforeData = JSON.parse(existingRaw)
+    } catch {
+      beforeData = null
+    }
+  }
+
   let indexData: { characters: string[] } = { characters: [] }
   try {
     const content = await fs.readFile(indexPath, 'utf-8')
@@ -105,6 +142,7 @@ export async function saveCharacter(
 
   const filePath = path.join(charactersDir, `${id}.json`)
   await fs.writeFile(filePath, JSON.stringify({ ...payload, id }, null, 2), 'utf-8')
+  await logChange(projectPath, { action: 'save-character', target: id, before: beforeData, after: payload })
 
   return { id, filePath }
 }
@@ -259,5 +297,6 @@ export async function saveChapterContent(
   }
 
   await fs.writeFile(chapterPath, JSON.stringify(merged, null, 2), 'utf-8')
+  await logChange(projectPath, { action: 'save-chapter', target: chapterId, before: existing, after: merged })
   return merged
 }

@@ -104,6 +104,11 @@ ipcMain.handle('fs:read-file', async (_event, filePath: string) => {
   return fs.readFile(filePath, 'utf-8')
 })
 
+ipcMain.handle('fs:list-dir', async (_event, dirPath: string) => {
+  if (!dirPath) throw new Error('dirPath is required')
+  return fs.readdir(dirPath)
+})
+
 ipcMain.handle('shell:open-external', async (_event, url: string) => {
   if (!url) return
   const { shell } = await import('electron')
