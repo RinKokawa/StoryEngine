@@ -22,6 +22,17 @@ const emit = defineEmits<{
 }>()
 
 const close = () => emit('close')
+
+const onKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    close()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKey, true))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
 </script>
 
 <template>
@@ -40,6 +51,7 @@ const close = () => emit('close')
         <div v-else class="placeholder">无头像</div>
       </div>
       <div class="info">
+        <button type="button" class="back" @click="close">← 返回</button>
         <h3>{{ character.name || '未命名角色' }}</h3>
         <p v-if="character.gender">性别：{{ character.gender }}</p>
         <p v-if="character.birthday">出生日期：{{ character.birthday }}</p>
@@ -69,6 +81,22 @@ const close = () => emit('close')
   gap: 1rem;
   padding: 1rem 1.5rem;
   color: #2c2f36;
+}
+
+.back {
+  align-self: flex-start;
+  margin: 0 0 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #d0d4dd;
+  background: #f5f6fa;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.back:focus,
+.back:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .avatar {
