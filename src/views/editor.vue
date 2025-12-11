@@ -5,6 +5,7 @@ import EditorNav from './editor/editor_nav.vue'
 import EditorDashboard from './editor/editor_dashboard.vue'
 import EditorCharacters from './editor/editor_characters.vue'
 import EditorManuscript from './editor/editor_manuscript.vue'
+import EditorWorldview from './editor/editor_worldview.vue'
 
 const props = defineProps<{
   path: string | null
@@ -37,6 +38,7 @@ const currentView = computed(() => {
   if (activeNav.value === 'dashboard') return EditorDashboard
   if (activeNav.value === 'manuscript') return EditorManuscript
   if (activeNav.value === 'characters') return EditorCharacters
+  if (activeNav.value === 'world') return EditorWorldview
   return null
 })
 
