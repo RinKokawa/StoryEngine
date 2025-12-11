@@ -116,9 +116,9 @@ const applyCharacter = async (idx: number) => {
   const removeLen = content.value[start] === '@' ? 1 : 0
   const before = content.value.slice(0, start)
   const after = content.value.slice(start + removeLen)
-  const insertion = `@${item.name}`
-  content.value = `${before}${insertion} ${after}`
-  const pos = before.length + insertion.length + 1
+  const insertion = item.name
+  content.value = `${before}${insertion}${after}`
+  const pos = before.length + insertion.length
   await nextTick()
   if (textareaRef.value) {
     textareaRef.value.focus()
