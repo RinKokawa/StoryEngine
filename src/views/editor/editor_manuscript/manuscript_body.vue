@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import CharacterPicker from '../editor_characters/character_picker.vue'
 
 const props = defineProps<{
   projectPath: string
@@ -12,6 +13,12 @@ const emit = defineEmits<{
 
 const content = ref('')
 const synopsis = ref('')
+const characters = ref<Array<{ id: string; name: string; gender?: string; avatar?: string | null }>>([])
+const showPicker = ref(false)
+const pickerActiveIndex = ref(0)
+const mentionStart = ref<number | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const pickerRef = ref<HTMLElement | null>(null)
 
 watch(
   () => props.chapter,
@@ -59,8 +66,119 @@ const onKey = (e: KeyboardEvent) => {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKey, true))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
+const loadCharacters = async () => {
+  if (!props.projectPath) {
+    characters.value = []
+    return
+  }
+  try {
+    const list = await window.ipcRenderer.invoke('list-characters', props.projectPath)
+    if (Array.isArray(list)) {
+      characters.value = list
+    }
+  } catch (err) {
+    console.error('加载角色列表失败', err)
+  }
+}
+
+watch(
+  () => props.projectPath,
+  () => loadCharacters(),
+  { immediate: true },
+)
+
+watch(
+  () => props.chapter?.id,
+  () => closePicker(),
+)
+
+const closePicker = () => {
+  showPicker.value = false
+  mentionStart.value = null
+}
+
+const openPickerAtCaret = (e: KeyboardEvent) => {
+  if (!characters.value.length) return
+  const target = e.target as HTMLTextAreaElement | null
+  if (!target) return
+  mentionStart.value = target.selectionStart ?? 0
+  pickerActiveIndex.value = 0
+  showPicker.value = true
+}
+
+const applyCharacter = async (idx: number) => {
+  const item = characters.value[idx]
+  if (!item) {
+    closePicker()
+    return
+  }
+  const start = mentionStart.value ?? textareaRef.value?.selectionStart ?? 0
+  const removeLen = content.value[start] === '@' ? 1 : 0
+  const before = content.value.slice(0, start)
+  const after = content.value.slice(start + removeLen)
+  const insertion = `@${item.name}`
+  content.value = `${before}${insertion} ${after}`
+  const pos = before.length + insertion.length + 1
+  await nextTick()
+  if (textareaRef.value) {
+    textareaRef.value.focus()
+    textareaRef.value.setSelectionRange(pos, pos)
+  }
+  closePicker()
+}
+
+const handlePickerHover = (idx: number) => {
+  pickerActiveIndex.value = idx
+}
+
+const handleTextareaKeydown = (e: KeyboardEvent) => {
+  if (e.key === '@') {
+    openPickerAtCaret(e)
+    return
+  }
+  if (!showPicker.value) return
+  if (e.key === 'Escape') {
+    closePicker()
+    return
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (characters.value.length) {
+      pickerActiveIndex.value = (pickerActiveIndex.value + 1) % characters.value.length
+    }
+    return
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (characters.value.length) {
+      pickerActiveIndex.value =
+        (pickerActiveIndex.value - 1 + characters.value.length) % characters.value.length
+    }
+    return
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    applyCharacter(pickerActiveIndex.value)
+  }
+}
+
+const handleClickOutside = (e: MouseEvent) => {
+  if (!showPicker.value) return
+  const target = e.target as Node | null
+  if (!target) return
+  if (pickerRef.value?.contains(target)) return
+  if (textareaRef.value?.contains(target as Node)) return
+  closePicker()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKey, true)
+  document.addEventListener('mousedown', handleClickOutside)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey, true)
+  document.removeEventListener('mousedown', handleClickOutside)
+})
 </script>
 
 <template>
@@ -72,7 +190,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
         简介：
         <input v-model="synopsis" type="text" placeholder="简介" />
       </label>
-      <textarea v-model="content" placeholder="章节内容" />
+      <div class="editor-area">
+        <textarea
+          ref="textareaRef"
+          v-model="content"
+          placeholder="章节内容"
+          @keydown="handleTextareaKeydown"
+        />
+        <div v-if="showPicker && characters.length" class="picker-pop" ref="pickerRef">
+          <CharacterPicker
+            :characters="characters"
+            :active-index="pickerActiveIndex"
+            @hover="handlePickerHover"
+            @select="applyCharacter"
+          />
+        </div>
+      </div>
       <div class="actions">
         <button type="button" class="primary" :disabled="!dirty || saving" @click="saveContent">
           {{ saving ? '保存中...' : '保存修改' }}
@@ -133,6 +266,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
   outline: none;
   box-shadow: none;
   border-color: #646cff;
+}
+
+.editor-area {
+  position: relative;
+}
+
+.picker-pop {
+  position: absolute;
+  left: 0;
+  bottom: 8px;
+  z-index: 10;
 }
 
 .actions {
