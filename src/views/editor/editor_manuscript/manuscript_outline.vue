@@ -155,9 +155,22 @@ const handleModalSubmit = async (name: string) => {
 const handleModalClose = () => {
   showModal.value = false
 }
-const selectChapter = (chapter: { id: string; name: string; synopsis?: string; content?: string }) => {
+const findChapterById = (id: string) => {
+  for (const v of volumes.value) {
+    if (!v.chapters) continue
+    for (const c of v.chapters) {
+      if (c.id === id) return c
+    }
+  }
+  return null
+}
+
+const selectChapter = async (chapter: { id: string; name: string; synopsis?: string; content?: string }) => {
   selectedChapterId.value = chapter.id
-  emit('open-chapter', chapter)
+  // 为避免使用旧缓存，重新加载一次卷章节数据后再打开
+  await loadVolumes()
+  const latest = findChapterById(chapter.id) || chapter
+  emit('open-chapter', latest)
 }
 </script>
 

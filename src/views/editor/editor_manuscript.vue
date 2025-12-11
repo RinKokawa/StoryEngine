@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import ManuscriptOutline from './editor_manuscript/manuscript_outline.vue'
 import ManuscriptBody from './editor_manuscript/manuscript_body.vue'
 import ManuscriptAi from './editor_manuscript/manuscript_ai.vue'
+import ManuscriptMentions from './editor_manuscript/manuscript_mentions.vue'
 
 defineProps<{
   projectPath: string
@@ -11,19 +12,22 @@ defineProps<{
 const collapsed = reactive({
   left: false,
   center: false,
+  mentions: false,
   right: false,
 })
 
-const widths = reactive<Record<'left' | 'center' | 'right', number>>({
-  left: 25,
-  center: 50,
-  right: 25,
+const widths = reactive<Record<'left' | 'center' | 'mentions' | 'right', number>>({
+  left: 22,
+  center: 38,
+  mentions: 20,
+  right: 20,
 })
 
 const visibleKeys = computed(() => {
-  const keys: Array<'left' | 'center' | 'right'> = []
+  const keys: Array<'left' | 'center' | 'mentions' | 'right'> = []
   if (!collapsed.left) keys.push('left')
   if (!collapsed.center) keys.push('center')
+  if (!collapsed.mentions) keys.push('mentions')
   if (!collapsed.right) keys.push('right')
   return keys
 })
@@ -39,7 +43,11 @@ const gridColumns = computed(() => {
 
 const handlePairs = computed(() => {
   const keys = visibleKeys.value
-  const pairs: Array<{ left: 'left' | 'center' | 'right'; right: 'left' | 'center' | 'right'; pos: number }> = []
+  const pairs: Array<{
+    left: 'left' | 'center' | 'mentions' | 'right'
+    right: 'left' | 'center' | 'mentions' | 'right'
+    pos: number
+  }> = []
   if (keys.length < 2) return pairs
   const total = keys.reduce((sum, key) => sum + widths[key], 0)
   let acc = 0
@@ -56,8 +64,8 @@ const handlePairs = computed(() => {
 
 const layoutRef = ref<HTMLElement | null>(null)
 const dragging = ref<{
-  left: 'left' | 'center' | 'right'
-  right: 'left' | 'center' | 'right'
+  left: 'left' | 'center' | 'mentions' | 'right'
+  right: 'left' | 'center' | 'mentions' | 'right'
   startX: number
   totalWidth: number
   leftWidth: number
@@ -94,8 +102,8 @@ const stopDrag = () => {
 }
 
 const startDrag = (
-  left: 'left' | 'center' | 'right',
-  right: 'left' | 'center' | 'right',
+  left: 'left' | 'center' | 'mentions' | 'right',
+  right: 'left' | 'center' | 'mentions' | 'right',
   e: MouseEvent,
 ) => {
   const el = layoutRef.value
@@ -118,14 +126,21 @@ onBeforeUnmount(() => {
   stopDrag()
 })
 
-const toggle = (key: 'left' | 'center' | 'right') => {
+const toggle = (key: 'left' | 'center' | 'mentions' | 'right') => {
   collapsed[key] = !collapsed[key]
 }
 
 const currentChapter = ref<{ id: string; name: string; synopsis?: string; content?: string } | null>(null)
+const liveContent = ref('')
 
 const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: string; content?: string }) => {
   currentChapter.value = chapter
+  liveContent.value = chapter.content ?? ''
+}
+
+const handleChapterUpdated = (chapter: { id: string; name: string; synopsis?: string; content?: string }) => {
+  currentChapter.value = chapter
+  liveContent.value = chapter.content ?? ''
 }
 </script>
 
@@ -143,6 +158,9 @@ const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: strin
         <button type="button" class="ghost" @click="toggle('center')">
           {{ collapsed.center ? '显示中栏' : '收起中栏' }}
         </button>
+        <button type="button" class="ghost" @click="toggle('mentions')">
+          {{ collapsed.mentions ? '显示提及栏' : '收起提及栏' }}
+        </button>
         <button type="button" class="ghost" @click="toggle('right')">
           {{ collapsed.right ? '显示右栏' : '收起右栏' }}
         </button>
@@ -156,6 +174,7 @@ const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: strin
             <header class="panel-head">
               <strong v-if="key === 'left'">左栏</strong>
               <strong v-else-if="key === 'center'">中栏</strong>
+              <strong v-else-if="key === 'mentions'">提及</strong>
               <strong v-else>右栏</strong>
             </header>
             <div class="panel-body">
@@ -164,7 +183,14 @@ const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: strin
                 v-else-if="key === 'center'"
                 :project-path="projectPath"
                 :chapter="currentChapter"
-                @updated="currentChapter = $event"
+                @content-change="liveContent = $event"
+                @updated="handleChapterUpdated"
+              />
+              <ManuscriptMentions
+                v-else-if="key === 'mentions'"
+                :project-path="projectPath"
+                :chapter="currentChapter"
+                :content="liveContent"
               />
               <ManuscriptAi v-else />
             </div>

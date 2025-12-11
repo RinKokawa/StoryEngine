@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'updated', chapter: { id: string; name: string; synopsis?: string; content?: string }): void
+  (e: 'content-change', content: string): void
 }>()
 
 const content = ref('')
@@ -26,6 +27,12 @@ watch(
     content.value = val?.content ?? ''
     synopsis.value = val?.synopsis ?? ''
   },
+  { immediate: true },
+)
+
+watch(
+  content,
+  (val) => emit('content-change', val),
   { immediate: true },
 )
 
