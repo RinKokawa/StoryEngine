@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, onBeforeUnmount } from 'vue'
 import Titlebar from '../../components/titlebar.vue'
 
 const props = defineProps<{

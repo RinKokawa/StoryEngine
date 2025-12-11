@@ -97,9 +97,15 @@ const handleEdit = async (id: string) => {
 }
 
 const openViewer = async (id: string) => {
-  const fallback = characters.value.find((c) => c.id === id) || null
+  if (!props.projectPath) {
+    window.alert('缺少项目路径，无法读取角色')
+    return
+  }
+  const fallback =
+    characters.value.find((c) => c.id === id) || { id, name: '加载中...', gender: '', avatar: null }
   viewingCharacter.value = fallback
   showViewer.value = true
+  closeMenu()
   try {
     const data = await window.ipcRenderer.invoke('read-character', props.projectPath, id)
     viewingCharacter.value = data
@@ -136,7 +142,7 @@ const projectName = computed(() => {
         <li
           v-for="item in characters"
           :key="item.id"
-          @dblclick="openViewer(item.id)"
+          @dblclick.stop.prevent="openViewer(item.id)"
         >
           <span class="avatar" v-if="item.avatar">
             <img :src="item.avatar" :alt="item.name" />
@@ -271,6 +277,7 @@ li {
   padding: 6px 4px;
   transition: background 0.15s ease;
   cursor: pointer;
+  user-select: none;
 }
 
 li:hover {
