@@ -246,12 +246,14 @@ const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: strin
   min-height: 320px;
   height: 100%;
   background: #fff;
+  min-height: 0;
 }
 
 .panel {
   border-right: 1px solid #e5e7ec;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .panel:last-child {
@@ -267,6 +269,10 @@ const handleOpenChapter = (chapter: { id: string; name: string; synopsis?: strin
 .panel-body {
   flex: 1;
   padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .placeholder {

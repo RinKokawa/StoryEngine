@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
@@ -10,6 +10,7 @@ const input = ref('')
 const loading = ref(false)
 const error = ref('')
 const listRef = ref<HTMLElement | null>(null)
+const visibleMessages = computed(() => messages.value.filter((m) => m.role !== 'system'))
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -63,10 +64,17 @@ onMounted(scrollToBottom)
     </header>
 
     <div ref="listRef" class="messages">
-      <p v-if="!messages.length" class="placeholder">开始提问，获取灵感。</p>
-      <div v-for="(msg, idx) in messages" :key="idx" class="msg" :data-role="msg.role">
-        <strong class="role">{{ msg.role === 'assistant' ? 'AI' : msg.role === 'user' ? '我' : '系统' }}</strong>
-        <p class="content">{{ msg.content }}</p>
+      <p v-if="!visibleMessages.length" class="placeholder">开始提问，获取灵感。</p>
+      <div
+        v-for="(msg, idx) in visibleMessages"
+        :key="idx"
+        class="msg"
+        :data-role="msg.role"
+      >
+        <div class="bubble">
+          <strong class="role">{{ msg.role === 'assistant' ? 'AI' : '我' }}</strong>
+          <p class="content">{{ msg.content }}</p>
+        </div>
       </div>
     </div>
 
@@ -91,6 +99,8 @@ onMounted(scrollToBottom)
   flex-direction: column;
   gap: 0.5rem;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .head {
@@ -120,29 +130,45 @@ h4 {
 .messages {
   flex: 1;
   border: 1px solid #e5e7ec;
-  border-radius: 6px;
-  padding: 0.5rem;
+  border-radius: 10px;
+  padding: 0.75rem;
   overflow-y: auto;
-  background: #fff;
+  background: linear-gradient(180deg, #f9fafc 0%, #ffffff 40%);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .msg {
-  padding: 0.35rem 0.45rem;
-  border-radius: 6px;
+  display: flex;
+}
+
+.msg[data-role='assistant'] {
+  justify-content: flex-start;
+}
+
+.msg[data-role='user'] {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 90%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
   background: #f7f9fc;
   border: 1px solid #eef1f6;
 }
 
-.msg[data-role='assistant'] {
+.msg[data-role='assistant'] .bubble {
   background: #f0f4ff;
   border-color: #dbe4ff;
+  box-shadow: 0 4px 12px rgba(55, 88, 182, 0.08);
 }
 
-.msg[data-role='user'] {
-  background: #f5f6fa;
+.msg[data-role='user'] .bubble {
+  background: #e8ecf9;
+  border-color: #cfd8f4;
+  box-shadow: 0 4px 12px rgba(74, 90, 125, 0.08);
 }
 
 .role {
@@ -168,6 +194,7 @@ h4 {
   border: 1px solid #f5c6cb;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
+  margin: 0;
 }
 
 .input-area {
@@ -207,5 +234,17 @@ textarea:focus-visible {
 .primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .messages {
+    max-height: 280px;
+  }
+  .input-area {
+    flex-direction: column;
+  }
+  .primary {
+    width: 100%;
+  }
 }
 </style>
