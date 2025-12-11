@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps<{
   projectPath: string
@@ -47,6 +47,20 @@ const saveContent = async () => {
     saving.value = false
   }
 }
+
+const onKey = (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    if (!props.chapter) return
+    e.preventDefault()
+    e.stopPropagation()
+    if (dirty.value && !saving.value) {
+      saveContent()
+    }
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKey, true))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
 </script>
 
 <template>
