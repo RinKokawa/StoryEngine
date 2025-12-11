@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter, ensureWorldviewsIndex, readWorldviewItem } from './service/projectService'
+import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter, ensureWorldviewsIndex, readWorldviewItem, listNotes, saveNote, deleteNote } from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -138,6 +138,22 @@ ipcMain.handle('worldview:read-item', async (_event, projectPath: string, id: st
   if (!projectPath) throw new Error('projectPath is required')
   if (!id) throw new Error('id is required')
   return readWorldviewItem(projectPath, id)
+})
+
+ipcMain.handle('notes:list', async (_event, projectPath: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return listNotes(projectPath)
+})
+
+ipcMain.handle('notes:save', async (_event, projectPath: string, payload: { id?: string; title?: string; content?: string }) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return saveNote(projectPath, payload)
+})
+
+ipcMain.handle('notes:delete', async (_event, projectPath: string, id: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  if (!id) throw new Error('id is required')
+  return deleteNote(projectPath, id)
 })
 
 ipcMain.handle('shell:open-external', async (_event, url: string) => {

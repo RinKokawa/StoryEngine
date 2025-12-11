@@ -78,6 +78,131 @@ export async function ensureWorldviewsFolder(projectPath: string) {
   return target
 }
 
+export async function ensureNotesFolder(projectPath: string) {
+  const target = path.join(projectPath, 'notes')
+  await fs.mkdir(target, { recursive: true })
+  const indexPath = path.join(target, 'notes.json')
+  try {
+    await fs.access(indexPath)
+  } catch {
+    const data = { notes: [] as string[] }
+    await fs.writeFile(indexPath, JSON.stringify(data, null, 2), 'utf-8')
+  }
+  return target
+}
+
+export async function listNotes(projectPath: string) {
+  const dir = await ensureNotesFolder(projectPath)
+  const indexPath = path.join(dir, 'notes.json')
+
+  let ids: string[] = []
+  try {
+    const raw = await fs.readFile(indexPath, 'utf-8')
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed.notes)) {
+      ids = parsed.notes
+    }
+  } catch {
+    ids = []
+  }
+
+  const notes = []
+  for (const id of ids) {
+    const file = path.join(dir, `${id}.json`)
+    try {
+      const raw = await fs.readFile(file, 'utf-8')
+      const data = JSON.parse(raw)
+      notes.push({
+        id,
+        title: data.title ?? id,
+        content: data.content ?? '',
+        updatedAt: data.updatedAt ?? new Date().toISOString(),
+      })
+    } catch {
+      notes.push({ id, title: id, content: '', updatedAt: new Date().toISOString() })
+    }
+  }
+
+  return notes
+}
+
+export async function saveNote(
+  projectPath: string,
+  payload: { id?: string; title?: string; content?: string },
+) {
+  const dir = await ensureNotesFolder(projectPath)
+  const indexPath = path.join(dir, 'notes.json')
+
+  let index: { notes: string[] } = { notes: [] }
+  try {
+    const raw = await fs.readFile(indexPath, 'utf-8')
+    index = JSON.parse(raw)
+  } catch {
+    index = { notes: [] }
+  }
+  if (!Array.isArray(index.notes)) {
+    index.notes = []
+  }
+
+  const id = payload.id?.trim() || `note_${Date.now()}`
+  const data = {
+    id,
+    title: (payload.title ?? '').trim() || '未命名笔记',
+    content: payload.content ?? '',
+    updatedAt: new Date().toISOString(),
+  }
+
+  const file = path.join(dir, `${id}.json`)
+  let before: Record<string, unknown> | null = null
+  try {
+    const raw = await fs.readFile(file, 'utf-8')
+    before = JSON.parse(raw)
+  } catch {
+    before = null
+  }
+
+  if (!index.notes.includes(id)) {
+    index.notes.unshift(id)
+    await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8')
+  } else {
+    await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8')
+  }
+  await fs.writeFile(file, JSON.stringify(data, null, 2), 'utf-8')
+  await logChange(projectPath, { action: 'save-note', target: id, before, after: data })
+  return data
+}
+
+export async function deleteNote(projectPath: string, id: string) {
+  const dir = await ensureNotesFolder(projectPath)
+  const indexPath = path.join(dir, 'notes.json')
+
+  let index: { notes: string[] } = { notes: [] }
+  try {
+    const raw = await fs.readFile(indexPath, 'utf-8')
+    index = JSON.parse(raw)
+  } catch {
+    index = { notes: [] }
+  }
+  if (!Array.isArray(index.notes)) {
+    index.notes = []
+  }
+  index.notes = index.notes.filter((entry) => entry !== id)
+  await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8')
+
+  const file = path.join(dir, `${id}.json`)
+  let before: Record<string, unknown> | null = null
+  try {
+    const raw = await fs.readFile(file, 'utf-8')
+    before = JSON.parse(raw)
+    await fs.unlink(file)
+  } catch {
+    // ignore missing
+  }
+
+  await logChange(projectPath, { action: 'delete-note', target: id, before })
+  return { ok: true }
+}
+
 export async function ensureWorldviewsIndex(projectPath: string) {
   const folder = await ensureWorldviewsFolder(projectPath)
   const indexPath = path.join(folder, 'index.json')

@@ -6,6 +6,7 @@ import EditorDashboard from './editor/editor_dashboard.vue'
 import EditorCharacters from './editor/editor_characters.vue'
 import EditorManuscript from './editor/editor_manuscript.vue'
 import EditorWorldview from './editor/editor_worldview.vue'
+import EditorNotes from './editor/editor_notes.vue'
 
 const props = defineProps<{
   path: string | null
@@ -39,6 +40,7 @@ const currentView = computed(() => {
   if (activeNav.value === 'manuscript') return EditorManuscript
   if (activeNav.value === 'characters') return EditorCharacters
   if (activeNav.value === 'world') return EditorWorldview
+  if (activeNav.value === 'notes') return EditorNotes
   return null
 })
 
@@ -101,6 +103,8 @@ const maximizeWindow = () => window.ipcRenderer.invoke('window-control', 'maximi
   padding: 1rem 1.5rem;
   margin-left: 220px;
   box-sizing: border-box;
+  height: calc(100vh - 32px);
+  overflow-y: auto;
 }
 
 .placeholder {
