@@ -82,7 +82,8 @@ onBeforeUnmount(() => {
 .modal {
   background: #fff;
   padding: 1rem;
-  width: 320px;
+  width: 360px;
+  max-width: 92vw;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   box-sizing: border-box;
@@ -97,6 +98,7 @@ header h4 {
   padding: 0.45rem 0.55rem;
   border: 1px solid #d0d4dd;
   border-radius: 0;
+  box-sizing: border-box;
 }
 
 .body input:focus,
