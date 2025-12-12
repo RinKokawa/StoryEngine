@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import WorldviewItem from './editor_worldview_item.vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import Titlebar from '../components/titlebar.vue'
 
 const props = defineProps<{
   projectPath: string
@@ -11,6 +11,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const currentItem = ref<any | null>(null)
 const showItem = ref(false)
+const projectName = computed(() => props.projectPath?.split(/[\\/]/).filter(Boolean).at(-1) || '项目')
 
 const loadWorldviews = async () => {
   items.value = []
@@ -53,6 +54,17 @@ const closeItem = () => {
   showItem.value = false
   currentItem.value = null
 }
+
+const onKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && showItem.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    closeItem()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKey, true))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
 </script>
 
 <template>
@@ -68,12 +80,23 @@ const closeItem = () => {
         <li v-for="item in items" :key="item" @dblclick.stop.prevent="openItem(item)">{{ item }}</li>
       </ul>
     </div>
-    <WorldviewItem
-      v-if="showItem && currentItem"
-      :item="currentItem"
-      :project-name="projectPath?.split(/[\\\\/]/).filter(Boolean).at(-1) || '项目'"
-      @close="closeItem"
-    />
+    <div v-if="showItem && currentItem" class="overlay" @click.self="closeItem">
+      <div class="viewer">
+        <Titlebar
+          :name="`${projectName} | 世界观`"
+          :status-text="currentItem.title || currentItem.id || '条目'"
+          :status-color="'#4a5a7d'"
+          @close="closeItem"
+          @minimize="() => {}"
+          @maximize="() => {}"
+        />
+        <div class="viewer-content">
+          <h3>{{ currentItem.title || currentItem.id }}</h3>
+          <p class="muted">双击列表打开的世界观条目</p>
+          <pre class="body">{{ currentItem.content }}</pre>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -110,5 +133,45 @@ const closeItem = () => {
 .list {
   margin: 0;
   padding-left: 1.2rem;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  z-index: 50;
+}
+
+.viewer {
+  background: #f5f6fa;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-content {
+  padding: 1rem 1.5rem;
+  color: #2c2f36;
+}
+
+.viewer-content h3 {
+  margin: 0 0 0.25rem;
+}
+
+.muted {
+  margin: 0 0 0.65rem;
+  color: #6c7180;
+}
+
+.body {
+  background: #fff;
+  border: 1px solid #d0d4dd;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
 }
 </style>
