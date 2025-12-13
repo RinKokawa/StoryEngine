@@ -5,6 +5,7 @@ import EditorNav from './editor/editor_nav.vue'
 import EditorDashboard from './editor/editor_dashboard.vue'
 import EditorCharacters from './editor/editor_characters.vue'
 import EditorManuscript from './editor/editor_manuscript.vue'
+import EditorOutline from './editor/editor_outline.vue'
 import EditorWorldview from './editor/editor_worldview.vue'
 import EditorNotes from './editor/editor_notes.vue'
 
@@ -38,6 +39,7 @@ const sidebarWidth = ref(64)
 const currentView = computed(() => {
   if (activeNav.value === 'dashboard') return EditorDashboard
   if (activeNav.value === 'manuscript') return EditorManuscript
+  if (activeNav.value === 'outline') return EditorOutline
   if (activeNav.value === 'characters') return EditorCharacters
   if (activeNav.value === 'world') return EditorWorldview
   if (activeNav.value === 'notes') return EditorNotes

@@ -251,7 +251,7 @@ ipcMain.handle('window-control', (event, action: 'minimize' | 'maximize' | 'clos
 
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
     minWidth: 960,
     minHeight: 540,
     frame: false,
