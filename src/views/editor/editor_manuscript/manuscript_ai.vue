@@ -5,6 +5,8 @@ type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
 const props = defineProps<{
   projectPath: string
+  currentChapter?: { id: string; name: string; synopsis?: string; content?: string } | null
+  liveContent?: string
 }>()
 
 const baseSystem = '你是写作助手，回答简洁具体。'
@@ -14,6 +16,10 @@ const loading = ref(false)
 const error = ref('')
 const listRef = ref<HTMLElement | null>(null)
 const visibleMessages = computed(() => messages.value.filter((m) => m.role !== 'system'))
+const metaInfo = ref<{ name: string; synopsis: string }>({ name: '', synopsis: '' })
+const previousChapters = ref<
+  Array<{ id: string; name: string; synopsis?: string; content?: string }>
+>([])
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -55,26 +61,97 @@ const handleKey = (e: KeyboardEvent) => {
 
 onMounted(scrollToBottom)
 
+const rebuildSystemMessage = () => {
+  const name = metaInfo.value.name?.trim() || '未命名作品'
+  const synopsis = metaInfo.value.synopsis?.trim() || '暂无简介'
+
+  const contextLines: string[] = []
+  previousChapters.value.forEach((c) => {
+    contextLines.push(`前章《${c.name}》\n梗概：${c.synopsis ?? '无'}\n正文：${c.content ?? ''}`)
+  })
+  if (props.currentChapter) {
+    const content = props.liveContent ?? props.currentChapter.content ?? ''
+    contextLines.push(`当前章节《${props.currentChapter.name}》\n梗概：${props.currentChapter.synopsis ?? '无'}\n正文：${content}`)
+  }
+
+  const parts = [
+    baseSystem,
+    `作品信息：\n标题：${name}\n简介：${synopsis}`,
+  ]
+  if (contextLines.length) {
+    parts.push(`章节上下文（当前章节 + 前三章）：\n${contextLines.join('\n\n')}`)
+  }
+  const content = parts.join('\n\n')
+  messages.value = [{ role: 'system', content }, ...messages.value.filter((m) => m.role !== 'system')]
+}
+
 const loadProjectMeta = async () => {
   if (!props.projectPath) return
   try {
     const meta = await window.ipcRenderer.invoke('project:read-meta', props.projectPath)
-    const synopsis = meta?.synopsis?.trim() || '暂无简介'
-    const name = meta?.name?.trim() || '未命名作品'
-    const context = `${baseSystem}\n作品信息：\n标题：${name}\n简介：${synopsis}`
-    messages.value = [{ role: 'system', content: context }, ...messages.value.filter((m) => m.role !== 'system')]
+    metaInfo.value = {
+      name: meta?.name ?? '',
+      synopsis: meta?.synopsis ?? '',
+    }
+    rebuildSystemMessage()
   } catch (err) {
     console.error('读取作品信息失败', err)
+    metaInfo.value = { name: '', synopsis: '' }
+    rebuildSystemMessage()
   }
+}
+
+const loadChapterContext = async () => {
+  if (!props.projectPath || !props.currentChapter?.id) {
+    previousChapters.value = []
+    rebuildSystemMessage()
+    return
+  }
+  try {
+    const list = await window.ipcRenderer.invoke('list-outline-structure', props.projectPath)
+    const flat: Array<{ id: string; name: string; synopsis?: string; content?: string }> = []
+    if (Array.isArray(list)) {
+      for (const v of list) {
+        if (Array.isArray(v.chapters)) {
+          flat.push(...v.chapters)
+        }
+      }
+    }
+    const idx = flat.findIndex((c) => c.id === props.currentChapter?.id)
+    if (idx >= 0) {
+      const start = Math.max(0, idx - 3)
+      previousChapters.value = flat.slice(start, idx)
+    } else {
+      previousChapters.value = []
+    }
+  } catch (err) {
+    console.error('加载章节上下文失败', err)
+    previousChapters.value = []
+  }
+  rebuildSystemMessage()
 }
 
 onMounted(() => {
   loadProjectMeta()
+  loadChapterContext()
 })
 
 watch(
   () => props.projectPath,
-  () => loadProjectMeta(),
+  () => {
+    loadProjectMeta()
+    loadChapterContext()
+  },
+)
+
+watch(
+  () => props.currentChapter?.id,
+  () => loadChapterContext(),
+)
+
+watch(
+  () => props.liveContent,
+  () => rebuildSystemMessage(),
 )
 </script>
 
