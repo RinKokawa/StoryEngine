@@ -195,7 +195,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="manuscript-body">
     <h4>正文内容</h4>
-    <div v-if="chapter">
+    <div v-if="chapter" class="body-wrapper">
       <h5 class="chapter-title">{{ chapter.name }}</h5>
       <label class="synopsis">
         简介：
@@ -229,9 +229,24 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.manuscript-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .manuscript-body h4 {
   margin: 0 0 0.5rem;
   font-size: 1rem;
+}
+
+.body-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .chapter-title {
@@ -264,8 +279,9 @@ onBeforeUnmount(() => {
 .manuscript-body textarea {
   width: 100%;
   height: 100%;
-  min-height: 240px;
-  resize: vertical;
+  min-height: 0;
+  flex: 1;
+  resize: none;
   border: 1px solid #d0d4dd;
   padding: 0.65rem;
   font-size: 0.95rem;
@@ -282,6 +298,10 @@ onBeforeUnmount(() => {
 
 .editor-area {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .picker-pop {
