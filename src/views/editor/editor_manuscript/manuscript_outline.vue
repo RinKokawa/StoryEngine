@@ -2,15 +2,16 @@
 import { onMounted, ref, watch } from 'vue'
 import OutlineModal from './outline_modal.vue'
 
+type Chapter = { id: string; name: string; synopsis: string; content?: string }
+type Volume = { id: string; name: string; chapters?: Array<Chapter> }
+
 const props = defineProps<{
   projectPath: string
 }>()
 
-const volumes = ref<
-  Array<{ id: string; name: string; chapters?: Array<{ id: string; name: string; synopsis: string; content?: string }> }>
->([])
+const volumes = ref<Array<Volume>>([])
 const emit = defineEmits<{
-  (e: 'open-chapter', chapter: { id: string; name: string; synopsis: string; content?: string }): void
+  (e: 'open-chapter', chapter: Chapter): void
 }>()
 const expanded = ref<Set<string>>(new Set())
 const selectedChapterId = ref<string | null>(null)
@@ -155,7 +156,7 @@ const handleModalSubmit = async (name: string) => {
 const handleModalClose = () => {
   showModal.value = false
 }
-const findChapterById = (id: string) => {
+const findChapterById = (id: string): Chapter | null => {
   for (const v of volumes.value) {
     if (!v.chapters) continue
     for (const c of v.chapters) {
@@ -165,7 +166,7 @@ const findChapterById = (id: string) => {
   return null
 }
 
-const selectChapter = async (chapter: { id: string; name: string; synopsis?: string; content?: string }) => {
+const selectChapter = async (chapter: Chapter) => {
   selectedChapterId.value = chapter.id
   // 为避免使用旧缓存，重新加载一次卷章节数据后再打开
   await loadVolumes()
