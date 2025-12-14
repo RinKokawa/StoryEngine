@@ -192,7 +192,7 @@ const handleChapterUpdated = (chapter: { id: string; name: string; synopsis?: st
                 :chapter="currentChapter"
                 :content="liveContent"
               />
-              <ManuscriptAi v-else />
+              <ManuscriptAi v-else :project-path="projectPath" />
             </div>
           </section>
         </template>

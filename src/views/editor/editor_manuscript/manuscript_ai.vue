@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
-const messages = ref<ChatMessage[]>([
-  { role: 'system', content: '你是写作助手，回答简洁具体。' },
-])
+const props = defineProps<{
+  projectPath: string
+}>()
+
+const baseSystem = '你是写作助手，回答简洁具体。'
+const messages = ref<ChatMessage[]>([{ role: 'system', content: baseSystem }])
 const input = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -51,6 +54,28 @@ const handleKey = (e: KeyboardEvent) => {
 }
 
 onMounted(scrollToBottom)
+
+const loadProjectMeta = async () => {
+  if (!props.projectPath) return
+  try {
+    const meta = await window.ipcRenderer.invoke('project:read-meta', props.projectPath)
+    const synopsis = meta?.synopsis?.trim() || '暂无简介'
+    const name = meta?.name?.trim() || '未命名作品'
+    const context = `${baseSystem}\n作品信息：\n标题：${name}\n简介：${synopsis}`
+    messages.value = [{ role: 'system', content: context }, ...messages.value.filter((m) => m.role !== 'system')]
+  } catch (err) {
+    console.error('读取作品信息失败', err)
+  }
+}
+
+onMounted(() => {
+  loadProjectMeta()
+})
+
+watch(
+  () => props.projectPath,
+  () => loadProjectMeta(),
+)
 </script>
 
 <template>

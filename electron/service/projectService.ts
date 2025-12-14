@@ -16,6 +16,32 @@ export async function createProjectOnDisk(name: string, location: string) {
   return { projectPath: projectDir }
 }
 
+export async function readProjectMeta(projectPath: string) {
+  const novelPath = path.join(projectPath, 'novel.json')
+  try {
+    const raw = await fs.readFile(novelPath, 'utf-8')
+    return JSON.parse(raw)
+  } catch {
+    return { name: path.basename(projectPath), synopsis: '' }
+  }
+}
+
+export async function saveProjectSynopsis(projectPath: string, synopsis: string) {
+  const novelPath = path.join(projectPath, 'novel.json')
+  let existing: Record<string, unknown> = {}
+  try {
+    const raw = await fs.readFile(novelPath, 'utf-8')
+    existing = JSON.parse(raw)
+  } catch {
+    existing = { name: path.basename(projectPath) }
+  }
+
+  const next = { ...existing, synopsis: synopsis ?? '' }
+  await fs.writeFile(novelPath, JSON.stringify(next, null, 2), 'utf-8')
+  await logChange(projectPath, { action: 'save-synopsis', target: 'novel.json', before: existing, after: next })
+  return next
+}
+
 async function logChange(
   projectPath: string,
   entry: { action: string; target: string; before?: unknown; after?: unknown },

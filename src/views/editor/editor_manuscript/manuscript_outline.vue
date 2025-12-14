@@ -9,6 +9,8 @@ const props = defineProps<{
 }>()
 
 const volumes = ref<Array<Volume>>([])
+const synopsis = ref('')
+const synopsisSaving = ref(false)
 const emit = defineEmits<{
   (e: 'open-chapter', chapter: Chapter): void
 }>()
@@ -18,6 +20,20 @@ const selectedChapterId = ref<string | null>(null)
 const ensureOutline = async () => {
   if (!props.projectPath) return
   await window.ipcRenderer.invoke('ensure-outline', props.projectPath)
+}
+
+const loadSynopsis = async () => {
+  if (!props.projectPath) {
+    synopsis.value = ''
+    return
+  }
+  try {
+    const meta = await window.ipcRenderer.invoke('project:read-meta', props.projectPath)
+    synopsis.value = meta?.synopsis ?? ''
+  } catch (err) {
+    console.error('读取作品简介失败', err)
+    synopsis.value = ''
+  }
 }
 
 const loadVolumes = async () => {
@@ -37,6 +53,7 @@ const loadVolumes = async () => {
 onMounted(() => {
   ensureOutline()
   loadVolumes()
+  loadSynopsis()
 })
 
 watch(
@@ -44,6 +61,7 @@ watch(
   () => {
     ensureOutline()
     loadVolumes()
+    loadSynopsis()
   },
 )
 
@@ -107,6 +125,19 @@ const openCreateVolume = () => {
   modalPlaceholder.value = '请输入卷名'
   modalConfirm.value = '创建卷'
   showModal.value = true
+}
+
+const saveSynopsis = async () => {
+  if (!props.projectPath) return
+  synopsisSaving.value = true
+  try {
+    await window.ipcRenderer.invoke('project:save-synopsis', props.projectPath, synopsis.value)
+  } catch (err) {
+    console.error('保存作品简介失败', err)
+    window.alert('保存作品简介失败')
+  } finally {
+    synopsisSaving.value = false
+  }
 }
 
 const handleModalSubmit = async (name: string) => {
@@ -176,6 +207,23 @@ const selectChapter = async (chapter: Chapter) => {
 
 <template>
   <div class="outline">
+    <div class="intro-card">
+      <div class="intro-header">
+        <h4>作品简介</h4>
+        <div class="intro-actions">
+          <span class="muted" v-if="synopsisSaving">保存中…</span>
+          <button type="button" class="ghost primary" :disabled="synopsisSaving" @click="saveSynopsis">
+            {{ synopsisSaving ? '保存中' : '保存简介' }}
+          </button>
+        </div>
+      </div>
+      <textarea
+        v-model="synopsis"
+        class="intro-input"
+        rows="3"
+        placeholder="简要描述作品背景、主线或氛围，便于创作时参考"
+      />
+    </div>
     <div class="header">
       <h4>卷章节结构</h4>
       <button type="button" class="ghost" @click="openCreateVolume">+ 新建卷</button>
@@ -232,6 +280,55 @@ const selectChapter = async (chapter: Chapter) => {
 .outline h4 {
   margin: 0 0 0.5rem;
   font-size: 1rem;
+}
+
+.intro-card {
+  border: 1px solid #e1e4ec;
+  background: #f9fafc;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.intro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.intro-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intro-input {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid #d0d4dd;
+  background: #fff;
+  box-sizing: border-box;
+  color: #2c2f36;
+}
+
+.intro-input:focus,
+.intro-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 90, 125, 0.15);
+}
+
+.muted {
+  color: #6c7180;
+  font-size: 12px;
+}
+
+.ghost.primary {
+  border-color: #4a5a7d;
+  color: #2c2f36;
+  background: #e8ecf5;
 }
 
 .tree {

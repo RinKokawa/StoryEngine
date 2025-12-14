@@ -2,7 +2,31 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { createProjectOnDisk, readProjectCover, ensureCharactersFolder, saveCharacter, listCharacters, readCharacter, ensureOutlineFolder, listVolumes, listOutlineStructure, saveChapterContent, createVolume, deleteVolume, createChapter, deleteChapter, ensureWorldviewsIndex, readWorldviewItem, listNotes, saveNote, deleteNote, saveEnvKey, readEnvKey } from './service/projectService'
+import {
+  createProjectOnDisk,
+  readProjectCover,
+  ensureCharactersFolder,
+  saveCharacter,
+  listCharacters,
+  readCharacter,
+  ensureOutlineFolder,
+  listVolumes,
+  listOutlineStructure,
+  saveChapterContent,
+  createVolume,
+  deleteVolume,
+  createChapter,
+  deleteChapter,
+  ensureWorldviewsIndex,
+  readWorldviewItem,
+  listNotes,
+  saveNote,
+  deleteNote,
+  saveEnvKey,
+  readEnvKey,
+  readProjectMeta,
+  saveProjectSynopsis,
+} from './service/projectService'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -55,6 +79,16 @@ ipcMain.handle('create-project', async (_event, payload: { name?: string; locati
 ipcMain.handle('get-project-cover', async (_event, projectPath: string) => {
   if (!projectPath) return null
   return readProjectCover(projectPath)
+})
+
+ipcMain.handle('project:read-meta', async (_event, projectPath: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return readProjectMeta(projectPath)
+})
+
+ipcMain.handle('project:save-synopsis', async (_event, projectPath: string, synopsis: string) => {
+  if (!projectPath) throw new Error('projectPath is required')
+  return saveProjectSynopsis(projectPath, synopsis)
 })
 
 ipcMain.handle('ensure-characters-folder', async (_event, projectPath: string) => {
