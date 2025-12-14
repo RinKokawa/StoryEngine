@@ -26,21 +26,23 @@ const handleDeleteChapter = (chapter: Chapter) =>
 
 <template>
   <div class="tree-item">
-    <button type="button" class="tree-node" :class="{ expanded }" @click="handleToggle">
-      <span class="icons">
-        <svg class="chevron" viewBox="0 0 16 16" width="14" height="14" :class="{ expanded }">
-          <path fill="currentColor" d="M6 4.75a.75.75 0 0 1 1.28-.53l3.25 3.25a.75.75 0 0 1 0 1.06L7.28 11.78a.75.75 0 0 1-1.28-.53V4.75Z" />
-        </svg>
-        <svg class="folder" viewBox="0 0 16 16" width="14" height="14" :class="{ open: expanded }">
-          <path fill="currentColor" d="M1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25H7.5L6.25 3.5H1.75z" />
-        </svg>
-      </span>
-      <span class="label">{{ volume.name }}</span>
-      <span class="badge" v-if="volume.chapters?.length">{{ volume.chapters.length }}</span>
-    </button>
-    <div class="actions">
-      <button type="button" class="ghost" @click.stop="handleCreateChapter">+ 章节</button>
-      <button type="button" class="ghost danger" @click.stop="handleDeleteVolume">删卷</button>
+    <div class="volume-row">
+      <button type="button" class="tree-node" :class="{ expanded }" @click="handleToggle">
+        <span class="icons">
+          <svg class="chevron" viewBox="0 0 16 16" width="14" height="14" :class="{ expanded }">
+            <path fill="currentColor" d="M6 4.75a.75.75 0 0 1 1.28-.53l3.25 3.25a.75.75 0 0 1 0 1.06L7.28 11.78a.75.75 0 0 1-1.28-.53V4.75Z" />
+          </svg>
+          <svg class="folder" viewBox="0 0 16 16" width="14" height="14" :class="{ open: expanded }">
+            <path fill="currentColor" d="M1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25H7.5L6.25 3.5H1.75z" />
+          </svg>
+        </span>
+        <span class="label">{{ volume.name }}</span>
+        <span class="badge" v-if="volume.chapters?.length">{{ volume.chapters.length }}</span>
+      </button>
+      <div class="actions">
+        <button type="button" class="ghost" @click.stop="handleCreateChapter">+ 章节</button>
+        <button type="button" class="ghost danger" @click.stop="handleDeleteVolume">删卷</button>
+      </div>
     </div>
     <div v-if="expanded && volume.chapters?.length" class="chapters">
       <ChapterItem
@@ -62,8 +64,14 @@ const handleDeleteChapter = (chapter: Chapter) =>
   background: transparent;
 }
 
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .tree-node {
-  width: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -86,9 +94,9 @@ const handleDeleteChapter = (chapter: Chapter) =>
 }
 
 .actions {
-  display: flex;
+  display: inline-flex;
+  flex-shrink: 0;
   gap: 6px;
-  padding: 0 10px 6px;
 }
 
 .icons {
