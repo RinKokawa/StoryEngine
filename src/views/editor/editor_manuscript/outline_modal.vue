@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps<{
   title: string
   placeholder: string
   confirmText: string
+  initialValue?: string
 }>()
 
 const emit = defineEmits<{
@@ -14,6 +15,14 @@ const emit = defineEmits<{
 
 const value = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
+
+watch(
+  () => props.initialValue,
+  (val) => {
+    value.value = val ?? ''
+  },
+  { immediate: true },
+)
 
 const submit = () => {
   emit('submit', value.value.trim())

@@ -16,6 +16,8 @@ const emit = defineEmits<{
 }>()
 const expanded = ref<Set<string>>(new Set())
 const selectedChapterId = ref<string | null>(null)
+const modalInitialValue = ref('')
+const renameTarget = ref<{ volumeId: string; chapter: Chapter } | null>(null)
 
 const ensureOutline = async () => {
   if (!props.projectPath) return
@@ -75,7 +77,7 @@ const toggle = (id: string) => {
 const isExpanded = (id: string) => expanded.value.has(id)
 
 const showModal = ref(false)
-const modalMode = ref<'volume' | 'chapter'>('volume')
+const modalMode = ref<'volume' | 'chapter' | 'rename-chapter'>('volume')
 const modalVolumeId = ref<string | null>(null)
 const modalTitle = ref('新建卷')
 const modalPlaceholder = ref('请输入卷名')
@@ -99,6 +101,18 @@ const createChapter = async (volumeId: string) => {
   modalTitle.value = '新建章节'
   modalPlaceholder.value = '请输入章节名'
   modalConfirm.value = '创建章节'
+  modalInitialValue.value = ''
+  showModal.value = true
+}
+
+const renameChapter = (payload: { volumeId: string; chapter: Chapter }) => {
+  renameTarget.value = payload
+  modalMode.value = 'rename-chapter'
+  modalVolumeId.value = payload.volumeId
+  modalTitle.value = '重命名章节'
+  modalPlaceholder.value = '请输入章节名'
+  modalConfirm.value = '保存名称'
+  modalInitialValue.value = payload.chapter.name
   showModal.value = true
 }
 
@@ -124,6 +138,7 @@ const openCreateVolume = () => {
   modalTitle.value = '新建卷'
   modalPlaceholder.value = '请输入卷名'
   modalConfirm.value = '创建卷'
+  modalInitialValue.value = ''
   showModal.value = true
 }
 
@@ -179,12 +194,35 @@ const handleModalSubmit = async (name: string) => {
       console.error('创建章节失败', err)
       window.alert('创建章节失败')
     }
+  } else if (modalMode.value === 'rename-chapter' && renameTarget.value) {
+    try {
+      const { volumeId, chapter } = renameTarget.value
+      await window.ipcRenderer.invoke('save-chapter-content', props.projectPath, chapter.id, {
+        chapter_name: name.trim(),
+      })
+      volumes.value = volumes.value.map((v) => {
+        if (v.id !== volumeId) return v
+        const chapters = Array.isArray(v.chapters)
+          ? v.chapters.map((c) => (c.id === chapter.id ? { ...c, name: name.trim() } : c))
+          : []
+        return { ...v, chapters }
+      })
+      if (selectedChapterId.value === chapter.id) {
+        emit('open-chapter', { ...chapter, name: name.trim() })
+      }
+    } catch (err) {
+      console.error('重命名章节失败', err)
+      window.alert('重命名章节失败')
+    } finally {
+      renameTarget.value = null
+    }
   }
   showModal.value = false
 }
 
 const handleModalClose = () => {
   showModal.value = false
+  renameTarget.value = null
 }
 const findChapterById = (id: string): Chapter | null => {
   for (const v of volumes.value) {
@@ -239,6 +277,7 @@ const selectChapter = async (chapter: Chapter) => {
         @create-chapter="createChapter"
         @delete-volume="deleteVolume"
         @delete-chapter="deleteChapter"
+        @rename-chapter="renameChapter"
         @select-chapter="selectChapter"
       />
     </div>
@@ -249,6 +288,7 @@ const selectChapter = async (chapter: Chapter) => {
       :title="modalTitle"
       :placeholder="modalPlaceholder"
       :confirm-text="modalConfirm"
+      :initial-value="modalInitialValue"
       @submit="handleModalSubmit"
       @close="handleModalClose"
     />

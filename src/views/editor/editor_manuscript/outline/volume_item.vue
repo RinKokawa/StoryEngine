@@ -13,6 +13,7 @@ const emit = defineEmits<{
   (e: 'create-chapter', volumeId: string): void
   (e: 'delete-volume', volumeId: string): void
   (e: 'delete-chapter', payload: { volumeId: string; chapterId: string }): void
+  (e: 'rename-chapter', payload: { volumeId: string; chapter: Chapter }): void
   (e: 'select-chapter', chapter: Chapter): void
 }>()
 
@@ -22,6 +23,7 @@ const handleDeleteVolume = () => emit('delete-volume', props.volume.id)
 const handleSelectChapter = (chapter: Chapter) => emit('select-chapter', chapter)
 const handleDeleteChapter = (chapter: Chapter) =>
   emit('delete-chapter', { volumeId: props.volume.id, chapterId: chapter.id })
+const handleRenameChapter = (chapter: Chapter) => emit('rename-chapter', { volumeId: props.volume.id, chapter })
 </script>
 
 <template>
@@ -51,6 +53,7 @@ const handleDeleteChapter = (chapter: Chapter) =>
         :chapter="c"
         :active="c.id === selectedChapterId"
         @select="handleSelectChapter"
+        @rename="handleRenameChapter"
         @delete="handleDeleteChapter"
       />
     </div>

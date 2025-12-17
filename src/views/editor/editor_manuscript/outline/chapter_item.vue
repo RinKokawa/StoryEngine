@@ -8,10 +8,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', chapter: Chapter): void
+  (e: 'rename', chapter: Chapter): void
   (e: 'delete', chapter: Chapter): void
 }>()
 
 const handleSelect = () => emit('select', props.chapter)
+const handleRename = () => emit('rename', props.chapter)
 const handleDelete = () => emit('delete', props.chapter)
 </script>
 
@@ -19,6 +21,7 @@ const handleDelete = () => emit('delete', props.chapter)
   <div class="chapter-row" :class="{ active: active }" @click="handleSelect">
     <span class="dot"></span>
     <span class="chapter-name">{{ chapter.name }}</span>
+    <button type="button" class="ghost tiny" @click.stop="handleRename">改名</button>
     <button type="button" class="ghost danger tiny" @click.stop="handleDelete">删</button>
   </div>
 </template>
@@ -59,14 +62,14 @@ const handleDelete = () => emit('delete', props.chapter)
   border-radius: 0;
 }
 
-.ghost.danger {
-  border-color: #e57373;
-  color: #c62828;
-}
-
 .ghost.tiny {
   padding: 2px 6px;
   font-size: 12px;
+}
+
+.ghost.danger {
+  border-color: #e57373;
+  color: #c62828;
 }
 
 .ghost:focus,
